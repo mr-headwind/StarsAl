@@ -1,0 +1,125 @@
+ LICENSE
+ -------
+    Copyright (C) 202x Anthony Buckley
+
+    This file is part of MYPROJECT.
+
+    MYPROJECT is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    MYPROJECT is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with MYPROJECT.  If not, see <http://www.gnu.org/licenses/>.
+
+
+ DESCRIPTION
+ -----------
+    MYPROJECT (Astronomy CCD in Telescope Capture) is an application designed for 
+    video and image capture of the Planets and the Moon. A suitable astronomy or
+    modified webcam will give the best results, however it will work with most webcams.
+    The camera driver must be V4L2 compliant.
+
+    Numerous video and image formats are available, however FITS image support is
+    mostly basic and should only be used by those familiar with it.
+
+    MYPROJECT is intended for use with Linux only.
+
+    While MYPROJECT is primarily designed for use in astronomy, it can also serve as a general
+    webcam program.
+
+ INSTALL
+ -------
+    There are several ways to install MYPROJECT outlined below.
+
+ 1. DISTRIBUTION PACKAGE
+ -----------------------
+    This is the preferred method for installation.
+
+    Download the latest distribution archive from here: 
+    	https://github.com/mr-headwind/MYPROJECT/tree/master/DIST_PACKAGES 
+    to your download directory (eg. $HOME/Downloads).
+
+    Start a terminal or xterm session
+    cd $HOME/Downloads (or your download directory)
+    tar xvzf MYPROJECT-x.xx.tar.gz (where x.xx is the version number)
+    ./configure --prefix=/usr
+    make
+    sudo make install
+
+    There are a number of package dependencies (see below) that will be highlighted
+    during the configure process. These must be installed.
+
+ 2. DEB PACKAGE
+ --------------
+    A binary deb package file is available on SourceForge at:-
+
+	https://sourceforge.net/projects/MYPROJECT/?source=directory
+
+    or go to the SourceForge home page and search for MYPROJECT.
+
+    It has been a little difficult to test this package properly so it is provided
+    as is only. If you experience any problem with it, please let me know (see BUGS ... below).
+
+ 3. BUILD FROM SOURCE
+ --------------------
+    If you wish to build and/or work on MYPROJECT separately, the git repository is located at:
+
+    	https://github.com/mr-headwind/MYPROJECT
+
+    Either clone the repository or download the repository package to a suitable development 
+    directory (eg. $HOME/Development/MYPROJECT). You may also download individual files and there 
+    is a RELEASES directory with various stable snapshot archives.
+    If you elect to grab individual files be warned that these may be in a work-in-progress
+    state and be unstable.
+    	
+    The icon image file 'MYPROJECT.png' will need to be located appropriately:
+    	cd $HOME
+    	mkdir -P .local/share/icons/hicolor/48x48/apps
+    	mkdir -P .local/share/pixmaps/MYPROJECT
+    	cd MYPROJECT (or whatever directory was chosen for download)
+    	ln -s MYPROJECT.png .local/share/icons/hicolor/48x48/apps/MYPROJECT.png
+    	ln -s MYPROJECT.png .local/share/pixmaps/MYPROJECT/MYPROJECT.png
+
+    If you wish to make your own distribution package the 'setup_AutoTools.sh' shell script 
+    in the AutoTools directory will set up a release structure, but may need to be altered 
+    if your directory structure is different.
+
+ DEPENDENCIES
+ ------------
+    The GTK+ 3.0 and xxxx libraries need to be installed and, for the most part,
+    will likely already be present. However, if there is a problem, try:
+    	sudo apt-get install xxxx 
+    	sudo apt-get build-dep libgtk-3-dev 
+	sudo apt-get update
+
+ THINGS TO BE DONE
+ -----------------
+    Web page - possible Launch Pad or add add own ? (or leave it at the SourceForge one)
+    Build a .deb package for apt-get install MYPROJECT ?
+
+ THINGS TO BE CHECKED OR REVIEWED
+ --------------------------------
+
+ KNOWN ISSUES / BUGS
+ -------------------
+    . xxxx
+
+ THE TECHNICAL STUFF
+ -------------------
+    MYPROJECT has been developed in c and uses GTK+ 3.0 for user interfaces. OTHER DETAILS. There are also a
+    number of additional libraries required: xxxx
+
+ BUGS & SUGGESTIONS
+ ------------------
+    Email any bugs, requests or suggestions to tony.buckley0000@gmail.com
+
+ ITEMS FOR IMPROVEMENT
+ ---------------------
+    . xxxx
+
