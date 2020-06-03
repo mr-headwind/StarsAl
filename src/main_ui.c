@@ -66,6 +66,10 @@ extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
 extern int get_user_pref(char *, char **);
 
+extern void OnNewProj(GtkWidget*, gpointer);
+extern void OnOpenProj(GtkWidget*, gpointer);
+extern void OnCloseProj(GtkWidget*, gpointer);
+extern void OnProj(GtkWidget*, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
 extern void OnAbout(GtkWidget*, gpointer);
 extern void OnViewLog(GtkWidget*, gpointer);
@@ -130,9 +134,11 @@ void main_ui(StarsAlData *app_data, MainUi *m_ui)
 /*
 ** Menu function for StarsAl application.
 **
-**  File	     Edit		Help
-**   - Exit    	      - Settings	 - View log
-**   	       	      	 		 - About
+**  File	        Edit		        Help
+**   - New Project    	 - Project settings	 - View log
+**   - Open Project      - User settings         - About
+**   - Close Project   
+**   - Exit    	      
 */
 
 void create_menu(MainUi *m_ui)
@@ -145,14 +151,23 @@ void create_menu(MainUi *m_ui)
     m_ui->file_menu = gtk_menu_new();
 
     /* File menu items */
+    m_ui->new_proj = gtk_menu_item_new_with_mnemonic ("New Project...");
+    m_ui->open_proj = gtk_menu_item_new_with_mnemonic ("Open Project...");
+    m_ui->close_proj = gtk_menu_item_new_with_mnemonic ("Close Project...");
     m_ui->sep = gtk_separator_menu_item_new();
     m_ui->file_exit = gtk_menu_item_new_with_mnemonic ("E_xit");
 
     /* Add to menu */
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->new_proj);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->open_proj);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->close_proj);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->sep);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->file_exit);
 
     /* Callbacks */
+    g_signal_connect (m_ui->new_proj, "activate", G_CALLBACK (OnNewProj), m_ui->window);
+    g_signal_connect (m_ui->open_proj, "activate", G_CALLBACK (OnOpenProj), m_ui->window);
+    g_signal_connect (m_ui->close_proj, "activate", G_CALLBACK (OnCloseProj), m_ui->window);
     g_signal_connect_swapped (m_ui->file_exit, "activate", G_CALLBACK (OnQuit), m_ui->window); 
 
     /* Show menu items */
@@ -163,12 +178,15 @@ void create_menu(MainUi *m_ui)
     m_ui->edit_menu = gtk_menu_new();
 
     /* Option menu items */
-    m_ui->edit_prefs = gtk_menu_item_new_with_mnemonic ("_Settings...");
+    m_ui->edit_prefs = gtk_menu_item_new_with_mnemonic ("_Project Settings...");
+    m_ui->edit_prefs = gtk_menu_item_new_with_mnemonic ("_User Settings...");
 
     /* Add to menu */
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_proj);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_prefs);
 
     /* Callbacks */
+    g_signal_connect (m_ui->edit_proj, "activate", G_CALLBACK (OnProj), m_ui->window);
     g_signal_connect (m_ui->edit_prefs, "activate", G_CALLBACK (OnPrefs), m_ui->window);
 
     /* Show menu items */
