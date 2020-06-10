@@ -49,7 +49,7 @@
 
 /* Prototypes */
 
-void main_ui(UserData *, MainUi *);
+void main_ui(StarsAlData *, MainUi *);
 void create_menu(MainUi *);
 void create_main_view(MainUi *);
 
@@ -171,6 +171,9 @@ void create_menu(MainUi *m_ui)
     g_signal_connect_swapped (m_ui->file_exit, "activate", G_CALLBACK (OnQuit), m_ui->window); 
 
     /* Show menu items */
+    gtk_widget_show (m_ui->new_proj);
+    gtk_widget_show (m_ui->open_proj);
+    gtk_widget_show (m_ui->close_proj);
     gtk_widget_show (m_ui->file_exit);
 
 
@@ -178,7 +181,7 @@ void create_menu(MainUi *m_ui)
     m_ui->edit_menu = gtk_menu_new();
 
     /* Option menu items */
-    m_ui->edit_prefs = gtk_menu_item_new_with_mnemonic ("_Project Settings...");
+    m_ui->edit_proj = gtk_menu_item_new_with_mnemonic ("_Project Settings...");
     m_ui->edit_prefs = gtk_menu_item_new_with_mnemonic ("_User Settings...");
 
     /* Add to menu */
@@ -190,6 +193,7 @@ void create_menu(MainUi *m_ui)
     g_signal_connect (m_ui->edit_prefs, "activate", G_CALLBACK (OnPrefs), m_ui->window);
 
     /* Show menu items */
+    gtk_widget_show (m_ui->edit_proj);
     gtk_widget_show (m_ui->edit_prefs);
 
 

@@ -20,7 +20,7 @@ CC=cc
 CFLAGS=-I. `pkg-config --cflags gtk+-3.0` 
 CFLAGS2=-Wno-deprecated-declarations
 DEPS = defs.h main.h user_data.h version.h preferences.h
-OBJ = myproject.o callbacks.o main_ui.o prefs_ui.o date_util.o utility.o about_ui.o view_file_ui.o css.o
+OBJ = starsal.o callbacks.o main_ui.o prefs_ui.o date_util.o utility.o about_ui.o view_file_ui.o css.o
 LIBS = `pkg-config --libs gtk+-3.0`
 #LIBS2 = -lxxxx
 

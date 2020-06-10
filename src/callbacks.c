@@ -47,6 +47,10 @@
 
 /* Prototypes */
 
+void OnNewProj(GtkWidget*, gpointer *user_data);
+void OnOpenProj(GtkWidget*, gpointer *user_data);
+void OnCloseProj(GtkWidget*, gpointer *user_data);
+void OnProj(GtkWidget*, gpointer *user_data);
 void OnPrefs(GtkWidget*, gpointer *user_data);
 void OnViewLog(GtkWidget*, gpointer *user_data);
 void OnAbout(GtkWidget*, gpointer *user_data);
@@ -74,6 +78,42 @@ static const char *debug_hdr = "DEBUG-callbacks.c ";
 
 
 /* Callbacks */
+
+
+/* Callback - Open a new project */
+
+void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
+{  
+
+    return;
+}  
+
+
+/* Callback - Open a project */
+
+void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
+{  
+
+    return;
+}  
+
+
+/* Callback - Close a project */
+
+void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
+{  
+
+    return;
+}  
+
+
+/* Callback - Edit project settings */
+
+void OnProj(GtkWidget *menu_item, gpointer *user_data)
+{  
+
+    return;
+}  
 
 
 /* Callback - Set up preferences */

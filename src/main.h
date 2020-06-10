@@ -1,5 +1,5 @@
 /*
-**  Copyright (C) 2021 Anthony Buckley
+**  Copyright (C) 2020 Anthony Buckley
 ** 
 **  This file is part of StarsAl.
 ** 
@@ -25,7 +25,7 @@
 ** Author:	Anthony Buckley
 **
 ** History
-**	xx-xxx-2021	Initial
+**	10-Jun-2020	Initial
 **
 */
 
@@ -51,8 +51,8 @@ typedef struct _main_ui
     GtkWidget *menu_bar;  
     GtkWidget *file_menu, *edit_menu, *help_menu;
     GtkWidget *file_hdr, *edit_hdr, *help_hdr;
-    GtkWidget *file_exit;
-    GtkWidget *edit_prefs;
+    GtkWidget *new_proj, *open_proj, *close_proj, *file_exit;
+    GtkWidget *edit_proj, *edit_prefs;
     GtkWidget *view_log, *help_about;
     GtkWidget *sep, *sep2;
     GtkAccelGroup *accel_group;
