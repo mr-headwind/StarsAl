@@ -112,7 +112,6 @@ GtkWidget* view_file_ui(char *fn)
     GtkTextBuffer *txt_buffer;  
     GtkTextIter iter;
     GtkWidget *menu_bar;
-    PangoFontDescription *font_desc;
     char buffer[500];
     int rc;
     int close_hndlr_id;
@@ -128,18 +127,11 @@ GtkWidget* view_file_ui(char *fn)
     mbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
     /* Label for file name */
-    font_desc = pango_font_description_from_string ("Sans 9");
-
     label_t = gtk_label_new("Filename:");
-    pango_font_description_set_weight(font_desc, PANGO_WEIGHT_BOLD);
-    gtk_widget_override_font (GTK_WIDGET (label_t), font_desc);
+    gtk_widget_set_name (GTK_WIDGET (label_t), "title_4a");
 
     label_f = gtk_label_new(fn);
-    pango_font_description_set_weight(font_desc, PANGO_WEIGHT_NORMAL);
-    gtk_widget_override_color(label_f, GTK_STATE_FLAG_NORMAL, &DARK_BLUE);
-    gtk_widget_override_font (GTK_WIDGET (label_f), font_desc);
-
-    pango_font_description_free (font_desc);
+    gtk_widget_set_name (GTK_WIDGET (label_f), "title_3a");
 
     lbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start (GTK_BOX (lbox), label_t, FALSE, FALSE, 0);

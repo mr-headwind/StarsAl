@@ -101,7 +101,9 @@ static char *css_data_fhd =
 	"label#title_1 { font-family: Sans; font-size: 18px; font-weight: bold; }"
 	"label#title_2 { font-family: Serif; font-size: 18px; font-style: italic; color: #fa8072; }"
 	"label#title_3 { font-family: Sans; font-size: 12px; color: @DARK_BLUE;}"
+	"label#title_3a { font-family: Sans; font-size: 9px; color: @DARK_BLUE;}"
 	"label#title_4 { font-family: Sans; font-size: 12px; font-weight: bold; }"
+	"label#title_4a { font-family: Sans; font-size: 9px; font-weight: bold; }"
 	"label#title_5 { font-family: Sans; font-size: 12px; color: #e00b40;}"
 	"label#status { font-family: Sans; font-size: 12px; color: #b8860b; font-style: italic; }"
 	"entry#ent_1 { color: @DARK_BLUE; }"
@@ -196,16 +198,16 @@ void get_screen_res(GdkRectangle *workarea)
     GdkScreen *scr;
 
     /* 16.04
-    */
     if ((scr = gdk_screen_get_default ()) == NULL)
     	return;
     
     gdk_screen_get_monitor_workarea (scr, 0, workarea);
+    */
 
     /* 18.04
+    */
     gdk_monitor_get_workarea (gdk_display_get_primary_monitor (gdk_display_get_default()),
 			      workarea);
-    */
 
     return;
 }
