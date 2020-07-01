@@ -16,7 +16,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with StarsAl.  If not, see <http://www.gnu.org/licenses/>.
 
-CC=cc
+#CC=cc
+#CC=g++
+CXX=g++
 CFLAGS=-I. `pkg-config --cflags gtk+-3.0` 
 CFLAGS2=-Wno-deprecated-declarations
 DEPS = defs.h main.h user_data.h version.h preferences.h
@@ -25,10 +27,10 @@ LIBS = `pkg-config --libs gtk+-3.0`
 #LIBS2 = -lxxxx
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) $(CFLAGS2)
+	$(CXX) -c -o $@ $< $(CFLAGS) $(CFLAGS2)
 
 StarsAl: $(OBJ)
-	$(CC) -o $@ $^ $(LIBS) $(LIBS2) $(LIBS3)
+	$(CXX) -o $@ $^ $(LIBS) $(LIBS2) $(LIBS3)
 
 clean:
 	rm -f $(OBJ)

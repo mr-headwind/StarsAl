@@ -234,7 +234,7 @@ void user_prefs_ui(PrefUi *p_ui)
 
     while(p_ui->hide_list != NULL)
     {
-	tmp = p_ui->hide_list->data;
+	tmp = (GtkWidget *) p_ui->hide_list->data;
 	gtk_widget_hide (tmp);
 	p_ui->hide_list = g_list_next(p_ui->hide_list);
     }
@@ -314,7 +314,7 @@ char find_active_by_parent(GtkWidget *parent, char nm)
 
     while (child_widgets != NULL)
     {
-	radio = child_widgets->data;
+	radio = (GtkWidget *) child_widgets->data;
 
 	if (GTK_IS_TOGGLE_BUTTON (radio))
 	{
@@ -615,7 +615,7 @@ int set_user_pref(char *key, char *val)
 	    i = strlen(val);
 
 	    if (i > strlen(Preference->val))
-		Preference->val = realloc(Preference->val, i + 1);
+		Preference->val = (char *) realloc(Preference->val, i + 1);
 
 	    strcpy(Preference->val, val);
 	    break;

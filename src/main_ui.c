@@ -390,7 +390,7 @@ GtkWidget * debug_cntr(GtkWidget *cntr)
 
     while (child_widgets != NULL)
     {
-	widget = child_widgets->data;
+	widget = (GtkWidget *) child_widgets->data;
 	widget_name = gtk_widget_get_name (widget);
 	printf("%s \tname %s\n", debug_hdr, widget_name);
 
