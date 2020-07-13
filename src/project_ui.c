@@ -54,10 +54,18 @@
 
 /* Prototypes */
 
-int user_prefs_main(GtkWidget *);
-int user_prefs_init(GtkWidget *);
-PrefUi * new_pref_ui();
-void user_prefs_ui(PrefUi *);
+int project_main(GtkWidget *);
+int project_init(ProjectData *, GtkWidget *);
+ProjectUi * new_proj_ui();
+void project_ui(ProjectUi *);
+void proj_data(ProjectUi *);
+
+void OnProjCancel(GtkWidget*, gpointer);
+gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
+void OnProjSave(GtkWidget*, gpointer);
+
+
+
 void prefs_control(PrefUi *);
 void project_dir(PrefUi *);
 
@@ -70,7 +78,6 @@ int write_user_prefs(GtkWidget *);
 void set_default_prefs();
 void default_dir_pref();
 void set_user_prefs(PrefUi *);
-int get_user_pref(char *, char **);
 void get_user_pref_idx(int, char *, char **);
 int match_key_val_combo(char *, char *, int, char **);
 void get_pref_key(int, char *);
@@ -84,14 +91,14 @@ int pref_changed(char *, char *);
 int validate_pref(PrefUi *);
 void free_prefs();
 void OnDirBrowse(GtkWidget*, gpointer);
-void OnPrefClose(GtkWidget*, gpointer);
-gboolean OnPrefDelete(GtkWidget*, GdkEvent *, gpointer);
-void OnPrefSave(GtkWidget*, gpointer);
+
+
+extern int get_user_pref(char *, char **);
+extern void log_msg(char*, char*, char*, GtkWidget*);
+extern void register_window(GtkWidget *);
 
 
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
-extern void log_msg(char*, char*, char*, GtkWidget*);
-extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
 extern char * app_dir_path();
 extern char * home_dir();
@@ -108,27 +115,25 @@ extern void string_trim(char *);
 
 /* Globals */
 
-static const char *debug_hdr = "DEBUG-prefs_ui.c ";
+static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
-static GList *pref_list = NULL;
-static GList *pref_list_head = NULL;
-static int pref_count;
 
 
-/* Display and maintenance of user preferences */
+/* Display and maintenance of project details */
 
-int user_prefs_main(GtkWidget *window)
+int project_main(GtkWidget *window)
 {
-    PrefUi *ui;
+    ProjectUi *ui;
+    ProjectData *proj;
 
     /* Initial */
-    if (! user_prefs_init(window))
+    if (! project_init(proj, window))
     	return FALSE;
 
-    ui = new_pref_ui();
+    ui = new_proj_ui();
 
     /* Create the interface */
-    user_prefs_ui(ui);
+    project_ui(ui);
 
     /* Register the window */
     register_window(ui->window);
@@ -139,17 +144,23 @@ int user_prefs_main(GtkWidget *window)
 
 /* Initial checks and values */
 
-int user_prefs_init(GtkWidget *window)
+int project_init(ProjectData *proj, GtkWidget *window)
 {
+    char *p;
+
     /* Initial */
     save_indi = FALSE;
 
-    /* Should at least be a default set of user preferences */
-    if (pref_count == 0)
+    /* Get the application working directory */
+    get_user_pref(WORK_DIR, &p);
+
+    if (p == NULL)
     {
-	log_msg("APP0005", "No user preferences", "APP0005", window);
+	log_msg("APP0009", "", "APP0009", window);
     	return FALSE;
     }
+
+    proj->proj_path = p;
 
     return TRUE;
 }
@@ -157,10 +168,10 @@ int user_prefs_init(GtkWidget *window)
 
 /* Create new screen data variable */
 
-PrefUi * new_pref_ui()
+ProjectUi * new_proj_ui()
 {
-    PrefUi *ui = (PrefUi *) malloc(sizeof(PrefUi));
-    memset(ui, 0, sizeof(PrefUi));
+    ProjectUi *ui = (ProjectUi *) malloc(sizeof(ProjectUi));
+    memset(ui, 0, sizeof(ProjectUi));
 
     return ui;
 }
@@ -168,14 +179,14 @@ PrefUi * new_pref_ui()
 
 /* Create the user interface and set the CallBacks */
 
-void user_prefs_ui(PrefUi *p_ui)
+void project_ui(ProjectUi *p_ui)
 {
     int init;
     GtkWidget *tmp;
 
     /* Set up the UI window */
     p_ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(p_ui->window), USER_PREFS_UI);
+    gtk_window_set_title(GTK_WINDOW(p_ui->window), PROJECT_UI);
     gtk_window_set_position(GTK_WINDOW(p_ui->window), GTK_WIN_POS_NONE);
     gtk_window_set_default_size(GTK_WINDOW(p_ui->window), 475, 400);
     gtk_container_set_border_width(GTK_CONTAINER(p_ui->window), 10);
@@ -185,64 +196,51 @@ void user_prefs_ui(PrefUi *p_ui)
     p_ui->main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
     /* Main update or view grid */
-    prefs_control(p_ui);
+    proj_data(p_ui);
 
     /* Box container for action buttons */
     p_ui->btn_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
     gtk_widget_set_halign(GTK_WIDGET (p_ui->btn_hbox), GTK_ALIGN_CENTER);
 
-    /* Close button */
-    p_ui->close_btn = gtk_button_new_with_label("  Close  ");
-    g_signal_connect_swapped(p_ui->close_btn, "clicked", G_CALLBACK(OnPrefClose), p_ui->window);
-    gtk_box_pack_end (GTK_BOX (p_ui->btn_hbox), p_ui->close_btn, FALSE, FALSE, 0);
+    /* Cancel button */
+    p_ui->cancel_btn = gtk_button_new_with_label("  Cancel  ");
+    g_signal_connect_swapped(p_ui->cancel_btn, "clicked", G_CALLBACK(OnProjCancel), p_ui->window);
+    gtk_box_pack_end (GTK_BOX (p_ui->btn_hbox), p_ui->cancel_btn, FALSE, FALSE, 0);
 
     /* Save button */
-    p_ui->save_btn = gtk_button_new_with_label("  Apply  ");
-    g_signal_connect(p_ui->save_btn, "clicked", G_CALLBACK(OnPrefSave), (gpointer) p_ui);
+    p_ui->save_btn = gtk_button_new_with_label("  Save  ");
+    g_signal_connect(p_ui->save_btn, "clicked", G_CALLBACK(OnProjSave), (gpointer) p_ui);
     gtk_box_pack_end (GTK_BOX (p_ui->btn_hbox), p_ui->save_btn, FALSE, FALSE, 0);
 
     /* Combine everything onto the window */
-    gtk_box_pack_start (GTK_BOX (p_ui->main_vbox), p_ui->prefs_cntr, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->main_vbox), p_ui->proj_cntr, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (p_ui->main_vbox), p_ui->btn_hbox, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER(p_ui->window), p_ui->main_vbox);
 
     /* Exit when window closed */
-    p_ui->close_handler = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnPrefDelete), NULL);
-
-    /* Show (or not) */
-    gtk_widget_show_all(p_ui->window);
-
-    p_ui->hide_list = g_list_first(p_ui->hide_list);
-
-    while(p_ui->hide_list != NULL)
-    {
-	tmp = (GtkWidget *) p_ui->hide_list->data;
-	gtk_widget_hide (tmp);
-	p_ui->hide_list = g_list_next(p_ui->hide_list);
-    }
-
-    g_list_free(p_ui->hide_list);
-    gtk_window_resize(GTK_WINDOW(p_ui->window), 475, 350);
+    p_ui->close_handler = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnProjDelete), NULL);
 
     return;
 }
 
 
-/* Control container for user preference settings */
+/* Control container and widgets for project data */
 
-void prefs_control(PrefUi *p_ui)
+void proj_data(ProjectUi *p_ui)
 {  
     GtkWidget *label;  
     int row;
 
-    p_ui->prefs_cntr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-    gtk_widget_set_name(p_ui->prefs_cntr, "pref_cntr");
-    gtk_container_set_border_width (GTK_CONTAINER (p_ui->prefs_cntr), 10);
+    /* Main container */
+    p_ui->proj_cntr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    gtk_widget_set_name(p_ui->proj_cntr, "proj_cntr");
+    gtk_container_set_border_width (GTK_CONTAINER (p_ui->proj_cntr), 10);
 
-    /* Add each user preference setting */
+    /* Project title and path */
 
-    /* Project Directory */
-    project_dir(p_ui);
+    /* Images */
+
+    /* Darks */
 
     return;
 }
@@ -268,7 +266,7 @@ void project_dir(PrefUi *p_ui)
     gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_dir), 40);
     gtk_box_pack_start (GTK_BOX (p_ui->proj_dir_box), p_ui->proj_dir, FALSE, FALSE, 3);
 
-    get_user_pref(PROJECT_DIR, &p);
+    get_user_pref(WORK_DIR, &p);
     gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), p);
 
     /* Browse button */

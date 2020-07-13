@@ -40,17 +40,20 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-typedef struct _ProjectData
+
+typedef struct _ProjectUi
 {
-    /* Ui */
     GtkWidget *window;
-    GtkWidget *nm_box, *img_grid, *dark_grid, *btn_box, *cntl_box;
-    GtkWidget *proj_nm_lbl, *proj_nm;
+    GtkWidget *nm_grid, *img_grid, *dark_grid, *btn_hbox, *proj_cntr;
+    GtkWidget *proj_nm_lbl, *proj_nm, *proj_path_lbl;
     GtkWidget *img_lbl, *img_list, *img_sel_btn;
     GtkWidget *darks_lbl, *darks_list, *darks_sel_btn;
     GtkWidget *save_btn, *cancel_btn;
+} ProjectUi;
 
-    /* Data */
+
+typedef struct _ProjectData
+{
     char *project_name;
     char *proj_path;
     int status;

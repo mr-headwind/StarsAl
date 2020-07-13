@@ -105,6 +105,7 @@ static const char *app_messages[][2] =
     { "APP0006", "Warning: No %s found. "},
     { "APP0007", "Warning: default user settings being set up. "},
     { "APP0008", "File error: %s. "},
+    { "APP0009", "Working directory not found. "},
     { "APP9999", "Application message: "},
     { "SYS9000", "Failed to start application. "},
     { "SYS9001", "Session started. "},
@@ -118,7 +119,7 @@ static const char *app_messages[][2] =
     { "SYS9999", "Error - Unknown error message given. "}			// NB - MUST be last
 };
 
-static const int Msg_Count = 19;
+static const int Msg_Count = 20;
 static char *Home;
 static char *logfile = NULL;
 static FILE *lf = NULL;
