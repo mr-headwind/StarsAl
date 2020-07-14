@@ -53,15 +53,6 @@ void main_ui(StarsAlData *, MainUi *);
 void create_menu(MainUi *);
 void create_main_view(MainUi *);
 
-void create_label(GtkWidget **, char *, char *, GtkWidget *);
-void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
-void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
-void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
-void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
-	
-GtkWidget * debug_cntr(GtkWidget *);
-
-
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
 extern int get_user_pref(char *, char **);
@@ -76,6 +67,12 @@ extern void OnViewLog(GtkWidget*, gpointer);
 extern void OnQuit(GtkWidget*, gpointer);
 
 extern void set_css();
+extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
+extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
+extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
+extern void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
+extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
+extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
 
 

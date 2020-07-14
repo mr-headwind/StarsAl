@@ -237,6 +237,7 @@ void proj_data(ProjectUi *p_ui)
     gtk_container_set_border_width (GTK_CONTAINER (p_ui->proj_cntr), 10);
 
     /* Project title and path */
+    p_ui->nm_grid = gtk_grid_new
 
     /* Images */
 

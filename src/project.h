@@ -57,6 +57,8 @@ typedef struct _ProjectData
     char *project_name;
     char *proj_path;
     int status;
+    char *images_path;
+    char *darks_path;
     GList *images_gl;
     GList *darks_gl;
 } ProjectData;
@@ -79,7 +81,6 @@ typedef struct _ImgMeta
 typedef struct _Image
 {
     char *img_nm;
-    char *img_path;
     ImgMeta img_meta;
 } Image;
 
