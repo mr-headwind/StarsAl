@@ -25,7 +25,7 @@
 ** Author:	Anthony Buckley
 **
 ** History
-**	12-Jun-2021	Initial code
+**	12-Jul-2021	Initial code
 **
 */
 
@@ -57,12 +57,13 @@
 int project_main(GtkWidget *);
 int project_init(ProjectData *, GtkWidget *);
 ProjectUi * new_proj_ui();
-void project_ui(ProjectUi *);
-void proj_data(ProjectUi *);
+void project_ui(ProjectData *, ProjectUi *);
+void proj_data(ProjectData *, ProjectUi *);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
 void OnProjSave(GtkWidget*, gpointer);
+void OnDirBrowse(GtkWidget*, gpointer);
 
 
 
@@ -79,7 +80,6 @@ void set_default_prefs();
 void default_dir_pref();
 void set_user_prefs(PrefUi *);
 void get_user_pref_idx(int, char *, char **);
-int match_key_val_combo(char *, char *, int, char **);
 void get_pref_key(int, char *);
 void get_pref_val(int, char **);
 int set_user_pref(char *, char *);
@@ -90,7 +90,6 @@ int pref_save_reqd(PrefUi *);
 int pref_changed(char *, char *);
 int validate_pref(PrefUi *);
 void free_prefs();
-void OnDirBrowse(GtkWidget*, gpointer);
 
 
 extern int get_user_pref(char *, char **);
@@ -133,7 +132,7 @@ int project_main(GtkWidget *window)
     ui = new_proj_ui();
 
     /* Create the interface */
-    project_ui(ui);
+    project_ui(proj, ui);
 
     /* Register the window */
     register_window(ui->window);
@@ -179,7 +178,7 @@ ProjectUi * new_proj_ui()
 
 /* Create the user interface and set the CallBacks */
 
-void project_ui(ProjectUi *p_ui)
+void project_ui(ProjectData *proj, ProjectUi *p_ui)
 {
     int init;
     GtkWidget *tmp;
@@ -196,7 +195,7 @@ void project_ui(ProjectUi *p_ui)
     p_ui->main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
     /* Main update or view grid */
-    proj_data(p_ui);
+    proj_data(proj, p_ui);
 
     /* Box container for action buttons */
     p_ui->btn_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
@@ -226,7 +225,7 @@ void project_ui(ProjectUi *p_ui)
 
 /* Control container and widgets for project data */
 
-void proj_data(ProjectUi *p_ui)
+void proj_data(ProjectData *, ProjectUi *p_ui)
 {  
     GtkWidget *label;  
     int row;
@@ -237,9 +236,29 @@ void proj_data(ProjectUi *p_ui)
     gtk_container_set_border_width (GTK_CONTAINER (p_ui->proj_cntr), 10);
 
     /* Project title and path */
-    p_ui->nm_grid = gtk_grid_new
+    p_ui->nm_grid = gtk_grid_new();
 
-    /* Images */
+    create_label2(&(p_ui->proj_nm_lbl), "title_4", "Project Name", p_ui->nm_grid, 0, 0, 1, 1);
+
+    create_entry(&(p_ui->proj_nm), "proj_nm", p_ui->nm_grid, 0, 1);
+    gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_nm), GTK_ALIGN_START);
+    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_nm), 256);
+    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 40);
+
+    create_label2(&(p_ui->proj_path_lbl), "title_4", proj->proj_path, p_ui->nm_grid, 1, 1, 1, 1);
+
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_gridl, FALSE, FALSE, 0);
+
+    /* Images selection */
+    p_ui->img_grid = gtk_grid_new();
+
+    create_label2(&(p_ui->image_lbl), "title_4", "Select Images", p_ui->img_grid, 0, 0, 1, 1);
+
+    p_ui->img_sel_btn = gtk_button_new_with_label("Browse...");
+    g_signal_connect(p_ui->img_sel_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_dir_box), p_ui->browse_btn, FALSE, FALSE, 0);
+
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->img_grid, FALSE, FALSE, 0);
 
     /* Darks */
 
@@ -279,44 +298,6 @@ void project_dir(PrefUi *p_ui)
 
 
     return;
-}
-
-
-/* Set a field based on a radio button name */
-
-char find_active_by_parent(GtkWidget *parent, char nm)
-{
-    GtkWidget *radio;
-    const gchar *widget_name;
-
-    GList *child_widgets = gtk_container_get_children(GTK_CONTAINER (parent));
-
-    child_widgets = g_list_first(child_widgets);
-
-    while (child_widgets != NULL)
-    {
-	radio = (GtkWidget *) child_widgets->data;
-
-	if (GTK_IS_TOGGLE_BUTTON (radio))
-	{
-	    widget_name = gtk_widget_get_name (radio);
-
-	    if (widget_name[1] == nm)
-	    {
-		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio)) == TRUE)
-		{
-		    g_list_free (child_widgets);
-		    return widget_name[3];
-		}
-	    }
-	}
-
-	child_widgets = g_list_next(child_widgets);
-    }
-
-    g_list_free (child_widgets);
-
-    return '\0';
 }
 
 
@@ -693,39 +674,6 @@ void get_pref_val(int idx, char **val)
 	*val = Preference->val;
 
     return;
-}
-
-
-// Return a pointer to a user preference value for a key or NULL
-// String match the key and part value
-
-int match_key_val_combo(char *key, char *s_val, int s_len, char **val)
-{
-    int i, k_len;
-    UserPrefData *Preference;
-
-    i = 0;
-    *val = NULL;
-    k_len = strlen(key);
-
-    pref_list = g_list_first(pref_list_head);
-
-    while(pref_list != NULL)
-    {
-    	Preference = (UserPrefData *) pref_list->data;
-
-    	if ((strncmp(Preference->key, key, k_len) == 0) &&
-	    (strncmp(Preference->val, s_val, s_len) == 0))
-    	{
-	    *val = Preference->val;
-	    break;
-    	}
-
-	pref_list = g_list_next(pref_list);
-	i++;
-    }
-
-    return i;
 }
 
 
