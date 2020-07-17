@@ -225,7 +225,7 @@ void project_ui(ProjectData *proj, ProjectUi *p_ui)
 
 /* Control container and widgets for project data */
 
-void proj_data(ProjectData *, ProjectUi *p_ui)
+void proj_data(ProjectData *proj, ProjectUi *p_ui)
 {  
     GtkWidget *label;  
     int row;
@@ -250,17 +250,28 @@ void proj_data(ProjectData *, ProjectUi *p_ui)
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_gridl, FALSE, FALSE, 0);
 
     /* Images selection */
-    p_ui->img_grid = gtk_grid_new();
-
-    create_label2(&(p_ui->image_lbl), "title_4", "Select Images", p_ui->img_grid, 0, 0, 1, 1);
-
-    p_ui->img_sel_btn = gtk_button_new_with_label("Browse...");
-    g_signal_connect(p_ui->img_sel_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_dir_box), p_ui->browse_btn, FALSE, FALSE, 0);
-
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->img_grid, FALSE, FALSE, 0);
+    select_images(p_ui->images, p_ui, "Images");
 
     /* Darks */
+    select_images(p_ui->darks, p_ui, "Darks");
+
+    return;
+}
+
+
+/* Widgets for selecting images and darks */
+
+void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
+{  
+    lst->img_grid = gtk_grid_new();
+
+    create_label2(&(lst->image_lbl), "title_4", "Select Images", lst->img_grid, 0, 0, 1, 1);
+
+    lst->sel_btn = gtk_button_new_with_label("Browse...");
+    g_signal_connect(lst->sel_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
+    gtk_box_pack_start (GTK_BOX (lst->proj_dir_box), lst->sel_btn, FALSE, FALSE, 0);
+
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->img_grid, FALSE, FALSE, 0);
 
     return;
 }
