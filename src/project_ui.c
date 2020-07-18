@@ -250,10 +250,10 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_gridl, FALSE, FALSE, 0);
 
     /* Images selection */
-    select_images(p_ui->images, p_ui, "Images");
+    select_images(p_ui->images, p_ui, "Select Images");
 
     /* Darks */
-    select_images(p_ui->darks, p_ui, "Darks");
+    select_images(p_ui->darks, p_ui, "Select Darks");
 
     return;
 }
@@ -265,11 +265,18 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 {  
     lst->img_grid = gtk_grid_new();
 
-    create_label2(&(lst->image_lbl), "title_4", "Select Images", lst->img_grid, 0, 0, 1, 1);
+    create_label2(&(lst->img_lbl), "title_4", desc, lst->img_grid, 0, 0, 1, 1);
 
     lst->sel_btn = gtk_button_new_with_label("Browse...");
+    gtk_widget_set_valign (lst->sel_btn, GTK_ALIGN_END);
+    gtk_grid_attach(GTK_GRID (lst->img_grid), lst->img_lbl, 1, 1, 1, 1);
     g_signal_connect(lst->sel_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
-    gtk_box_pack_start (GTK_BOX (lst->proj_dir_box), lst->sel_btn, FALSE, FALSE, 0);
+
+    lst->list_box = gtk_list_box_new();
+    lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOw (lst->scroll_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
+    gtk_grid_attach(GTK_GRID (lst->img_grid), lst->scroll_win, 0, 1, 1, 1);
 
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->img_grid, FALSE, FALSE, 0);
 
