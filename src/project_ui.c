@@ -59,11 +59,23 @@ int project_init(ProjectData *, GtkWidget *);
 ProjectUi * new_proj_ui();
 void project_ui(ProjectData *, ProjectUi *);
 void proj_data(ProjectData *, ProjectUi *);
+void select_images(ImageListUi *, ProjectUi *, char *);
+int proj_save_reqd(ProjectUi *);
+void set_proj(ProjectData *, ProjectUi *);
+int save_proj(ProjectData *, ProjectUi *);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
 void OnProjSave(GtkWidget*, gpointer);
 void OnDirBrowse(GtkWidget*, gpointer);
+
+extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
+extern int get_user_pref(char *, char **);
+extern void log_msg(char*, char*, char*, GtkWidget*);
+extern void register_window(GtkWidget *);
+extern void deregister_window(GtkWidget *);
+
+
 
 
 
@@ -86,19 +98,11 @@ int set_user_pref(char *, char *);
 int add_user_pref(char *, char *);
 int add_user_pref_idx(char *, char *, int);
 void delete_user_pref(char *);
-int pref_save_reqd(PrefUi *);
 int pref_changed(char *, char *);
 int validate_pref(PrefUi *);
 void free_prefs();
 
-
-extern int get_user_pref(char *, char **);
-extern void log_msg(char*, char*, char*, GtkWidget*);
-extern void register_window(GtkWidget *);
-
-
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
-extern void deregister_window(GtkWidget *);
 extern char * app_dir_path();
 extern char * home_dir();
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
@@ -165,6 +169,9 @@ int project_init(ProjectData *proj, GtkWidget *window)
 }
 
 
+// USER INTERFACE
+
+
 /* Create new screen data variable */
 
 ProjectUi * new_proj_ui()
@@ -190,6 +197,7 @@ void project_ui(ProjectData *proj, ProjectUi *p_ui)
     gtk_window_set_default_size(GTK_WINDOW(p_ui->window), 475, 400);
     gtk_container_set_border_width(GTK_CONTAINER(p_ui->window), 10);
     g_object_set_data (G_OBJECT (p_ui->window), "ui", p_ui);
+    g_object_set_data (G_OBJECT (p_ui->window), "proj", proj);
 
     /* Main view */
     p_ui->main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -282,6 +290,206 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
     return;
 }
+
+
+// MAINTENANCE
+
+
+/* Check if changes have been made */
+
+int pref_save_reqd(ProjectUi *p_ui)
+{
+    gint res;
+    char cc;
+    char s[3];
+    int idx;
+    const gchar *proj_dir;
+
+    /* Initial */
+    s[1] = '\0';
+
+    /* Project directory */
+    proj_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_dir));
+
+    /* Project directory exists */
+    if (! check_dir((char *) proj_dir))
+    {
+	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) proj_dir);
+
+	if (res == GTK_RESPONSE_YES)
+	    make_dir((char *) proj_dir);
+    }
+
+    if (pref_changed(PROJECT_DIR, (char *) proj_dir))
+    	return TRUE;
+
+    return FALSE;
+}
+
+
+/* Set up the project data */
+
+void set_proj(ProjectData *proj, ProjectUi *p_ui)
+{
+    const gchar *s;
+
+    /* Project name */
+    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm);
+
+    if (proj->project_name == NULL)
+    {
+    	proj->project_name = (char *) malloc(strlen(s) + 1);
+	proj->project_name[0] = '\0';
+	proj->status = 0;
+    }
+
+    if (strcmp(s, proj->project_nm) != 0)
+    	strcpy(proj->project_name, s);
+
+    /* Load the image list */
+
+    return;
+}
+
+
+/* Write the project file */
+
+int save_proj(ProjectData *proj, ProjectUi *p_ui)
+{
+    FILE *fd = NULL;
+    char buf[256];
+    char *prefs_fn;
+    char *app_dir;
+    int app_dir_len;
+
+    /* Project name */
+    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm);
+
+    app_dir = app_dir_path();
+    app_dir_len = strlen(app_dir);
+    prefs_fn = (char *) malloc(app_dir_len + 19);
+    sprintf(prefs_fn, "%s/app_settings", app_dir);
+
+    /* New or overwrite file */
+    if ((fd = fopen(prefs_fn, "w")) == (FILE *) NULL)
+    {
+	free(prefs_fn);
+	return FALSE;
+    }
+
+    /* Write new values */
+    pref_list = g_list_first(pref_list_head);
+
+    while(pref_list != NULL)
+    {
+    	UserPrefData *Preference = (UserPrefData *) pref_list->data;
+
+    	if (Preference->val != NULL)
+    	{
+	    sprintf(buf, "%s|%s\n", Preference->key, Preference->val);
+	    
+	    if ((fputs(buf, fd)) == EOF)
+	    {
+		free(prefs_fn);
+		log_msg("SYS9005", prefs_fn, "SYS9005", window);
+		return FALSE;
+	    }
+    	}
+
+	pref_list = g_list_next(pref_list);
+    }
+
+    /* Close off */
+    fclose(fd);
+    free(prefs_fn);
+    save_indi = FALSE;
+
+    return TRUE;
+}
+
+
+/* Callbacks */
+
+
+/* Callback for apply changes and close */
+
+void OnProjSave(GtkWidget *btn, gpointer user_data)
+{
+    ProjectUi *p_ui;
+    ProjectData *proj;
+
+    /* Get data */
+    p_ui = (ProjectUi *) user_data;
+    proj = (ProjectData *) g_object_get_data (G_OBJECT (p_ui->window), "proj");
+
+    /* Check for changes */
+    if ((save_indi = proj_save_reqd(p_ui)) == FALSE)
+    {
+    	info_dialog(p_ui->window, "There are no changes to save!", "");
+    	return;
+    }
+
+    /* Error check */
+    if (validate_proj(p_ui) == FALSE)
+    	return;
+
+    /* Set up the project data */
+    set_proj(proj, p_ui);
+
+    /* Save to file */
+    save_proj(proj, p_ui);
+
+    return;
+}
+
+
+// Callback for window close
+// Destroy the window and de-register the window 
+// Check for changes
+
+void OnProjCancel(GtkWidget *window, gpointer user_data)
+{ 
+    GtkWidget *dialog;
+    ProjectUi *ui;
+    gint response;
+
+    /* Get data */
+    ui = (ProjectUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Check for changes */
+    if ((save_indi = proj_save_reqd(ui)) == TRUE)
+    {
+	/* Ask if OK to close without saving */
+	dialog = gtk_message_dialog_new (GTK_WINDOW (window),
+					 GTK_DIALOG_MODAL,
+					 GTK_MESSAGE_QUESTION,
+					 GTK_BUTTONS_OK_CANCEL,
+					 "Close without saving changes?");
+
+	response = gtk_dialog_run (GTK_DIALOG (dialog));
+	gtk_widget_destroy (dialog);
+
+	if (response == GTK_RESPONSE_CANCEL)
+	    return;
+    }
+
+    /* Close the window, free the screen data and block any secondary close signal */
+    g_signal_handler_block (window, ui->close_handler);
+
+    deregister_window(window);
+    gtk_window_close(GTK_WINDOW(window));
+
+    free(ui);
+
+    return;
+}
+
+
+
+
+
+
+
 
 
 /* Project working directory - default */
@@ -420,60 +628,6 @@ int read_user_prefs(GtkWidget *window)
 }
 
 
-/* Write the user preferences file */
-
-int write_user_prefs(GtkWidget *window)
-{
-    FILE *fd = NULL;
-    char buf[256];
-    char *prefs_fn;
-    char *app_dir;
-    int app_dir_len;
-
-    /* Get the full path for the user settings file */
-    app_dir = app_dir_path();
-    app_dir_len = strlen(app_dir);
-    prefs_fn = (char *) malloc(app_dir_len + 19);
-    sprintf(prefs_fn, "%s/app_settings", app_dir);
-
-    /* New or overwrite file */
-    if ((fd = fopen(prefs_fn, "w")) == (FILE *) NULL)
-    {
-	free(prefs_fn);
-	return FALSE;
-    }
-
-    /* Write new values */
-    pref_list = g_list_first(pref_list_head);
-
-    while(pref_list != NULL)
-    {
-    	UserPrefData *Preference = (UserPrefData *) pref_list->data;
-
-    	if (Preference->val != NULL)
-    	{
-	    sprintf(buf, "%s|%s\n", Preference->key, Preference->val);
-	    
-	    if ((fputs(buf, fd)) == EOF)
-	    {
-		free(prefs_fn);
-		log_msg("SYS9005", prefs_fn, "SYS9005", window);
-		return FALSE;
-	    }
-    	}
-
-	pref_list = g_list_next(pref_list);
-    }
-
-    /* Close off */
-    fclose(fd);
-    free(prefs_fn);
-    save_indi = FALSE;
-
-    return TRUE;
-}
-
-
 /* Set up default user preferences. All preferences may not be present */
 
 void set_default_prefs()
@@ -511,26 +665,6 @@ void default_dir_pref()
 	make_dir(val);
 
     free(val);
-
-    return;
-}
-
-
-/* Update all user preferences */
-
-void set_user_prefs(PrefUi *p_ui)
-{
-    char cc;
-    char s[3];
-    int idx;
-    const gchar *proj_dir;
-
-    /* Initial */
-    s[1] = '\0';
-
-    /* Capture duration */
-    proj_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_dir));
-    set_user_pref(PROJECT_DIR, (char *) proj_dir);
 
     return;
 }
@@ -726,38 +860,6 @@ void delete_user_pref(char *key)
 
 /* Check if changes have been made */
 
-int pref_save_reqd(PrefUi *p_ui)
-{
-    gint res;
-    char cc;
-    char s[3];
-    int idx;
-    const gchar *proj_dir;
-
-    /* Initial */
-    s[1] = '\0';
-
-    /* Project directory */
-    proj_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_dir));
-
-    /* Project directory exists */
-    if (! check_dir((char *) proj_dir))
-    {
-	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) proj_dir);
-
-	if (res == GTK_RESPONSE_YES)
-	    make_dir((char *) proj_dir);
-    }
-
-    if (pref_changed(PROJECT_DIR, (char *) proj_dir))
-    	return TRUE;
-
-    return FALSE;
-}
-
-
-/* Check if changes have been made */
-
 int pref_changed(char *key, char *val)
 {
     char *p;
@@ -849,84 +951,6 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     }
 
     gtk_widget_destroy (dialog);
-
-    return;
-}
-
-
-/* Callback for apply changes and close */
-
-void OnPrefSave(GtkWidget *btn, gpointer user_data)
-{
-    PrefUi *ui;
-
-    /* Get data */
-    ui = (PrefUi *) user_data;
-
-    /* Check for changes */
-    if ((save_indi = pref_save_reqd(ui)) == FALSE)
-    {
-    	info_dialog(ui->window, "There are no changes to save!", "");
-    	return;
-    }
-
-    /* Error check */
-    if (validate_pref(ui) == FALSE)
-    	return;
-
-    if (ui->fn_err == TRUE)
-    {
-	log_msg("APP0001", NULL, "APP0001", ui->window);
-    	return;
-    }
-
-    /* Store preferences */
-    set_user_prefs(ui);
-
-    /* Save to file */
-    write_user_prefs(ui->window);
-
-    return;
-}
-
-
-// Callback for window close
-// Destroy the window and de-register the window 
-// Check for changes
-
-void OnPrefClose(GtkWidget *window, gpointer user_data)
-{ 
-    GtkWidget *dialog;
-    PrefUi *ui;
-    gint response;
-
-    /* Get data */
-    ui = (PrefUi *) g_object_get_data (G_OBJECT (window), "ui");
-
-    /* Check for changes */
-    if ((save_indi = pref_save_reqd(ui)) == TRUE)
-    {
-	/* Ask if OK to close without saving */
-	dialog = gtk_message_dialog_new (GTK_WINDOW (window),
-					 GTK_DIALOG_MODAL,
-					 GTK_MESSAGE_QUESTION,
-					 GTK_BUTTONS_OK_CANCEL,
-					 "Close without saving changes?");
-
-	response = gtk_dialog_run (GTK_DIALOG (dialog));
-	gtk_widget_destroy (dialog);
-
-	if (response == GTK_RESPONSE_CANCEL)
-	    return;
-    }
-
-    /* Close the window, free the screen data and block any secondary close signal */
-    g_signal_handler_block (window, ui->close_handler);
-
-    deregister_window(window);
-    gtk_window_close(GTK_WINDOW(window));
-
-    free(ui);
 
     return;
 }
