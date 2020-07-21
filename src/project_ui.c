@@ -63,6 +63,7 @@ void select_images(ImageListUi *, ProjectUi *, char *);
 int proj_save_reqd(ProjectUi *);
 void set_proj(ProjectData *, ProjectUi *);
 int save_proj(ProjectData *, ProjectUi *);
+int validate_proj(ProjectUi *);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -74,6 +75,7 @@ extern int get_user_pref(char *, char **);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
+extern void string_trim(char *);
 
 
 
@@ -99,7 +101,6 @@ int add_user_pref(char *, char *);
 int add_user_pref_idx(char *, char *, int);
 void delete_user_pref(char *);
 int pref_changed(char *, char *);
-int validate_pref(PrefUi *);
 void free_prefs();
 
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
@@ -113,7 +114,6 @@ extern int make_dir(char *);
 extern int is_ui_reg(char *, int);
 extern int close_ui(char *);
 extern int val_str2numb(char *, int *, char *, GtkWidget *);
-extern void string_trim(char *);
 
 
 /* Globals */
@@ -297,7 +297,7 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
 /* Check if changes have been made */
 
-int pref_save_reqd(ProjectUi *p_ui)
+int proj_save_reqd(ProjectUi *p_ui)
 {
     gint res;
     char cc;
@@ -327,6 +327,31 @@ int pref_save_reqd(ProjectUi *p_ui)
 }
 
 
+/* Validate screen contents */
+
+int validate_proj(ProjectUi *p_ui)
+{
+    const gchar *s;
+
+    /* Project name must be present */
+    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
+
+    if (s == NULL)
+    {
+	log_msg("APP0005", "Project Name", "APP0005", window);
+    	return FALSE;
+    }
+
+    if (string_trim((char *) s) == "")
+    {
+	log_msg("APP0005", "Project Name", "APP0005", window);
+    	return FALSE;
+    }
+
+    return TRUE;
+}
+
+
 /* Set up the project data */
 
 void set_proj(ProjectData *proj, ProjectUi *p_ui)
@@ -334,7 +359,7 @@ void set_proj(ProjectData *proj, ProjectUi *p_ui)
     const gchar *s;
 
     /* Project name */
-    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm);
+    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
 
     if (proj->project_name == NULL)
     {
@@ -343,6 +368,7 @@ void set_proj(ProjectData *proj, ProjectUi *p_ui)
 	proj->status = 0;
     }
 
+    /* Make sure it's changed */
     if (strcmp(s, proj->project_nm) != 0)
     	strcpy(proj->project_name, s);
 
@@ -363,7 +389,7 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     int app_dir_len;
 
     /* Project name */
-    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm);
+    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
 
     app_dir = app_dir_path();
     app_dir_len = strlen(app_dir);
@@ -408,7 +434,7 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
 }
 
 
-/* Callbacks */
+/* CALLBACKS */
 
 
 /* Callback for apply changes and close */
@@ -870,17 +896,6 @@ int pref_changed(char *key, char *val)
     	return TRUE;
 
     return FALSE;
-}
-
-
-/* Validate screen contents */
-
-int validate_pref(PrefUi *p_ui)
-{
-    const gchar *s;
-    int i;
-
-    return TRUE;
 }
 
 
