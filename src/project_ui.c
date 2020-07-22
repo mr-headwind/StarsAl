@@ -69,6 +69,8 @@ void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
 void OnProjSave(GtkWidget*, gpointer);
 void OnDirBrowse(GtkWidget*, gpointer);
+void OnListClear(GtkWidget*, gpointer);
+void OnListRemove(GtkWidget*, gpointer);
 
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
 extern int get_user_pref(char *, char **);
@@ -275,10 +277,24 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
     create_label2(&(lst->img_lbl), "title_4", desc, lst->img_grid, 0, 0, 1, 1);
 
+    lst->btn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
+
     lst->sel_btn = gtk_button_new_with_label("Browse...");
     gtk_widget_set_valign (lst->sel_btn, GTK_ALIGN_END);
-    gtk_grid_attach(GTK_GRID (lst->img_grid), lst->img_lbl, 1, 1, 1, 1);
+    gtk_box_pack_start (GTK_BOX (lst->btn_vbox), lst->sel_btn, FALSE, FALSE, 0);
     g_signal_connect(lst->sel_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
+
+    lst->clear_btn = gtk_button_new_with_label("Clear");
+    gtk_widget_set_valign (lst->clear_btn, GTK_ALIGN_END);
+    gtk_box_pack_start (GTK_BOX (lst->btn_vbox), lst->clear_btn, FALSE, FALSE, 0);
+    g_signal_connect(lst->clear_btn, "clicked", G_CALLBACK(OnListClear), (gpointer) p_ui);
+
+    lst->remove_btn = gtk_button_new_with_label("Remove");
+    gtk_widget_set_valign (lst->remove_btn, GTK_ALIGN_END);
+    gtk_box_pack_start (GTK_BOX (lst->btn_vbox), lst->remove_btn, FALSE, FALSE, 0);
+    g_signal_connect(lst->remove_btn, "clicked", G_CALLBACK(OnListRemove), (gpointer) p_ui);
+
+    gtk_grid_attach(GTK_GRID (lst->img_grid), lst->btn_vbox, 1, 1, 1, 1);
 
     lst->list_box = gtk_list_box_new();
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
@@ -348,6 +364,8 @@ int validate_proj(ProjectUi *p_ui)
     	return FALSE;
     }
 
+    /* Check consistency of image data */
+
     return TRUE;
 }
 
@@ -373,6 +391,8 @@ void set_proj(ProjectData *proj, ProjectUi *p_ui)
     	strcpy(proj->project_name, s);
 
     /* Load the image list */
+
+    /* Load the darks list */
 
     return;
 }
@@ -469,6 +489,81 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
 }
 
 
+/* Callback - Image selection */
+
+void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
+{  
+    GtkWidget *dialog;
+    ProjectUi *p_ui;
+    gchar *dir_name;
+    gint res;
+
+    /* Get data */
+    p_ui = (ProjectUi *) user_data;
+
+    /* Selection */
+    dialog = gtk_file_chooser_dialog_new ("Select Images",
+					  GTK_WINDOW (p_ui->window),
+					  GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
+					  "_Cancel", GTK_RESPONSE_CANCEL,
+					  "_Apply", GTK_RESPONSE_APPLY,
+					  NULL);
+
+    res = gtk_dialog_run (GTK_DIALOG (dialog));
+
+    if (res == GTK_RESPONSE_APPLY)
+    {
+	GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+	dir_name = gtk_file_chooser_get_filename (chooser);
+
+	if (dir_name)
+	{
+	    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), dir_name);
+
+	    if (! check_dir(dir_name))
+	    {
+		res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", dir_name);
+
+		if (res == GTK_RESPONSE_YES)
+		    make_dir(dir_name);
+	    }
+	}
+
+	g_free (dir_name);
+    }
+
+    gtk_widget_destroy (dialog);
+
+    return;
+}
+
+
+/* Callback - Clear Image List */
+
+void OnListClear(GtkWidget *browse_btn, gpointer user_data)
+{  
+    ProjectUi *p_ui;
+
+    /* Get data */
+    p_ui = (ProjectUi *) user_data;
+
+    return;
+}
+
+
+/* Callback - Clear Image List */
+
+void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
+{  
+    ProjectUi *p_ui;
+
+    /* Get data */
+    p_ui = (ProjectUi *) user_data;
+
+    return;
+}
+
+
 // Callback for window close
 // Destroy the window and de-register the window 
 // Check for changes
@@ -509,6 +604,17 @@ void OnProjCancel(GtkWidget *window, gpointer user_data)
 
     return;
 }
+
+
+/* Window delete event */
+
+gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
+{
+    OnProjCancel(window, user_data);
+
+    return TRUE;
+}
+
 
 
 
@@ -919,63 +1025,4 @@ void free_prefs()
     g_list_free(pref_list_head);
 
     return;
-}
-
-
-/* Callback - Set capture directory */
-
-void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
-{  
-    GtkWidget *dialog;
-    PrefUi *p_ui;
-    gchar *dir_name;
-    gint res;
-
-    /* Get data */
-    p_ui = (PrefUi *) user_data;
-
-    /* Selection */
-    dialog = gtk_file_chooser_dialog_new ("Project Location",
-					  GTK_WINDOW (p_ui->window),
-					  GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
-					  "_Cancel", GTK_RESPONSE_CANCEL,
-					  "_Apply", GTK_RESPONSE_APPLY,
-					  NULL);
-
-    res = gtk_dialog_run (GTK_DIALOG (dialog));
-
-    if (res == GTK_RESPONSE_APPLY)
-    {
-	GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
-	dir_name = gtk_file_chooser_get_filename (chooser);
-
-	if (dir_name)
-	{
-	    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), dir_name);
-
-	    if (! check_dir(dir_name))
-	    {
-		res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", dir_name);
-
-		if (res == GTK_RESPONSE_YES)
-		    make_dir(dir_name);
-	    }
-	}
-
-	g_free (dir_name);
-    }
-
-    gtk_widget_destroy (dialog);
-
-    return;
-}
-
-
-/* Window delete event */
-
-gboolean OnPrefDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
-{
-    OnPrefClose(window, user_data);
-
-    return TRUE;
 }

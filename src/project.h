@@ -44,8 +44,8 @@
 typedef struct _ImageListUi
 {
     GtkWidget *img_grid;
-    GtkWidget *img_lbl, *img_list, *sel_btn;
-    GtkWidget *list_box, *scroll_win;
+    GtkWidget *img_lbl, *img_list, *sel_btn, *clear_btn, *remove_btn;
+    GtkWidget *btn_vbox, *list_box, *scroll_win;
 } ImageListUi;
 
 
