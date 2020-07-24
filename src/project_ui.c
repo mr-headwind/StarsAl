@@ -60,6 +60,7 @@ ProjectUi * new_proj_ui();
 void project_ui(ProjectData *, ProjectUi *);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(ImageListUi *, ProjectUi *, char *);
+void show_list(ImageListUi *);
 int proj_save_reqd(ProjectUi *);
 void set_proj(ProjectData *, ProjectUi *);
 int save_proj(ProjectData *, ProjectUi *);
@@ -280,6 +281,8 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
     lst->btn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
 
     lst->sel_btn = gtk_button_new_with_label("Browse...");
+    g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
+    g_object_set_data_full (G_OBJECT (lst->sel_btn), "heading", g_strdup (desc), (GDestroyNotify) g_free);
     gtk_widget_set_valign (lst->sel_btn, GTK_ALIGN_END);
     gtk_box_pack_start (GTK_BOX (lst->btn_vbox), lst->sel_btn, FALSE, FALSE, 0);
     g_signal_connect(lst->sel_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
@@ -303,6 +306,15 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_grid_attach(GTK_GRID (lst->img_grid), lst->scroll_win, 0, 1, 1, 1);
 
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->img_grid, FALSE, FALSE, 0);
+
+    return;
+}
+
+
+/* Set up the list box with the selected files */
+
+void show_list(ImageListUi *lst)
+{  
 
     return;
 }
@@ -348,6 +360,10 @@ int proj_save_reqd(ProjectUi *p_ui)
 int validate_proj(ProjectUi *p_ui)
 {
     const gchar *s;
+    char *f;
+    ImageListUi images;
+    ImageListUi darks;
+    GList *l;
 
     /* Project name must be present */
     s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
@@ -365,6 +381,11 @@ int validate_proj(ProjectUi *p_ui)
     }
 
     /* Check consistency of image data */
+    for(l = p_ui->images->files; l != NULL; l = l->next)
+    {
+    	f = (char *) l->data;
+	get_meta_data(f);
+    }
 
     return TRUE;
 }
@@ -495,14 +516,18 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 {  
     GtkWidget *dialog;
     ProjectUi *p_ui;
-    gchar *dir_name;
+    ImageListUi *lst;
+    char *heading;
     gint res;
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
+    g_object_get_data (G_OBJECT (lst->sel_btn), "list", lst);
+    lst->files = (ImageListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
+    heading = (char *) g_object_get_data (G_OBJECT (browse_btn), "heading");
 
     /* Selection */
-    dialog = gtk_file_chooser_dialog_new ("Select Images",
+    dialog = gtk_file_chooser_dialog_new (heading,
 					  GTK_WINDOW (p_ui->window),
 					  GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
 					  "_Cancel", GTK_RESPONSE_CANCEL,
@@ -514,25 +539,15 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     if (res == GTK_RESPONSE_APPLY)
     {
 	GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
-	dir_name = gtk_file_chooser_get_filename (chooser);
-
-	if (dir_name)
-	{
-	    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), dir_name);
-
-	    if (! check_dir(dir_name))
-	    {
-		res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", dir_name);
-
-		if (res == GTK_RESPONSE_YES)
-		    make_dir(dir_name);
-	    }
-	}
-
-	g_free (dir_name);
+	gtk_file_chooser_set_select_multiple (chooser, TRUE);
+	gtk_file_chooser_set_action (chooser, GTK_FILE_CHOOSER_ACTION_OPEN);
+	lst->files = gtk_file_chooser_get_filenames (chooser);
     }
 
     gtk_widget_destroy (dialog);
+
+    /* Add the selected files to the List widget */
+    show_list(lst);
 
     return;
 }
