@@ -54,7 +54,7 @@
 
 /* Prototypes */
 
-int project_main(GtkWidget *);
+int project_main(GtkWidget *, int);
 int project_init(ProjectData *, GtkWidget *);
 ProjectUi * new_proj_ui();
 void project_ui(ProjectData *, ProjectUi *);
@@ -127,7 +127,7 @@ static int save_indi;
 
 /* Display and maintenance of project details */
 
-int project_main(GtkWidget *window)
+int project_main(GtkWidget *window, int mode)
 {
     ProjectUi *ui;
     ProjectData *proj;
@@ -315,6 +315,26 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
 void show_list(ImageListUi *lst)
 {  
+    int len, i;
+    char *path, *nm;
+    GList *l;
+
+    lst->list_box = gtk_list_box_new();
+
+    for(l = lst->files; l != NULL; l = l->next)
+    {
+    	path = (char *) l->data;
+    	len = strlen(path);
+    	i = strrchr(path, '/');
+    	nm = (char *) malloc(len - i + 2);
+    	strcpy(nm, path + i, len - i + 1);
+
+	GtKWidgwet *lbl = gtk_label_new(nm);
+	g_object_set_data_full (G_OBJECT (lbl), "path", g_strdup (path), (GDestroyNotify) g_free);
+	gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
+
+	free(path);
+    }
 
     return;
 }
@@ -357,12 +377,15 @@ int proj_save_reqd(ProjectUi *p_ui)
 
 /* Validate screen contents */
 
-int validate_proj(ProjectUi *p_ui)
+int validate_proj(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *s;
     char *f;
     ImageListUi images;
     ImageListUi darks;
+    Image *imp;
+    GList *images_gl;
+    GList *darks_gl;
     GList *l;
 
     /* Project name must be present */
@@ -384,10 +407,20 @@ int validate_proj(ProjectUi *p_ui)
     for(l = p_ui->images->files; l != NULL; l = l->next)
     {
     	f = (char *) l->data;
-	get_meta_data(f);
+    	img = setup_image(f);
+    	get_meta_data(f);
     }
 
     return TRUE;
+}
+
+
+/* Set up the list box with the selected files */
+
+void get_meta_data(char *img_path)
+{  
+
+    return;
 }
 
 
@@ -478,38 +511,6 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
 /* CALLBACKS */
 
 
-/* Callback for apply changes and close */
-
-void OnProjSave(GtkWidget *btn, gpointer user_data)
-{
-    ProjectUi *p_ui;
-    ProjectData *proj;
-
-    /* Get data */
-    p_ui = (ProjectUi *) user_data;
-    proj = (ProjectData *) g_object_get_data (G_OBJECT (p_ui->window), "proj");
-
-    /* Check for changes */
-    if ((save_indi = proj_save_reqd(p_ui)) == FALSE)
-    {
-    	info_dialog(p_ui->window, "There are no changes to save!", "");
-    	return;
-    }
-
-    /* Error check */
-    if (validate_proj(p_ui) == FALSE)
-    	return;
-
-    /* Set up the project data */
-    set_proj(proj, p_ui);
-
-    /* Save to file */
-    save_proj(proj, p_ui);
-
-    return;
-}
-
-
 /* Callback - Image selection */
 
 void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
@@ -574,6 +575,38 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
+
+    return;
+}
+
+
+/* Callback for apply changes and close */
+
+void OnProjSave(GtkWidget *btn, gpointer user_data)
+{
+    ProjectUi *p_ui;
+    ProjectData *proj;
+
+    /* Get data */
+    p_ui = (ProjectUi *) user_data;
+    proj = (ProjectData *) g_object_get_data (G_OBJECT (p_ui->window), "proj");
+
+    /* Check for changes */
+    if ((save_indi = proj_save_reqd(p_ui)) == FALSE)
+    {
+    	info_dialog(p_ui->window, "There are no changes to save!", "");
+    	return;
+    }
+
+    /* Error check */
+    if (validate_proj(proj, p_ui) == FALSE)
+    	return;
+
+    /* Set up the project data */
+    set_proj(proj, p_ui);
+
+    /* Save to file */
+    save_proj(proj, p_ui);
 
     return;
 }

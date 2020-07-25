@@ -57,6 +57,7 @@ void OnAbout(GtkWidget*, gpointer *user_data);
 void OnQuit(GtkWidget*, gpointer *user_data);
 
 
+extern void project_main(GtkWidget *, int);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -84,6 +85,10 @@ static const char *debug_hdr = "DEBUG-callbacks.c ";
 
 void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 {  
+    GtkWindow *window;
+
+    window = (GtkWidget *) user_data;
+    project_main(window, 1);
 
     return;
 }  
