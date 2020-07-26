@@ -81,6 +81,7 @@ int make_dir(char *);
 FILE * open_file(char *, char *);
 int read_file(FILE *, char *, int);
 int val_str2numb(char *, int *, char *, GtkWidget *);
+void basename_dirname(char *, char **, char **);
 int check_errno();
 void print_bits(size_t const, void const * const);
 
@@ -659,6 +660,24 @@ int val_str2numb(char *s, int *numb, char *subst, GtkWidget *window)
     *numb = i;
 
     return TRUE;
+}
+
+
+/* Return the filename and directory separately from a full path */
+
+void basename_dirname(char *path, char **nm, char **dir)
+{  
+    int len, i;
+
+    len = strlen(path);
+    i = strrchr(path, '/');
+    *nm = (char *) malloc(len - i + 2);
+    strcpy(*nm, path + i, len - i + 1);
+    *dir = (char *) malloc(len - i);
+    strncpy(*dir, path,len - i);
+    *dir[i] = '\0';
+
+    return;
 }
 
 

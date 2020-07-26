@@ -65,6 +65,7 @@ int proj_save_reqd(ProjectUi *);
 void set_proj(ProjectData *, ProjectUi *);
 int save_proj(ProjectData *, ProjectUi *);
 int validate_proj(ProjectUi *);
+Image * setup_image(char *);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -75,6 +76,7 @@ void OnListRemove(GtkWidget*, gpointer);
 
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
 extern int get_user_pref(char *, char **);
+extern void basename_dirname(char *, char **, char **);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
@@ -315,8 +317,7 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
 void show_list(ImageListUi *lst)
 {  
-    int len, i;
-    char *path, *nm;
+    char *path, *nm, *dir;
     GList *l;
 
     lst->list_box = gtk_list_box_new();
@@ -324,16 +325,14 @@ void show_list(ImageListUi *lst)
     for(l = lst->files; l != NULL; l = l->next)
     {
     	path = (char *) l->data;
-    	len = strlen(path);
-    	i = strrchr(path, '/');
-    	nm = (char *) malloc(len - i + 2);
-    	strcpy(nm, path + i, len - i + 1);
+	basename_dirname(path, &nm, &dir);
 
 	GtKWidgwet *lbl = gtk_label_new(nm);
-	g_object_set_data_full (G_OBJECT (lbl), "path", g_strdup (path), (GDestroyNotify) g_free);
+	g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
 	gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
 
-	free(path);
+	free(nm);
+	free(dir);
     }
 
     return;
@@ -383,7 +382,7 @@ int validate_proj(ProjectData *proj, ProjectUi *p_ui)
     char *f;
     ImageListUi images;
     ImageListUi darks;
-    Image *imp;
+    Image *img;
     GList *images_gl;
     GList *darks_gl;
     GList *l;
@@ -408,10 +407,25 @@ int validate_proj(ProjectData *proj, ProjectUi *p_ui)
     {
     	f = (char *) l->data;
     	img = setup_image(f);
-    	get_meta_data(f);
     }
 
     return TRUE;
+}
+
+
+/* Set up the list box with the selected files */
+
+Image * setup_image(char *image_path)
+{  
+    Image *img;
+
+    img = (Image *) malloc(sizeof(Image));
+    basename_dirname(path, &(img->nm), &(img->dir);
+    img = (Image *) malloc(sizeof(Image));
+
+    load_exif_data(img);
+
+    return img;
 }
 
 
