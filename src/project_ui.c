@@ -66,6 +66,7 @@ void set_proj(ProjectData *, ProjectUi *);
 int save_proj(ProjectData *, ProjectUi *);
 int validate_proj(ProjectUi *);
 Image * setup_image(char *);
+void img_list(GList *, GList **);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -379,13 +380,10 @@ int proj_save_reqd(ProjectUi *p_ui)
 int validate_proj(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *s;
-    char *f;
     ImageListUi images;
     ImageListUi darks;
-    Image *img;
     GList *images_gl;
     GList *darks_gl;
-    GList *l;
 
     /* Project name must be present */
     s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
@@ -402,18 +400,42 @@ int validate_proj(ProjectData *proj, ProjectUi *p_ui)
     	return FALSE;
     }
 
-    /* Check consistency of image data */
-    for(l = p_ui->images->files; l != NULL; l = l->next)
-    {
-    	f = (char *) l->data;
-    	img = setup_image(f);
-    }
+    /* Need to compile a list of Images and exif data */
+    img_list(p_ui->images->files, &images_gl);
+
+    /* Need to compile a list of Darks and exif data */
+    img_list(p_ui->darks->files, &darks_gl);
+
+    /* Check all the images and darks for exposure consistency */
 
     return TRUE;
 }
 
 
-/* Set up the list box with the selected files */
+/* Compile a list of images and exif data */
+
+void img_list(GList *in_gl, GList **out_gl)
+{
+    char *f;
+    Image *img;
+    GList *l;
+
+    *out_gl = NULL;
+
+    for(l = p_ui->in_gl; l != NULL; l = l->next)
+    {
+    	f = (char *) l->data;
+    	img = setup_image(f);
+    	*out_gl = g_list_prepend(*out_gl, img);
+    }
+
+    *out_gl = g_list_reverse(*out_gl);
+
+    return;
+}
+
+
+/* Set up all Image data */
 
 Image * setup_image(char *image_path)
 {  
@@ -421,7 +443,6 @@ Image * setup_image(char *image_path)
 
     img = (Image *) malloc(sizeof(Image));
     basename_dirname(path, &(img->nm), &(img->dir);
-    img = (Image *) malloc(sizeof(Image));
 
     load_exif_data(img);
 
@@ -429,9 +450,9 @@ Image * setup_image(char *image_path)
 }
 
 
-/* Set up the list box with the selected files */
+/* Extract the image Exif data (if any) */
 
-void get_meta_data(char *img_path)
+void load_exif_data(Image *img)
 {  
 
     return;
