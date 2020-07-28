@@ -39,6 +39,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <libexif/exif-data.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -65,8 +66,9 @@ int proj_save_reqd(ProjectUi *);
 void set_proj(ProjectData *, ProjectUi *);
 int save_proj(ProjectData *, ProjectUi *);
 int validate_proj(ProjectUi *);
-Image * setup_image(char *);
-void img_list(GList *, GList **);
+void img_list(GList *, GList **, ProjectUi *);
+Image * setup_image(char *, ProjectUi *);
+int load_exif_data(Image *img, ProjectUi *);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -82,6 +84,7 @@ extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
 extern void string_trim(char *);
+extern void trim_spaces(char *);
 
 
 
@@ -377,7 +380,7 @@ int proj_save_reqd(ProjectUi *p_ui)
 
 /* Validate screen contents */
 
-int validate_proj(ProjectData *proj, ProjectUi *p_ui)
+int validate_proj(ProjectUi *p_ui)
 {
     const gchar *s;
     ImageListUi images;
@@ -390,21 +393,21 @@ int validate_proj(ProjectData *proj, ProjectUi *p_ui)
 
     if (s == NULL)
     {
-	log_msg("APP0005", "Project Name", "APP0005", window);
+	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
     	return FALSE;
     }
 
     if (string_trim((char *) s) == "")
     {
-	log_msg("APP0005", "Project Name", "APP0005", window);
+	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
     	return FALSE;
     }
 
     /* Need to compile a list of Images and exif data */
-    img_list(p_ui->images->files, &images_gl);
+    img_list(p_ui->images->files, &images_gl, p_ui);
 
     /* Need to compile a list of Darks and exif data */
-    img_list(p_ui->darks->files, &darks_gl);
+    img_list(p_ui->darks->files, &darks_gl, p_ui);
 
     /* Check all the images and darks for exposure consistency */
 
@@ -414,7 +417,7 @@ int validate_proj(ProjectData *proj, ProjectUi *p_ui)
 
 /* Compile a list of images and exif data */
 
-void img_list(GList *in_gl, GList **out_gl)
+void img_list(GList *in_gl, GList **out_gl, ProjectUi *p_ui)
 {
     char *f;
     Image *img;
@@ -425,7 +428,7 @@ void img_list(GList *in_gl, GList **out_gl)
     for(l = p_ui->in_gl; l != NULL; l = l->next)
     {
     	f = (char *) l->data;
-    	img = setup_image(f);
+    	img = setup_image(f, p_ui);
     	*out_gl = g_list_prepend(*out_gl, img);
     }
 
@@ -437,14 +440,14 @@ void img_list(GList *in_gl, GList **out_gl)
 
 /* Set up all Image data */
 
-Image * setup_image(char *image_path)
+Image * setup_image(char *image_path, ProjectUi *p_ui)
 {  
     Image *img;
 
     img = (Image *) malloc(sizeof(Image));
     basename_dirname(path, &(img->nm), &(img->dir);
 
-    load_exif_data(img);
+    load_exif_data(img, p_ui);
 
     return img;
 }
@@ -452,10 +455,61 @@ Image * setup_image(char *image_path)
 
 /* Extract the image Exif data (if any) */
 
-void load_exif_data(Image *img)
+int load_exif_data(Image *img, ProjectUi *p_ui)
 {  
+    char *s;
+    ExifData *ed;
+    ExifEntry *entry;
 
-    return;
+    /* Load an ExifData object from an EXIF file */
+    s = (char *) malloc(strlen(img->img_path) + strlen(img->img_nm) + 1);
+    sprintf(s, "%s/%s", img->img_path, img->img_nm);
+
+    ed = exif_data_new_from_file(s);
+
+    if (!ed)
+    {
+	log_msg("APP0010", s, "APP0010", p_ui->window);
+        free(s);
+        return FALSE;
+    }
+
+    img.img_exif->camera = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img.img_exif->manufacturer = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img.img_exif->type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img.img_exif->date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img.img_exif->width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
+    img.img_exif->height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
+    img.img_exif->iso = get_tag(ed, EXIF_IFD_0, EXIF_TAG_ISO_SPEED_RATINGS);
+    img.img_exif->exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
+    img.img_exif->f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
+    
+    free(s);
+    return TRUE;
+}
+
+
+/* Extract tag and contents if exists */
+
+static void get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
+{
+    char buf[1024];
+
+    /* See if this tag exists */
+    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], tag);
+
+    if (entry) 
+    {
+        /* Get the contents of the tag in human-readable form */
+        exif_entry_get_value(entry, buf, sizeof(buf));
+
+        /* Don't bother printing it if it's entirely blank */
+        trim_spaces(buf);
+
+        if (*buf) {
+            printf("%s: %s\n", exif_tag_get_name_in_ifd(tag,ifd), buf);
+        }
+    }
 }
 
 

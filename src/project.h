@@ -72,25 +72,25 @@ typedef struct _ProjectData
 } ProjectData;
 
 
-typedef struct _ImgMeta
+typedef struct _ImgExif
 {
     char *camera;
-    char *img_type;
-    char *img_date;
-    int img_width;
-    int img_height;
-    char *wh_unit;
-    int iso;
-    int exposure;
-    char *exp_unit;
-} ImgMeta;
+    char *manufacturer;
+    char *type;
+    char *date;
+    char *width;
+    char *height;
+    char *iso;
+    char *exposure;
+    char *f_stop;
+} ImgExif;
 
 
 typedef struct _Image
 {
     char *img_nm;
     char *img_path;
-    ImgMeta img_meta;
+    ImgExif img_exif;
 } Image;
 
 #endif
