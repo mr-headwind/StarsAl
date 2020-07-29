@@ -474,9 +474,11 @@ int load_exif_data(Image *img, ProjectUi *p_ui)
         return FALSE;
     }
 
-    img.img_exif->camera = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-    img.img_exif->manufacturer = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-    img.img_exif->type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img.img_exif->camera = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
+    img.img_exif->manufacturer = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
+    img.img_exif->make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
+    img.img_exif->model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
+    img.img_exif->type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
     img.img_exif->date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
     img.img_exif->width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
     img.img_exif->height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
