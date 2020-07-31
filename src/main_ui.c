@@ -42,14 +42,14 @@
 #include <gtk/gtk.h>  
 #include <gdk/gdkkeysyms.h>  
 #include <main.h>
-#include <starsal.h>
+#include <project.h>
 #include <defs.h>
 #include <preferences.h>
 
 
 /* Prototypes */
 
-void main_ui(StarsAlData *, MainUi *);
+void main_ui(ProjectData *, MainUi *);
 void create_menu(MainUi *);
 void create_main_view(MainUi *);
 
@@ -60,7 +60,7 @@ extern int get_user_pref(char *, char **);
 extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
-extern void OnProj(GtkWidget*, gpointer);
+extern void OnEditProj(GtkWidget*, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
 extern void OnAbout(GtkWidget*, gpointer);
 extern void OnViewLog(GtkWidget*, gpointer);
@@ -83,11 +83,11 @@ static const char *debug_hdr = "DEBUG-main_ui.c ";
 
 /* Create the user interface and set the CallBacks */
 
-void main_ui(StarsAlData *app_data, MainUi *m_ui)
+void main_ui(ProjectData *proj, MainUi *m_ui)
 {  
     /* Set up the UI window */
     m_ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);  
-    g_object_set_data (G_OBJECT (m_ui->window), "app_data", app_data);
+    g_object_set_data (G_OBJECT (m_ui->window), "proj", proj);
     g_object_set_data (G_OBJECT (m_ui->window), "ui", m_ui);
     gtk_window_set_title(GTK_WINDOW(m_ui->window), TITLE);
     gtk_window_set_position(GTK_WINDOW(m_ui->window), GTK_WIN_POS_CENTER);
@@ -186,7 +186,7 @@ void create_menu(MainUi *m_ui)
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_prefs);
 
     /* Callbacks */
-    g_signal_connect (m_ui->edit_proj, "activate", G_CALLBACK (OnProj), m_ui->window);
+    g_signal_connect (m_ui->edit_proj, "activate", G_CALLBACK (OnEditProj), m_ui->window);
     g_signal_connect (m_ui->edit_prefs, "activate", G_CALLBACK (OnPrefs), m_ui->window);
 
     /* Show menu items */

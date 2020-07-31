@@ -41,7 +41,7 @@
 #include <libgen.h>  
 #include <gtk/gtk.h>  
 #include <main.h>
-#include <starsal.h>
+#include <project.h>
 #include <defs.h>
 
 
@@ -50,10 +50,10 @@
 
 /* Prototypes */
 
-void initialise(StarsAlData *, MainUi *);
+void initialise(ProjectData *, MainUi *);
 void final();
 
-extern void main_ui(StarsAlData *, MainUi *);
+extern void main_ui(ProjectData *, MainUi *);
 extern int check_app_dir();
 extern int reset_log();
 extern void close_log();
@@ -70,11 +70,11 @@ static const char *debug_hdr = "DEBUG-StarsAl.c ";
 
 int main(int argc, char *argv[])
 {  
-    StarsAlData app_data;
+    ProjectData proj;
     MainUi m_ui;
 
     /* Initial work */
-    initialise(&app_data, &m_ui);
+    initialise(&proj, &m_ui);
 
     /* Initialise Gtk */
     gtk_init(&argc, &argv);  
@@ -91,13 +91,13 @@ int main(int argc, char *argv[])
 
 /* Initial work */
 
-void initialise(StarsAlData *app_data, MainUi *m_ui)
+void initialise(ProjectData *proj, MainUi *m_ui)
 {
     char *p;
 
     /* Set variables */
     app_msg_extra[0] = '\0';
-    memset(app_data, 0, sizeof (StarsAlData));
+    memset(proj, 0, sizeof (ProjectData));
     memset(m_ui, 0, sizeof (MainUi));
 
     /* Set application directory */

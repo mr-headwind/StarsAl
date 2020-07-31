@@ -50,7 +50,7 @@
 void OnNewProj(GtkWidget*, gpointer *user_data);
 void OnOpenProj(GtkWidget*, gpointer *user_data);
 void OnCloseProj(GtkWidget*, gpointer *user_data);
-void OnProj(GtkWidget*, gpointer *user_data);
+void OnEditProj(GtkWidget*, gpointer *user_data);
 void OnPrefs(GtkWidget*, gpointer *user_data);
 void OnViewLog(GtkWidget*, gpointer *user_data);
 void OnAbout(GtkWidget*, gpointer *user_data);
@@ -86,9 +86,12 @@ static const char *debug_hdr = "DEBUG-callbacks.c ";
 void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 {  
     GtkWindow *window;
+    ProjectData *proj;
 
     window = (GtkWidget *) user_data;
-    project_main(window, 1);
+    proj = (ProjectData *) g_get_object_data (G_OBJECT (window), "proj")
+
+    project_main(window, proj);
 
     return;
 }  
@@ -114,8 +117,15 @@ void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Edit project settings */
 
-void OnProj(GtkWidget *menu_item, gpointer *user_data)
+void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
 {  
+    GtkWindow *window;
+    ProjectData *proj;
+
+    window = (GtkWidget *) user_data;
+    proj = (ProjectData *) g_get_object_data (G_OBJECT (window), "proj")
+
+    project_main(window, proj);
 
     return;
 }  

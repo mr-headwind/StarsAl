@@ -74,8 +74,8 @@ typedef struct _ProjectData
 
 typedef struct _ImgExif
 {
-    char *camera;
-    char *manufacturer;
+    char *make;
+    char *model;
     char *type;
     char *date;
     char *width;

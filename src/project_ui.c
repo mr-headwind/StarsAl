@@ -68,7 +68,8 @@ int save_proj(ProjectData *, ProjectUi *);
 int validate_proj(ProjectUi *);
 void img_list(GList *, GList **, ProjectUi *);
 Image * setup_image(char *, ProjectUi *);
-int load_exif_data(Image *img, ProjectUi *);
+int load_exif_data(Image *, ProjectUi *);
+static char * get_tag(ExifData *, ExifIfd, ExifTag);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -133,14 +134,20 @@ static int save_indi;
 
 /* Display and maintenance of project details */
 
-int project_main(GtkWidget *window, int mode)
+int project_main(GtkWidget *window, char *proj_nm)
 {
     ProjectUi *ui;
-    ProjectData *proj;
+    ProjectData proj;
 
     /* Initial */
-    if (! project_init(proj, window))
+    if (! project_init(&proj, window))
     	return FALSE;
+
+    /* Load or initialise project */
+    if (mode == 1)
+    	new_proj(&proj);
+    else
+    	load_proj(&prog);
 
     ui = new_proj_ui();
 
@@ -410,6 +417,7 @@ int validate_proj(ProjectUi *p_ui)
     img_list(p_ui->darks->files, &darks_gl, p_ui);
 
     /* Check all the images and darks for exposure consistency */
+    /* Discard unusable darks */
 
     return TRUE;
 }
@@ -474,9 +482,7 @@ int load_exif_data(Image *img, ProjectUi *p_ui)
         return FALSE;
     }
 
-    img.img_exif->camera = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
-    img.img_exif->manufacturer = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
-    img.img_exif->make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
+    img.img_exif->make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
     img.img_exif->model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
     img.img_exif->type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
     img.img_exif->date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
@@ -486,16 +492,20 @@ int load_exif_data(Image *img, ProjectUi *p_ui)
     img.img_exif->exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
     img.img_exif->f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
     
+    /* Free the EXIF and other data */
     free(s);
+    exif_data_unref(ed);
+
     return TRUE;
 }
 
 
 /* Extract tag and contents if exists */
 
-static void get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
+static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 {
     char buf[1024];
+    char *s;
 
     /* See if this tag exists */
     ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], tag);
@@ -508,10 +518,19 @@ static void get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
         /* Don't bother printing it if it's entirely blank */
         trim_spaces(buf);
 
-        if (*buf) {
-            printf("%s: %s\n", exif_tag_get_name_in_ifd(tag,ifd), buf);
+        if (*buf)
+        {
+            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf);
+	    s = (char *) malloc(strlen(buf) + 1);
+	    strcpy(s, buf);
         }
+	else
+	{
+	    s = NULL;
+	}
     }
+
+    return s;
 }
 
 
@@ -614,7 +633,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
-    g_object_get_data (G_OBJECT (lst->sel_btn), "list", lst);
+    g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
     lst->files = (ImageListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
     heading = (char *) g_object_get_data (G_OBJECT (browse_btn), "heading");
 
