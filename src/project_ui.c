@@ -55,17 +55,20 @@
 
 /* Prototypes */
 
-int project_main(GtkWidget *, int);
+int project_main(ProjectData *, GtkWidget);
 int project_init(ProjectData *, GtkWidget *);
 ProjectUi * new_proj_ui();
+ProjectData * new_proj_data();
 void project_ui(ProjectData *, ProjectUi *);
+void close_project(ProjectUi *);
+void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(ImageListUi *, ProjectUi *, char *);
 void show_list(ImageListUi *);
 int proj_save_reqd(ProjectUi *);
-void set_proj(ProjectData *, ProjectUi *);
+void setup_proj(ProjectData *);
 int save_proj(ProjectData *, ProjectUi *);
-int validate_proj(ProjectUi *);
+int setup_proj_validate(ProjectData *, ProjectUi *);
 void img_list(GList *, GList **, ProjectUi *);
 Image * setup_image(char *, ProjectUi *);
 int load_exif_data(Image *, ProjectUi *);
@@ -130,24 +133,25 @@ extern int val_str2numb(char *, int *, char *, GtkWidget *);
 
 static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
+static char *work_dir;
 
 
 /* Display and maintenance of project details */
 
-int project_main(GtkWidget *window, char *proj_nm)
+int project_main(ProjectData *proj_in, GtkWidget *window)
 {
+    ProjectData *proj;
     ProjectUi *ui;
-    ProjectData proj;
 
     /* Initial */
-    if (! project_init(&proj, window))
+    if (! project_init(window))
     	return FALSE;
 
-    /* Load or initialise project */
-    if (mode == 1)
-    	new_proj(&proj);
+    /* Load and/or initialise project */
+    if (! proj)
+    	proj = new_proj_data();
     else
-    	load_proj(&prog);
+    	proj = proj_in;
 
     ui = new_proj_ui();
 
@@ -163,7 +167,7 @@ int project_main(GtkWidget *window, char *proj_nm)
 
 /* Initial checks and values */
 
-int project_init(ProjectData *proj, GtkWidget *window)
+int project_init(GtkWidget *window)
 {
     char *p;
 
@@ -179,7 +183,7 @@ int project_init(ProjectData *proj, GtkWidget *window)
     	return FALSE;
     }
 
-    proj->proj_path = p;
+    work_dir = p;
 
     return TRUE;
 }
@@ -188,7 +192,7 @@ int project_init(ProjectData *proj, GtkWidget *window)
 // USER INTERFACE
 
 
-/* Create new screen data variable */
+/* Create new screen data structure */
 
 ProjectUi * new_proj_ui()
 {
@@ -196,6 +200,17 @@ ProjectUi * new_proj_ui()
     memset(ui, 0, sizeof(ProjectUi));
 
     return ui;
+}
+
+
+/* Create new project data structure*/
+
+ProjectData * new_proj_data()
+{
+    ProjectData *proj = (ProjectData *) malloc(sizeof(ProjectData));
+    memset(ui, 0, sizeof(ProjectData));
+
+    return proj;
 }
 
 
@@ -269,7 +284,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_nm), 256);
     gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 40);
 
-    create_label2(&(p_ui->proj_path_lbl), "title_4", proj->proj_path, p_ui->nm_grid, 1, 1, 1, 1);
+    create_label2(&(p_ui->proj_path_lbl), "title_4", proj->project_path, p_ui->nm_grid, 1, 1, 1, 1);
 
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_gridl, FALSE, FALSE, 0);
 
@@ -387,24 +402,24 @@ int proj_save_reqd(ProjectUi *p_ui)
 
 /* Validate screen contents */
 
-int validate_proj(ProjectUi *p_ui)
+int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
 {
-    const gchar *s;
+    const gchar *nm;
     ImageListUi images;
     ImageListUi darks;
     GList *images_gl;
     GList *darks_gl;
 
     /* Project name must be present */
-    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
+    nm = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
 
-    if (s == NULL)
+    if (nm == NULL)
     {
 	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
     	return FALSE;
     }
 
-    if (string_trim((char *) s) == "")
+    if (string_trim((char *) nm) == "")
     {
 	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
     	return FALSE;
@@ -416,8 +431,12 @@ int validate_proj(ProjectUi *p_ui)
     /* Need to compile a list of Darks and exif data */
     img_list(p_ui->darks->files, &darks_gl, p_ui);
 
-    /* Check all the images and darks for exposure consistency */
-    /* Discard unusable darks */
+    /* Check all the images for exposure consistency */
+
+    /* Discard and warn of unusable darks */
+
+    /* Set up project */
+    setup_proj(proj, nm, images_gl, darks_gl);
 
     return TRUE;
 }
@@ -536,27 +555,25 @@ static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 
 /* Set up the project data */
 
-void set_proj(ProjectData *proj, ProjectUi *p_ui)
+void setup_proj(ProjectData *proj, const gchar *nm, GList *image_gl, GList *darks_gl)
 {
-    const gchar *s;
-
     /* Project name */
-    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
-
     if (proj->project_name == NULL)
     {
-    	proj->project_name = (char *) malloc(strlen(s) + 1);
+    	proj->project_name = (char *) malloc(strlen(nm) + 1);
 	proj->project_name[0] = '\0';
+	proj->project_path = (char *) malloc(strlen(work_dir) + 1);
+	strcpy(proj->project_path, work_dir);
 	proj->status = 0;
     }
 
     /* Make sure it's changed */
-    if (strcmp(s, proj->project_nm) != 0)
-    	strcpy(proj->project_name, s);
+    if (strcmp(nm, proj->project_nm) != 0)
+    	strcpy(proj->project_name, nm);
 
-    /* Load the image list */
-
-    /* Load the darks list */
+    /* Images and Darks */
+    proj->images_gl = images_gl;
+    proj->darks_gl = darks_gl;
 
     return;
 }
@@ -615,6 +632,57 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     save_indi = FALSE;
 
     return TRUE;
+}
+
+
+/* Close the current project */
+
+void close_project(ProjectData *proj)
+{
+    /* Free the listed images and darks */
+    g_list_free_full(proj->images, (GDestroyNotify) free_img);
+    g_list_free_full(proj->darks, (GDestroyNotify) free_img);
+
+    proj->images_gl = NULL;
+    proj->darks_gl = NULL;
+
+    /* Free remaining */
+    free(proj->project_nm);
+    free(proj->project_path);
+
+    /* Free project */
+    free(proj);
+
+    return;
+}
+
+
+/* Free an image or dark */
+
+void free_img(gpointer data)
+{
+    Image *img;
+    ImgExif *e;
+
+    img = (Image *) data;
+    e = img->img_exif;
+
+    free(img->nm);
+    free(img->path);
+
+    free(e->make);
+    free(e->model);
+    free(e->type);
+    free(e->date);
+    free(e->width);
+    free(e->height);
+    free(e->iso);
+    free(e->exposure);
+    free(e->f_stop);
+
+    free(img);
+
+    return;
 }
 
 
@@ -701,19 +769,13 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
     p_ui = (ProjectUi *) user_data;
     proj = (ProjectData *) g_object_get_data (G_OBJECT (p_ui->window), "proj");
 
-    /* Check for changes */
+    /* Ignore if save is not required */
     if ((save_indi = proj_save_reqd(p_ui)) == FALSE)
-    {
-    	info_dialog(p_ui->window, "There are no changes to save!", "");
     	return;
-    }
 
     /* Error check */
-    if (validate_proj(proj, p_ui) == FALSE)
+    if (proj_setup_validate(proj, p_ui) == FALSE)
     	return;
-
-    /* Set up the project data */
-    set_proj(proj, p_ui);
 
     /* Save to file */
     save_proj(proj, p_ui);

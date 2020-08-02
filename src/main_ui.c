@@ -49,7 +49,7 @@
 
 /* Prototypes */
 
-void main_ui(ProjectData *, MainUi *);
+void main_ui(MainUi *);
 void create_menu(MainUi *);
 void create_main_view(MainUi *);
 
@@ -83,11 +83,10 @@ static const char *debug_hdr = "DEBUG-main_ui.c ";
 
 /* Create the user interface and set the CallBacks */
 
-void main_ui(ProjectData *proj, MainUi *m_ui)
+void main_ui(MainUi *m_ui)
 {  
     /* Set up the UI window */
     m_ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);  
-    g_object_set_data (G_OBJECT (m_ui->window), "proj", proj);
     g_object_set_data (G_OBJECT (m_ui->window), "ui", m_ui);
     gtk_window_set_title(GTK_WINDOW(m_ui->window), TITLE);
     gtk_window_set_position(GTK_WINDOW(m_ui->window), GTK_WIN_POS_CENTER);

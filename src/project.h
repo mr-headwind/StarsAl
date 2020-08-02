@@ -65,7 +65,7 @@ typedef struct _ProjectUi
 typedef struct _ProjectData
 {
     char *project_name;
-    char *proj_path;
+    char *project_path;
     int status;
     GList *images_gl;
     GList *darks_gl;

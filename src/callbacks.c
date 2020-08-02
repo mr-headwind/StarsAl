@@ -57,7 +57,7 @@ void OnAbout(GtkWidget*, gpointer *user_data);
 void OnQuit(GtkWidget*, gpointer *user_data);
 
 
-extern void project_main(GtkWidget *, int);
+extern void project_main(ProjectData *, GtkWidget *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -89,9 +89,8 @@ void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
     ProjectData *proj;
 
     window = (GtkWidget *) user_data;
-    proj = (ProjectData *) g_get_object_data (G_OBJECT (window), "proj")
 
-    project_main(window, proj);
+    project_main(NULL, window);
 
     return;
 }  
@@ -125,7 +124,7 @@ void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
     window = (GtkWidget *) user_data;
     proj = (ProjectData *) g_get_object_data (G_OBJECT (window), "proj")
 
-    project_main(window, proj);
+    project_main(proj, window);
 
     return;
 }  
