@@ -286,7 +286,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
 
     create_label2(&(p_ui->proj_path_lbl), "title_4", proj->project_path, p_ui->nm_grid, 1, 1, 1, 1);
 
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_gridl, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_grid, FALSE, FALSE, 0);
 
     /* Images selection */
     select_images(p_ui->images, p_ui, "Select Images");
@@ -370,33 +370,29 @@ void show_list(ImageListUi *lst)
 
 /* Check if changes have been made */
 
-int proj_save_reqd(ProjectUi *p_ui)
+int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 {
+    const gchar *s;
+
     gint res;
     char cc;
     char s[3];
     int idx;
     const gchar *proj_dir;
 
-    /* Initial */
-    s[1] = '\0';
+    /* Project name */
+    s = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_nm));
 
-    /* Project directory */
-    proj_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_dir));
-
-    /* Project directory exists */
-    if (! check_dir((char *) proj_dir))
-    {
-	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) proj_dir);
-
-	if (res == GTK_RESPONSE_YES)
-	    make_dir((char *) proj_dir);
-    }
-
-    if (pref_changed(PROJECT_DIR, (char *) proj_dir))
+    if (proj->project_name == NULL)
     	return TRUE;
 
-    return FALSE;
+    if (s == NULL)			// Error - but continue to validate
+    	return TRUE;
+
+    if (strcmp(s, proj->project_name) != 0)
+    	return TRUE;
+    	
+    return save_indi;
 }
 
 
@@ -583,14 +579,23 @@ void setup_proj(ProjectData *proj, const gchar *nm, GList *image_gl, GList *dark
 
 int save_proj(ProjectData *proj, ProjectUi *p_ui)
 {
+    char *path;
     FILE *fd = NULL;
     char buf[256];
     char *prefs_fn;
     char *app_dir;
     int app_dir_len;
 
-    /* Project name */
-    s = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
+    /* Project directory exists */
+    path = (char *) malloc(strlen(proj->project_nm) + strlen(proj->project_path) + 2);
+    sprintf(path, "%s/%s", proj->project_nm, proj->project_path);
+
+    if (! check_dir((char *) path))
+	make_dir((char *) path);
+
+    /* Save */
+
+
 
     app_dir = app_dir_path();
     app_dir_len = strlen(app_dir);
@@ -721,6 +726,9 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 	gtk_file_chooser_set_select_multiple (chooser, TRUE);
 	gtk_file_chooser_set_action (chooser, GTK_FILE_CHOOSER_ACTION_OPEN);
 	lst->files = gtk_file_chooser_get_filenames (chooser);
+
+	if (lst->files != NULL)
+	    save_reqd = TRUE;
     }
 
     gtk_widget_destroy (dialog);
@@ -741,6 +749,8 @@ void OnListClear(GtkWidget *browse_btn, gpointer user_data)
     /* Get data */
     p_ui = (ProjectUi *) user_data;
 
+    save_reqd = TRUE;
+
     return;
 }
 
@@ -753,6 +763,8 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
+
+    save_reqd = TRUE;
 
     return;
 }
@@ -770,7 +782,7 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
     proj = (ProjectData *) g_object_get_data (G_OBJECT (p_ui->window), "proj");
 
     /* Ignore if save is not required */
-    if ((save_indi = proj_save_reqd(p_ui)) == FALSE)
+    if ((save_indi = proj_save_reqd(proj, p_ui)) == FALSE)
     	return;
 
     /* Error check */
@@ -833,6 +845,26 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
     OnProjCancel(window, user_data);
 
     return TRUE;
+}
+
+
+/* Window cleanup */
+
+void window_cleanup(GtkWidget *window, ProjectUi *ui)
+{
+    GList *l;
+
+    /* Free any list and filenames */
+
+    /* Close the window, free the screen data and block any secondary close signal */
+    g_signal_handler_block (window, ui->close_handler);
+
+    deregister_window(window);
+    gtk_window_close(GTK_WINDOW(window));
+
+    free(ui);
+
+    return;
 }
 
 
