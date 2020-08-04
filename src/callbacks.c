@@ -36,7 +36,7 @@
 #include <libgen.h>  
 #include <gtk/gtk.h>  
 #include <main.h>
-#include <preferences.h>
+#include <project.h>
 #include <defs.h>  
 
 
@@ -85,7 +85,7 @@ static const char *debug_hdr = "DEBUG-callbacks.c ";
 
 void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 {  
-    GtkWindow *window;
+    GtkWidget *window;
     ProjectData *proj;
 
     window = (GtkWidget *) user_data;
@@ -118,11 +118,11 @@ void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
 
 void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
 {  
-    GtkWindow *window;
+    GtkWidget *window;
     ProjectData *proj;
 
     window = (GtkWidget *) user_data;
-    proj = (ProjectData *) g_get_object_data (G_OBJECT (window), "proj")
+    proj = (ProjectData *) g_object_get_data (G_OBJECT (window), "proj");
 
     project_main(proj, window);
 

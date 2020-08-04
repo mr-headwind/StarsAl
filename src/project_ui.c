@@ -55,17 +55,17 @@
 
 /* Prototypes */
 
-int project_main(ProjectData *, GtkWidget);
+int project_main(ProjectData *, GtkWidget *);
 int project_init(ProjectData *, GtkWidget *);
 ProjectUi * new_proj_ui();
 ProjectData * new_proj_data();
 void project_ui(ProjectData *, ProjectUi *);
-void close_project(ProjectUi *);
+void close_project(ProjectData *);
 void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(ImageListUi *, ProjectUi *, char *);
 void show_list(ImageListUi *);
-int proj_save_reqd(ProjectUi *);
+int proj_save_reqd(ProjectData *, ProjectUi *);
 void setup_proj(ProjectData *);
 int save_proj(ProjectData *, ProjectUi *);
 int setup_proj_validate(ProjectData *, ProjectUi *);
@@ -73,6 +73,7 @@ void img_list(GList *, GList **, ProjectUi *);
 Image * setup_image(char *, ProjectUi *);
 int load_exif_data(Image *, ProjectUi *);
 static char * get_tag(ExifData *, ExifIfd, ExifTag);
+void window_cleanup(GtkWidget *, ProjectUi *);
 
 void OnProjCancel(GtkWidget*, gpointer);
 gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -89,44 +90,8 @@ extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
 extern void string_trim(char *);
 extern void trim_spaces(char *);
-
-
-
-
-
-void prefs_control(PrefUi *);
-void project_dir(PrefUi *);
-
-char find_active_by_parent(GtkWidget *, char);
-void get_file_name(char *, char *, char *, char *, char, char, char);
-void file_name_item(char *, char, char, char, char, char *, char *, char *); 
-
-int read_user_prefs(GtkWidget *);
-int write_user_prefs(GtkWidget *);
-void set_default_prefs();
-void default_dir_pref();
-void set_user_prefs(PrefUi *);
-void get_user_pref_idx(int, char *, char **);
-void get_pref_key(int, char *);
-void get_pref_val(int, char **);
-int set_user_pref(char *, char *);
-int add_user_pref(char *, char *);
-int add_user_pref_idx(char *, char *, int);
-void delete_user_pref(char *);
-int pref_changed(char *, char *);
-void free_prefs();
-
-extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
-extern char * app_dir_path();
-extern char * home_dir();
-extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
-extern void info_dialog(GtkWidget *, char *, char *);
-extern gint query_dialog(GtkWidget *, char *, char *);
 extern int check_dir(char *);
 extern int make_dir(char *);
-extern int is_ui_reg(char *, int);
-extern int close_ui(char *);
-extern int val_str2numb(char *, int *, char *, GtkWidget *);
 
 
 /* Globals */
@@ -134,6 +99,7 @@ extern int val_str2numb(char *, int *, char *, GtkWidget *);
 static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
 static char *work_dir;
+static int work_dir_len;
 
 
 /* Display and maintenance of project details */
@@ -184,6 +150,7 @@ int project_init(GtkWidget *window)
     }
 
     work_dir = p;
+    work_dir_len = strlen(p);
 
     return TRUE;
 }
@@ -339,27 +306,43 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 }
 
 
-/* Set up the list box with the selected files */
+/* Set up the list box with the selected files and maintain a selected glist */
 
-void show_list(ImageListUi *lst)
+void show_list(ImageListUi *lst, GSList *gsl)
 {  
     char *path, *nm, *dir;
-    GList *l;
+    GList *sl, *l;
 
     lst->list_box = gtk_list_box_new();
 
-    for(l = lst->files; l != NULL; l = l->next)
+    for(sl = gsl; sl != NULL; sl = sl->next)
     {
-    	path = (char *) l->data;
-	basename_dirname(path, &nm, &dir);
+	path1 = (char *) sl->data;
 
-	GtKWidgwet *lbl = gtk_label_new(nm);
-	g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
-	gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
+	for(l = lst->files; l != NULL; l = l->next)
+	{
+	    path2 = (char *) l->data;
 
-	free(nm);
-	free(dir);
+	    if (strcmp(path1, path2) == 0)
+	    	break;
+	}
+
+	if (l == NULL)
+	{
+	    basename_dirname(path1, &nm, &dir);
+
+	    GtKWidgwet *lbl = gtk_label_new(nm);
+	    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
+	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
+	    lst->files = g_list_prepend(lst->files, path1);
+
+	    free(nm);
+	    free(dir);
+	}
     }
+
+    lst->files = g_list_reverse(lst->files);
+    g_slist_free_full(gsl, (GDestroyNotify) g_free);
 
     return;
 }
@@ -373,12 +356,6 @@ void show_list(ImageListUi *lst)
 int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *s;
-
-    gint res;
-    char cc;
-    char s[3];
-    int idx;
-    const gchar *proj_dir;
 
     /* Project name */
     s = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_nm));
@@ -448,7 +425,7 @@ void img_list(GList *in_gl, GList **out_gl, ProjectUi *p_ui)
 
     *out_gl = NULL;
 
-    for(l = p_ui->in_gl; l != NULL; l = l->next)
+    for(l = in_gl; l != NULL; l = l->next)
     {
     	f = (char *) l->data;
     	img = setup_image(f, p_ui);
@@ -468,7 +445,7 @@ Image * setup_image(char *image_path, ProjectUi *p_ui)
     Image *img;
 
     img = (Image *) malloc(sizeof(Image));
-    basename_dirname(path, &(img->nm), &(img->dir);
+    basename_dirname(image_path, &(img->nm), &(img->dir));
 
     load_exif_data(img, p_ui);
 
@@ -497,15 +474,15 @@ int load_exif_data(Image *img, ProjectUi *p_ui)
         return FALSE;
     }
 
-    img.img_exif->make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
-    img.img_exif->model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
-    img.img_exif->type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
-    img.img_exif->date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-    img.img_exif->width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
-    img.img_exif->height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
-    img.img_exif->iso = get_tag(ed, EXIF_IFD_0, EXIF_TAG_ISO_SPEED_RATINGS);
-    img.img_exif->exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
-    img.img_exif->f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
+    img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
+    img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
+    img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
+    img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img->img_exif.width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
+    img->img_exif.height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
+    img->img_exif.iso = get_tag(ed, EXIF_IFD_0, EXIF_TAG_ISO_SPEED_RATINGS);
+    img->img_exif.exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
+    img->img_exif.f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
     
     /* Free the EXIF and other data */
     free(s);
@@ -551,7 +528,7 @@ static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 
 /* Set up the project data */
 
-void setup_proj(ProjectData *proj, const gchar *nm, GList *image_gl, GList *darks_gl)
+void setup_proj(ProjectData *proj, const gchar *nm, GList *images_gl, GList *darks_gl)
 {
     /* Project name */
     if (proj->project_name == NULL)
@@ -564,7 +541,7 @@ void setup_proj(ProjectData *proj, const gchar *nm, GList *image_gl, GList *dark
     }
 
     /* Make sure it's changed */
-    if (strcmp(nm, proj->project_nm) != 0)
+    if (strcmp(nm, proj->project_name) != 0)
     	strcpy(proj->project_name, nm);
 
     /* Images and Darks */
@@ -579,37 +556,34 @@ void setup_proj(ProjectData *proj, const gchar *nm, GList *image_gl, GList *dark
 
 int save_proj(ProjectData *proj, ProjectUi *p_ui)
 {
+    int nml, pathl;
     char *path;
     FILE *fd = NULL;
     char buf[256];
-    char *prefs_fn;
-    char *app_dir;
-    int app_dir_len;
+    char *proj_fn;
 
     /* Project directory exists */
-    path = (char *) malloc(strlen(proj->project_nm) + strlen(proj->project_path) + 2);
-    sprintf(path, "%s/%s", proj->project_nm, proj->project_path);
+    nml = strlen(proj->project_name);
+    pathl = strlen(proj->project_path);
+
+    path = (char *) malloc(work_dir_len + pathl, nml + 3);
+    sprintf(path, "%s/%s/%s", work_dir, proj->project_path, proj->project_name);
 
     if (! check_dir((char *) path))
 	make_dir((char *) path);
 
-    /* Save */
-
-
-
-    app_dir = app_dir_path();
-    app_dir_len = strlen(app_dir);
-    prefs_fn = (char *) malloc(app_dir_len + 19);
-    sprintf(prefs_fn, "%s/app_settings", app_dir);
-
     /* New or overwrite file */
-    if ((fd = fopen(prefs_fn, "w")) == (FILE *) NULL)
+    proj_fn = (char *) malloc(work_dir_len + pathl + nml + nml + 8);
+    sprintf(proj_fn, "%s/%s_data", path, proj->project_name);
+
+    if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)
     {
-	free(prefs_fn);
+	free(proj_fn);
 	return FALSE;
     }
 
     /* Write new values */
+    /*
     pref_list = g_list_first(pref_list_head);
 
     while(pref_list != NULL)
@@ -630,10 +604,12 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
 
 	pref_list = g_list_next(pref_list);
     }
+    */
 
     /* Close off */
     fclose(fd);
-    free(prefs_fn);
+    free(proj_fn);
+    free(path);
     save_indi = FALSE;
 
     return TRUE;
@@ -645,14 +621,14 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
 void close_project(ProjectData *proj)
 {
     /* Free the listed images and darks */
-    g_list_free_full(proj->images, (GDestroyNotify) free_img);
-    g_list_free_full(proj->darks, (GDestroyNotify) free_img);
+    g_list_free_full(proj->images_gl, (GDestroyNotify) free_img);
+    g_list_free_full(proj->darks_gl, (GDestroyNotify) free_img);
 
     proj->images_gl = NULL;
     proj->darks_gl = NULL;
 
     /* Free remaining */
-    free(proj->project_nm);
+    free(proj->project_name);
     free(proj->project_path);
 
     /* Free project */
@@ -701,6 +677,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     GtkWidget *dialog;
     ProjectUi *p_ui;
     ImageListUi *lst;
+    GSList *gsl;
     char *heading;
     gint res;
 
@@ -725,7 +702,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 	GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
 	gtk_file_chooser_set_select_multiple (chooser, TRUE);
 	gtk_file_chooser_set_action (chooser, GTK_FILE_CHOOSER_ACTION_OPEN);
-	lst->files = gtk_file_chooser_get_filenames (chooser);
+	gsl = gtk_file_chooser_get_filenames (chooser);
 
 	if (lst->files != NULL)
 	    save_reqd = TRUE;
@@ -749,7 +726,7 @@ void OnListClear(GtkWidget *browse_btn, gpointer user_data)
     /* Get data */
     p_ui = (ProjectUi *) user_data;
 
-    save_reqd = TRUE;
+    save_indi = TRUE;
 
     return;
 }
@@ -764,7 +741,7 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
     /* Get data */
     p_ui = (ProjectUi *) user_data;
 
-    save_reqd = TRUE;
+    save_indi = TRUE;
 
     return;
 }
@@ -774,23 +751,26 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
 
 void OnProjSave(GtkWidget *btn, gpointer user_data)
 {
-    ProjectUi *p_ui;
+    ProjectUi *ui;
     ProjectData *proj;
 
     /* Get data */
-    p_ui = (ProjectUi *) user_data;
-    proj = (ProjectData *) g_object_get_data (G_OBJECT (p_ui->window), "proj");
+    ui = (ProjectUi *) user_data;
+    proj = (ProjectData *) g_object_get_data (G_OBJECT (ui->window), "proj");
 
     /* Ignore if save is not required */
-    if ((save_indi = proj_save_reqd(proj, p_ui)) == FALSE)
+    if ((save_indi = proj_save_reqd(proj, ui)) == FALSE)
     	return;
 
     /* Error check */
-    if (proj_setup_validate(proj, p_ui) == FALSE)
+    if (proj_setup_validate(proj, ui) == FALSE)
     	return;
 
     /* Save to file */
-    save_proj(proj, p_ui);
+    save_proj(proj, ui);
+
+    /* Close the window, free the screen data and block any secondary close signal */
+    window_cleanup(ui->window, ui);
 
     return;
 }
@@ -804,13 +784,15 @@ void OnProjCancel(GtkWidget *window, gpointer user_data)
 { 
     GtkWidget *dialog;
     ProjectUi *ui;
+    ProjectData *proj;
     gint response;
 
     /* Get data */
     ui = (ProjectUi *) g_object_get_data (G_OBJECT (window), "ui");
+    proj = (ProjectData *) g_object_get_data (G_OBJECT (window), "proj");
 
     /* Check for changes */
-    if ((save_indi = proj_save_reqd(ui)) == TRUE)
+    if ((save_indi = proj_save_reqd(proj, ui)) == TRUE)
     {
 	/* Ask if OK to close without saving */
 	dialog = gtk_message_dialog_new (GTK_WINDOW (window),
@@ -827,12 +809,7 @@ void OnProjCancel(GtkWidget *window, gpointer user_data)
     }
 
     /* Close the window, free the screen data and block any secondary close signal */
-    g_signal_handler_block (window, ui->close_handler);
-
-    deregister_window(window);
-    gtk_window_close(GTK_WINDOW(window));
-
-    free(ui);
+    window_cleanup(window, ui);
 
     return;
 }
@@ -852,9 +829,9 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 
 void window_cleanup(GtkWidget *window, ProjectUi *ui)
 {
-    GList *l;
-
     /* Free any list and filenames */
+    g_list_free_full(ui->images.files, (GDestroyNotify) g_free);
+    g_list_free_full(ui->darks.files, (GDestroyNotify) g_free);
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler);
@@ -863,418 +840,6 @@ void window_cleanup(GtkWidget *window, ProjectUi *ui)
     gtk_window_close(GTK_WINDOW(window));
 
     free(ui);
-
-    return;
-}
-
-
-
-
-
-
-
-
-
-
-/* Project working directory - default */
-
-void project_dir(PrefUi *p_ui)
-{  
-    char *p;
-
-    /* Heading */
-    create_label(&(p_ui->proj_dir_lbl), "data_1", "Working Directory", p_ui->prefs_cntr); 
-
-    /* Put in horizontal box */
-    p_ui->proj_dir_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-
-    /* Directory */
-    p_ui->proj_dir = gtk_entry_new();
-    gtk_widget_set_name(p_ui->proj_dir, "proj_dir");
-    gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_dir), GTK_ALIGN_START);
-    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_dir), 256);
-    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_dir), 40);
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_dir_box), p_ui->proj_dir, FALSE, FALSE, 3);
-
-    get_user_pref(WORK_DIR, &p);
-    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), p);
-
-    /* Browse button */
-    p_ui->browse_btn = gtk_button_new_with_label("Browse...");
-    g_signal_connect(p_ui->browse_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_dir_box), p_ui->browse_btn, FALSE, FALSE, 0);
-
-    gtk_box_pack_start (GTK_BOX (p_ui->prefs_cntr), p_ui->proj_dir_box, FALSE, FALSE, 0);
-
-
-    return;
-}
-
-
-/* Read the user preferences file */
-
-int read_user_prefs(GtkWidget *window)
-{
-    FILE *fd = NULL;
-    struct stat fileStat;
-    char buf[256];
-    char *prefs_fn;
-    char *app_dir;
-    char *p, *p2;
-    int app_dir_len;
-    int err;
-
-    /* Initial */
-    pref_count = 0;
-
-    /* Get the full path for the preferences file */
-    app_dir = app_dir_path();
-    app_dir_len = strlen(app_dir);
-    prefs_fn = (char *) malloc(app_dir_len + 19);
-    sprintf(prefs_fn, "%s/%s", app_dir, USER_PREFS);
-
-    /* If no preferences exist, create a default set */
-    err = stat(prefs_fn, &fileStat);
-
-    if ((err < 0) || (fileStat.st_size == 0))
-    {
-	log_msg("APP0007", NULL, NULL, NULL);
-    	set_default_prefs();
-	free(prefs_fn);
-
-	return TRUE;
-    }
-    
-    /* Read existing user preference settings */
-    if ((fd = fopen(prefs_fn, "r")) == (FILE *) NULL)
-    {
-	free(prefs_fn);
-	return FALSE;
-    }
-    
-    /* Store the preferences */
-    while ((fgets(buf, sizeof(buf), fd)) != NULL)
-    {
-	/* Check and save key */
-	if ((p = strchr(buf, '|')) == NULL)
-	{
-	    free(prefs_fn);
-	    sprintf(app_msg_extra, "%s", buf);
-	    log_msg("APP0008", "Invalid user preference key format", "APP0008", window);
-	    return FALSE;
-	}
-
-	if ((p - buf) > (PREF_KEY_SZ - 1))
-	{
-	    free(prefs_fn);
-	    sprintf(app_msg_extra, "%s", buf);
-	    log_msg("APP0008", "Invalid user preference key size", "APP0008", window);
-	    return FALSE;
-	}
-
-	/* Check and save value */
-	if ((p2 = strchr((p), '\n')) == NULL)
-	{
-	    free(prefs_fn);
-	    sprintf(app_msg_extra, "%s", buf);
-	    log_msg("APP0008", "Invalid user preference value", "APP0008", window);
-	    return FALSE;
-	}
-
-	/* Create a preference entry */
-	UserPrefData *Preference = (UserPrefData *) malloc(sizeof(UserPrefData));
-	memset(Preference, 0, sizeof (UserPrefData));
-	strncpy(Preference->key, buf, p - buf);
-	Preference->key[p - buf] = '\0';
-	string_trim(Preference->key);
-
-	p++;
-	*p2 = '\0';
-
-	Preference->val = (char *) malloc(strlen(p) + 1);
-	strcpy(Preference->val, p);
-	string_trim(Preference->val);
-	    
-	pref_list = g_list_prepend(pref_list, Preference);
-	pref_count++;
-    }
-
-    /* Still may need set up some default preferences */
-    pref_list_head = g_list_reverse(pref_list);
-    set_default_prefs();
-
-    /* Close off */
-    fclose(fd);
-    free(prefs_fn);
-    save_indi = FALSE;
-
-    return TRUE;
-}
-
-
-/* Set up default user preferences. All preferences may not be present */
-
-void set_default_prefs()
-{
-    char *p;
-
-    /* Default working directory */
-    get_user_pref(PROJECT_DIR, &p);
-
-    if (p == NULL)
-	default_dir_pref();
-
-    /* Save to file */
-    write_user_prefs(NULL);
-
-    return;
-}
-
-
-/* Default working directory preference  - $HOME/StarsAl */
-
-void default_dir_pref()
-{
-    char *home_str, *val;
-    int len;
-
-    home_str = home_dir();
-    len = strlen(home_str) + strlen(TITLE) + 11;
-    val = (char *) malloc(len);
-    sprintf(val, "%s/%s", home_str, TITLE);
-
-    add_user_pref(PROJECT_DIR, val);
-
-    if (! check_dir(val))
-	make_dir(val);
-
-    free(val);
-
-    return;
-}
-
-
-/* Add a user preference */
-
-int add_user_pref(char *key, char *val)
-{
-    UserPrefData *Preference;
-
-    Preference = (UserPrefData *) malloc(sizeof(UserPrefData));
-    strcpy(Preference->key, key);
-    Preference->val = (char *) malloc(strlen(val) + 1);
-    strcpy(Preference->val, val);
-
-    pref_list = g_list_append(pref_list_head, (gpointer) Preference);
-    pref_count++;
-
-    if (pref_list_head == NULL)
-    	pref_list_head = pref_list;
-
-    return TRUE;
-}
-
-
-/* Add a user preference at a given reference */
-
-int add_user_pref_idx(char *key, char *val, int idx)
-{
-    UserPrefData *Preference;
-
-    Preference = (UserPrefData *) malloc(sizeof(UserPrefData));
-    strcpy(Preference->key, key);
-    Preference->val = (char *) malloc(strlen(val) + 1);
-    strcpy(Preference->val, val);
-
-    pref_list_head = g_list_insert(pref_list_head, (gpointer) Preference, idx);
-    pref_count++;
-
-    return TRUE;
-}
-
-
-/* Update a user preference */
-
-int set_user_pref(char *key, char *val)
-{
-    int i;
-    UserPrefData *Preference;
-
-    /* Find the key entry and set the new value */
-    pref_list = g_list_first(pref_list_head);
-    i = 0;
-
-    while(pref_list != NULL)
-    {
-    	Preference = (UserPrefData *) pref_list->data;
-
-    	if (strcmp(Preference->key, key) == 0)
-    	{
-	    i = strlen(val);
-
-	    if (i > strlen(Preference->val))
-		Preference->val = (char *) realloc(Preference->val, i + 1);
-
-	    strcpy(Preference->val, val);
-	    break;
-    	}
-
-	pref_list = g_list_next(pref_list);
-    }
-
-    if (i == 0)
-    	return FALSE;
-
-    return TRUE;
-}
-
-
-/* Return a pointer to a user preference value for a key or NULL */
-
-int get_user_pref(char *key, char **val)
-{
-    int i;
-    UserPrefData *Preference;
-
-    *val = NULL;
-    i = 0;
-
-    pref_list = g_list_first(pref_list_head);
-
-    while(pref_list != NULL)
-    {
-    	Preference = (UserPrefData *) pref_list->data;
-
-    	if (strcmp(Preference->key, key) == 0)
-    	{
-	    *val = Preference->val;
-	    break;
-    	}
-
-	pref_list = g_list_next(pref_list);
-	i++;
-    }
-
-    return i;
-}
-
-
-/* Return a pointer to a user preference value for a key and index or NULL */
-
-void get_user_pref_idx(int idx, char *key, char **val)
-{
-    UserPrefData *Preference;
-
-    *val = NULL;
-
-    pref_list = g_list_nth(pref_list_head, idx);
-    Preference = (UserPrefData *) pref_list->data;
-
-    if (strcmp(Preference->key, key) == 0)
-	*val = Preference->val;
-
-    return;
-}
-
-
-/* Return the key at an index */
-
-void get_pref_key(int idx, char *key)
-{
-    UserPrefData *Preference;
-
-    pref_list = g_list_nth(pref_list_head, idx);
-    Preference = (UserPrefData *) pref_list->data;
-
-    if (pref_list == NULL)
-    	key = NULL;
-    else
-    	strcpy(key, Preference->key);
-
-    return;
-}
-
-
-/* Return a pointer to the value at an index */
-
-void get_pref_val(int idx, char **val)
-{
-    UserPrefData *Preference;
-
-    pref_list = g_list_nth(pref_list_head, idx);
-    Preference = (UserPrefData *) pref_list->data;
-
-    if (pref_list == NULL)
-    	*val = NULL;
-    else
-	*val = Preference->val;
-
-    return;
-}
-
-
-/* Delete a preference setting */
-
-void delete_user_pref(char *key)
-{
-    UserPrefData *Preference;
-    GList *llink = NULL;
-
-    llink = g_list_first(pref_list_head);
-
-    while(llink != NULL)
-    {
-    	Preference = (UserPrefData *) llink->data;
-
-    	if (strcmp(Preference->key, key) == 0)
-    	{
-	    pref_list_head = g_list_remove_link(pref_list_head, llink);
-	    free(Preference->val);
-	    free(Preference);
-	    g_list_free(llink);
-	    break;
-    	}
-
-	llink = g_list_next(llink);
-    }
-
-    return;
-}
-
-
-/* Check if changes have been made */
-
-int pref_changed(char *key, char *val)
-{
-    char *p;
-
-    get_user_pref(key, &p);
-
-    if (strcmp(p, val) != 0)
-    	return TRUE;
-
-    return FALSE;
-}
-
-
-/* Free the user preferences */
-
-void free_prefs()
-{
-    UserPrefData *Preference;
-
-    pref_list = g_list_first(pref_list_head);
-
-    while(pref_list != NULL)
-    {
-    	Preference = (UserPrefData *) pref_list->data;
-    	free(Preference->val);
-    	free(Preference);
-
-	pref_list = g_list_next(pref_list);
-    }
-
-    g_list_free(pref_list_head);
 
     return;
 }
