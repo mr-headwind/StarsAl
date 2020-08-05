@@ -56,7 +56,7 @@
 /* Prototypes */
 
 int project_main(ProjectData *, GtkWidget *);
-int project_init(ProjectData *, GtkWidget *);
+int project_init(GtkWidget *);
 ProjectUi * new_proj_ui();
 ProjectData * new_proj_data();
 void project_ui(ProjectData *, ProjectUi *);
@@ -64,9 +64,9 @@ void close_project(ProjectData *);
 void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(ImageListUi *, ProjectUi *, char *);
-void show_list(ImageListUi *);
+void show_list(ImageListUi *, GSList *);
 int proj_save_reqd(ProjectData *, ProjectUi *);
-void setup_proj(ProjectData *);
+void setup_proj(ProjectData *, const gchar *, GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
 int setup_proj_validate(ProjectData *, ProjectUi *);
 void img_list(GList *, GList **, ProjectUi *);
@@ -175,7 +175,7 @@ ProjectUi * new_proj_ui()
 ProjectData * new_proj_data()
 {
     ProjectData *proj = (ProjectData *) malloc(sizeof(ProjectData));
-    memset(ui, 0, sizeof(ProjectData));
+    memset(proj, 0, sizeof(ProjectData));
 
     return proj;
 }
@@ -392,17 +392,18 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
     	return FALSE;
     }
 
-    if (string_trim((char *) nm) == "")
+    string_trim((char *) nm);
+    if (*nm == '\0')
     {
 	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
     	return FALSE;
     }
 
     /* Need to compile a list of Images and exif data */
-    img_list(p_ui->images->files, &images_gl, p_ui);
+    img_list(p_ui->images.files, &images_gl, p_ui);
 
     /* Need to compile a list of Darks and exif data */
-    img_list(p_ui->darks->files, &darks_gl, p_ui);
+    img_list(p_ui->darks.files, &darks_gl, p_ui);
 
     /* Check all the images for exposure consistency */
 
@@ -445,7 +446,7 @@ Image * setup_image(char *image_path, ProjectUi *p_ui)
     Image *img;
 
     img = (Image *) malloc(sizeof(Image));
-    basename_dirname(image_path, &(img->nm), &(img->dir));
+    basename_dirname(image_path, &(img->nm), &(img->path));
 
     load_exif_data(img, p_ui);
 
@@ -462,8 +463,8 @@ int load_exif_data(Image *img, ProjectUi *p_ui)
     ExifEntry *entry;
 
     /* Load an ExifData object from an EXIF file */
-    s = (char *) malloc(strlen(img->img_path) + strlen(img->img_nm) + 1);
-    sprintf(s, "%s/%s", img->img_path, img->img_nm);
+    s = (char *) malloc(strlen(img->path) + strlen(img->nm) + 1);
+    sprintf(s, "%s/%s", img->path, img->nm);
 
     ed = exif_data_new_from_file(s);
 
@@ -476,7 +477,7 @@ int load_exif_data(Image *img, ProjectUi *p_ui)
 
     img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
     img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
-    img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_xxx);
+    img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
     img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
     img->img_exif.width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
     img->img_exif.height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
@@ -566,7 +567,7 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     nml = strlen(proj->project_name);
     pathl = strlen(proj->project_path);
 
-    path = (char *) malloc(work_dir_len + pathl, nml + 3);
+    path = (char *) malloc(work_dir_len + pathl + nml + 3);
     sprintf(path, "%s/%s/%s", work_dir, proj->project_path, proj->project_name);
 
     if (! check_dir((char *) path))
@@ -646,7 +647,7 @@ void free_img(gpointer data)
     ImgExif *e;
 
     img = (Image *) data;
-    e = img->img_exif;
+    e = &(img->img_exif);
 
     free(img->nm);
     free(img->path);
@@ -684,7 +685,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     /* Get data */
     p_ui = (ProjectUi *) user_data;
     g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
-    lst->files = (ImageListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
+    lst = (ImageListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
     heading = (char *) g_object_get_data (G_OBJECT (browse_btn), "heading");
 
     /* Selection */
@@ -705,13 +706,13 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 	gsl = gtk_file_chooser_get_filenames (chooser);
 
 	if (lst->files != NULL)
-	    save_reqd = TRUE;
+	    save_indi = TRUE;
     }
 
     gtk_widget_destroy (dialog);
 
     /* Add the selected files to the List widget */
-    show_list(lst);
+    show_list(lst, gsl);
 
     return;
 }
