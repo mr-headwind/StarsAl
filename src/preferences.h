@@ -51,6 +51,6 @@ typedef struct _UserPrefData
 // Key values for each preference setting detail stored
 
 #define SAMPLE_KEY "SAMPLEKEY1"
-#define WORK_DIR "WORKDIR"
+#define APP_DIR "APPDIR"
 
 #endif

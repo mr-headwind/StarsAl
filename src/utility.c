@@ -686,11 +686,13 @@ int val_str2numb(char *s, int *numb, char *subst, GtkWidget *window)
 void basename_dirname(char *path, char **nm, char **dir)
 {  
     int len, i;
+    char *s;
 
     len = strlen(path);
-    i = strrchr(path, '/');
+    s = strrchr(path, '/');
+    i = s - path;
     *nm = (char *) malloc(len - i + 2);
-    strcpy(*nm, path + i, len - i + 1);
+    strncpy(*nm, path + i, len - i + 1);
     *dir = (char *) malloc(len - i);
     strncpy(*dir, path,len - i);
     *dir[i] = '\0';

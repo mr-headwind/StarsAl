@@ -59,9 +59,7 @@ typedef struct _prefs_ui
 
     GtkWidget *save_btn, *close_btn;
 
-    GtkWidget *work_dir;
-    GtkWidget *work_dir;
-    GtkWidget *work_dir;
+    GtkWidget *app_dir;
     GtkWidget *browse_btn;
 
     int close_handler;
@@ -79,7 +77,6 @@ void user_prefs_ui(PrefUi *);
 void prefs_control(PrefUi *);
 void app_work_dir(PrefUi *);
 
-char find_active_by_parent(GtkWidget *, char);
 void get_file_name(char *, char *, char *, char *, char, char, char);
 void file_name_item(char *, char, char, char, char, char *, char *, char *); 
 
@@ -101,12 +98,13 @@ int pref_save_reqd(PrefUi *);
 int pref_changed(char *, char *);
 int validate_pref(PrefUi *);
 void free_prefs();
-void OnDirBrowse(GtkWidget*, gpointer);
-void OnPrefClose(GtkWidget*, gpointer);
-gboolean OnPrefDelete(GtkWidget*, GdkEvent *, gpointer);
-void OnPrefSave(GtkWidget*, gpointer);
+static void OnDirBrowse(GtkWidget*, gpointer);
+static void OnPrefClose(GtkWidget*, gpointer);
+static gboolean OnPrefDelete(GtkWidget*, GdkEvent *, gpointer);
+static void OnPrefSave(GtkWidget*, gpointer);
 
 
+extern char find_active_by_parent(GtkWidget *, char);
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
@@ -273,69 +271,31 @@ void app_work_dir(PrefUi *p_ui)
     char *p;
 
     /* Heading */
-    create_label(&(p_ui->work_dir), "data_1", "Working Directory", p_ui->prefs_cntr); 
+    create_label(&(p_ui->app_dir), "data_1", "Working Directory", p_ui->prefs_cntr); 
 
     /* Put in horizontal box */
-    p_ui->work_dir = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    p_ui->app_dir = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
 
     /* Directory */
-    p_ui->work_dir = gtk_entry_new();
-    gtk_widget_set_name(p_ui->work_dir, "work_dir");
-    gtk_widget_set_halign(GTK_WIDGET (p_ui->work_dir), GTK_ALIGN_START);
-    gtk_entry_set_max_length(GTK_ENTRY (p_ui->work_dir), 256);
-    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->work_dir), 40);
-    gtk_box_pack_start (GTK_BOX (p_ui->work_dir), p_ui->work_dir, FALSE, FALSE, 3);
+    p_ui->app_dir = gtk_entry_new();
+    gtk_widget_set_name(p_ui->app_dir, "app_dir");
+    gtk_widget_set_halign(GTK_WIDGET (p_ui->app_dir), GTK_ALIGN_START);
+    gtk_entry_set_max_length(GTK_ENTRY (p_ui->app_dir), 256);
+    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->app_dir), 40);
+    gtk_box_pack_start (GTK_BOX (p_ui->app_dir), p_ui->app_dir, FALSE, FALSE, 3);
 
-    get_user_pref(WORK_DIR, &p);
-    gtk_entry_set_text (GTK_ENTRY (p_ui->work_dir), p);
+    get_user_pref(APP_DIR, &p);
+    gtk_entry_set_text (GTK_ENTRY (p_ui->app_dir), p);
 
     /* Browse button */
     p_ui->browse_btn = gtk_button_new_with_label("Browse...");
     g_signal_connect(p_ui->browse_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
-    gtk_box_pack_start (GTK_BOX (p_ui->work_dir), p_ui->browse_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->app_dir), p_ui->browse_btn, FALSE, FALSE, 0);
 
-    gtk_box_pack_start (GTK_BOX (p_ui->prefs_cntr), p_ui->work_dir, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->prefs_cntr), p_ui->app_dir, FALSE, FALSE, 0);
 
 
     return;
-}
-
-
-/* Set a field based on a radio button name */
-
-char find_active_by_parent(GtkWidget *parent, char nm)
-{
-    GtkWidget *radio;
-    const gchar *widget_name;
-
-    GList *child_widgets = gtk_container_get_children(GTK_CONTAINER (parent));
-
-    child_widgets = g_list_first(child_widgets);
-
-    while (child_widgets != NULL)
-    {
-	radio = (GtkWidget *) child_widgets->data;
-
-	if (GTK_IS_TOGGLE_BUTTON (radio))
-	{
-	    widget_name = gtk_widget_get_name (radio);
-
-	    if (widget_name[1] == nm)
-	    {
-		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio)) == TRUE)
-		{
-		    g_list_free (child_widgets);
-		    return widget_name[3];
-		}
-	    }
-	}
-
-	child_widgets = g_list_next(child_widgets);
-    }
-
-    g_list_free (child_widgets);
-
-    return '\0';
 }
 
 
@@ -501,7 +461,7 @@ void set_default_prefs()
     char *p;
 
     /* Default working directory */
-    get_user_pref(WORK_DIR, &p);
+    get_user_pref(APP_DIR, &p);
 
     if (p == NULL)
 	default_dir_pref();
@@ -525,7 +485,7 @@ void default_dir_pref()
     val = (char *) malloc(len);
     sprintf(val, "%s/%s", home_str, TITLE);
 
-    add_user_pref(WORK_DIR, val);
+    add_user_pref(APP_DIR, val);
 
     if (! check_dir(val))
 	make_dir(val);
@@ -543,14 +503,14 @@ void set_user_prefs(PrefUi *p_ui)
     char cc;
     char s[3];
     int idx;
-    const gchar *work_dir;
+    const gchar *app_dir;
 
     /* Initial */
     s[1] = '\0';
 
     /* Capture duration */
-    work_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->work_dir));
-    set_user_pref(WORK_DIR, (char *) work_dir);
+    app_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->app_dir));
+    set_user_pref(APP_DIR, (char *) app_dir);
 
     return;
 }
@@ -785,24 +745,24 @@ int pref_save_reqd(PrefUi *p_ui)
     char cc;
     char s[3];
     int idx;
-    const gchar *work_dir;
+    const gchar *app_dir;
 
     /* Initial */
     s[1] = '\0';
 
     /* Project directory */
-    work_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->work_dir));
+    app_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->app_dir));
 
     /* Project directory exists */
-    if (! check_dir((char *) work_dir))
+    if (! check_dir((char *) app_dir))
     {
-	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) work_dir);
+	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) app_dir);
 
 	if (res == GTK_RESPONSE_YES)
-	    make_dir((char *) work_dir);
+	    make_dir((char *) app_dir);
     }
 
-    if (pref_changed(WORK_DIR, (char *) work_dir))
+    if (pref_changed(APP_DIR, (char *) app_dir))
     	return TRUE;
 
     return FALSE;
@@ -887,7 +847,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 
 	if (dir_name)
 	{
-	    gtk_entry_set_text (GTK_ENTRY (p_ui->work_dir), dir_name);
+	    gtk_entry_set_text (GTK_ENTRY (p_ui->app_dir), dir_name);
 
 	    if (! check_dir(dir_name))
 	    {

@@ -40,11 +40,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <libexif/exif-data.h>
+#include <libexif/exif-tag.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <defs.h>
 #include <project.h>
+#include <preferences.h>
 
 
 /* Defines */
@@ -75,14 +77,15 @@ int load_exif_data(Image *, ProjectUi *);
 static char * get_tag(ExifData *, ExifIfd, ExifTag);
 void window_cleanup(GtkWidget *, ProjectUi *);
 
-void OnProjCancel(GtkWidget*, gpointer);
-gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
-void OnProjSave(GtkWidget*, gpointer);
-void OnDirBrowse(GtkWidget*, gpointer);
-void OnListClear(GtkWidget*, gpointer);
-void OnListRemove(GtkWidget*, gpointer);
+static void OnProjCancel(GtkWidget*, gpointer);
+static gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
+static void OnProjSave(GtkWidget*, gpointer);
+static void OnDirBrowse(GtkWidget*, gpointer);
+static void OnListClear(GtkWidget*, gpointer);
+static void OnListRemove(GtkWidget*, gpointer);
 
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
+extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern int get_user_pref(char *, char **);
 extern void basename_dirname(char *, char **, char **);
 extern void log_msg(char*, char*, char*, GtkWidget*);
@@ -98,8 +101,8 @@ extern int make_dir(char *);
 
 static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
-static char *work_dir;
-static int work_dir_len;
+static char *app_dir;
+static int app_dir_len;
 
 
 /* Display and maintenance of project details */
@@ -141,7 +144,7 @@ int project_init(GtkWidget *window)
     save_indi = FALSE;
 
     /* Get the application working directory */
-    get_user_pref(WORK_DIR, &p);
+    get_user_pref(APP_DIR, &p);
 
     if (p == NULL)
     {
@@ -149,8 +152,8 @@ int project_init(GtkWidget *window)
     	return FALSE;
     }
 
-    work_dir = p;
-    work_dir_len = strlen(p);
+    app_dir = p;
+    app_dir_len = strlen(p);
 
     return TRUE;
 }
@@ -256,10 +259,10 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_grid, FALSE, FALSE, 0);
 
     /* Images selection */
-    select_images(p_ui->images, p_ui, "Select Images");
+    select_images(&(p_ui->images), p_ui, "Select Images");
 
     /* Darks */
-    select_images(p_ui->darks, p_ui, "Select Darks");
+    select_images(&(p_ui->darks), p_ui, "Select Darks");
 
     return;
 }
@@ -296,11 +299,11 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
     lst->list_box = gtk_list_box_new();
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOw (lst->scroll_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (lst->scroll_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
     gtk_grid_attach(GTK_GRID (lst->img_grid), lst->scroll_win, 0, 1, 1, 1);
 
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->img_grid, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->img_grid, FALSE, FALSE, 0);
 
     return;
 }
@@ -310,8 +313,9 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
 void show_list(ImageListUi *lst, GSList *gsl)
 {  
-    char *path, *nm, *dir;
-    GList *sl, *l;
+    char *path1, *path2, *nm, *dir;
+    GList *l;
+    GSList *sl;
 
     lst->list_box = gtk_list_box_new();
 
@@ -331,7 +335,7 @@ void show_list(ImageListUi *lst, GSList *gsl)
 	{
 	    basename_dirname(path1, &nm, &dir);
 
-	    GtKWidgwet *lbl = gtk_label_new(nm);
+	    GtkWidget *lbl = gtk_label_new(nm);
 	    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
 	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
 	    lst->files = g_list_prepend(lst->files, path1);
@@ -384,7 +388,7 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
     GList *darks_gl;
 
     /* Project name must be present */
-    nm = gtk_entry_get_text (GTKENTRY (p_ui->proj_nm));
+    nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
 
     if (nm == NULL)
     {
@@ -536,8 +540,8 @@ void setup_proj(ProjectData *proj, const gchar *nm, GList *images_gl, GList *dar
     {
     	proj->project_name = (char *) malloc(strlen(nm) + 1);
 	proj->project_name[0] = '\0';
-	proj->project_path = (char *) malloc(strlen(work_dir) + 1);
-	strcpy(proj->project_path, work_dir);
+	proj->project_path = (char *) malloc(strlen(app_dir) + 1);
+	strcpy(proj->project_path, app_dir);
 	proj->status = 0;
     }
 
@@ -567,14 +571,14 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     nml = strlen(proj->project_name);
     pathl = strlen(proj->project_path);
 
-    path = (char *) malloc(work_dir_len + pathl + nml + 3);
-    sprintf(path, "%s/%s/%s", work_dir, proj->project_path, proj->project_name);
+    path = (char *) malloc(app_dir_len + pathl + nml + 3);
+    sprintf(path, "%s/%s/%s", app_dir, proj->project_path, proj->project_name);
 
     if (! check_dir((char *) path))
 	make_dir((char *) path);
 
     /* New or overwrite file */
-    proj_fn = (char *) malloc(work_dir_len + pathl + nml + nml + 8);
+    proj_fn = (char *) malloc(app_dir_len + pathl + nml + nml + 8);
     sprintf(proj_fn, "%s/%s_data", path, proj->project_name);
 
     if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)

@@ -54,6 +54,8 @@ GtkWidget * find_widget_by_name(GtkWidget *, char *);
 
 GtkWidget * debug_cntr(GtkWidget *);
 
+extern void log_msg(char*, char*, char*, GtkWidget*);
+
 
 /* Globals */
 
@@ -80,7 +82,7 @@ void create_label(GtkWidget **lbl, char *nm, char *txt, GtkWidget *cntr)
 /* Create standard label */
 
 void create_label2(GtkWidget **lbl, char *nm, char *txt, GtkWidget *cntr, 
-		  int col, int row, int c_spn, int r_spn)
+		   int col, int row, int c_spn, int r_spn)
 {  
     *lbl = gtk_label_new(txt);  
     gtk_widget_set_name(*lbl, nm);
