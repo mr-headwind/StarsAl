@@ -59,7 +59,7 @@ typedef struct _prefs_ui
 
     GtkWidget *save_btn, *close_btn;
 
-    GtkWidget *app_dir;
+    GtkWidget *proj_dir;
     GtkWidget *browse_btn;
 
     int close_handler;
@@ -160,6 +160,9 @@ int user_prefs_init(GtkWidget *window)
     /* Initial */
     save_indi = FALSE;
 
+    /* Load the user preferences */
+    read_user_prefs(window);
+
     /* Should at least be a default set of user preferences */
     if (pref_count == 0)
     {
@@ -257,7 +260,7 @@ void prefs_control(PrefUi *p_ui)
 
     /* Add each user preference setting */
 
-    /* Application working directory */
+    /* Application project working directory */
     app_work_dir(p_ui);
 
     return;
@@ -271,28 +274,28 @@ void app_work_dir(PrefUi *p_ui)
     char *p;
 
     /* Heading */
-    create_label(&(p_ui->app_dir), "data_1", "Working Directory", p_ui->prefs_cntr); 
+    create_label(&(p_ui->proj_dir), "data_1", "Project Directory", p_ui->prefs_cntr); 
 
     /* Put in horizontal box */
-    p_ui->app_dir = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    p_ui->proj_dir = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
 
     /* Directory */
-    p_ui->app_dir = gtk_entry_new();
-    gtk_widget_set_name(p_ui->app_dir, "app_dir");
-    gtk_widget_set_halign(GTK_WIDGET (p_ui->app_dir), GTK_ALIGN_START);
-    gtk_entry_set_max_length(GTK_ENTRY (p_ui->app_dir), 256);
-    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->app_dir), 40);
-    gtk_box_pack_start (GTK_BOX (p_ui->app_dir), p_ui->app_dir, FALSE, FALSE, 3);
+    p_ui->proj_dir = gtk_entry_new();
+    gtk_widget_set_name(p_ui->proj_dir, "proj_dir");
+    gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_dir), GTK_ALIGN_START);
+    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_dir), 256);
+    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_dir), 40);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_dir), p_ui->proj_dir, FALSE, FALSE, 3);
 
-    get_user_pref(APP_DIR, &p);
-    gtk_entry_set_text (GTK_ENTRY (p_ui->app_dir), p);
+    get_user_pref(PROJ_DIR, &p);
+    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), p);
 
     /* Browse button */
     p_ui->browse_btn = gtk_button_new_with_label("Browse...");
     g_signal_connect(p_ui->browse_btn, "clicked", G_CALLBACK(OnDirBrowse), (gpointer) p_ui);
-    gtk_box_pack_start (GTK_BOX (p_ui->app_dir), p_ui->browse_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_dir), p_ui->browse_btn, FALSE, FALSE, 0);
 
-    gtk_box_pack_start (GTK_BOX (p_ui->prefs_cntr), p_ui->app_dir, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (p_ui->prefs_cntr), p_ui->proj_dir, FALSE, FALSE, 0);
 
 
     return;
@@ -348,15 +351,15 @@ int read_user_prefs(GtkWidget *window)
 	{
 	    free(prefs_fn);
 	    sprintf(app_msg_extra, "%s", buf);
-	    log_msg("APP0008", "Invalid user preference key format", "APP0008", window);
+	    log_msg("APP0008", "Invalid Preference format (key|value)", "APP0008", window);
 	    return FALSE;
 	}
 
 	if ((p - buf) > (PREF_KEY_SZ - 1))
 	{
 	    free(prefs_fn);
-	    sprintf(app_msg_extra, "%s", buf);
-	    log_msg("APP0008", "Invalid user preference key size", "APP0008", window);
+	    sprintf(app_msg_extra, "%s\nMax key size: %d", buf, PREF_KEY_SZ);
+	    log_msg("APP0008", "Invalid Preference Key size", "APP0008", window);
 	    return FALSE;
 	}
 
@@ -461,7 +464,7 @@ void set_default_prefs()
     char *p;
 
     /* Default working directory */
-    get_user_pref(APP_DIR, &p);
+    get_user_pref(PROJ_DIR, &p);
 
     if (p == NULL)
 	default_dir_pref();
@@ -473,7 +476,7 @@ void set_default_prefs()
 }
 
 
-/* Default working directory preference  - $HOME/StarsAl */
+/* Default working directory preference - $HOME/StarsAl */
 
 void default_dir_pref()
 {
@@ -485,7 +488,7 @@ void default_dir_pref()
     val = (char *) malloc(len);
     sprintf(val, "%s/%s", home_str, TITLE);
 
-    add_user_pref(APP_DIR, val);
+    add_user_pref(PROJ_DIR, val);
 
     if (! check_dir(val))
 	make_dir(val);
@@ -503,14 +506,14 @@ void set_user_prefs(PrefUi *p_ui)
     char cc;
     char s[3];
     int idx;
-    const gchar *app_dir;
+    const gchar *proj_dir;
 
     /* Initial */
     s[1] = '\0';
 
     /* Capture duration */
-    app_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->app_dir));
-    set_user_pref(APP_DIR, (char *) app_dir);
+    proj_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_dir));
+    set_user_pref(PROJ_DIR, (char *) proj_dir);
 
     return;
 }
@@ -745,24 +748,24 @@ int pref_save_reqd(PrefUi *p_ui)
     char cc;
     char s[3];
     int idx;
-    const gchar *app_dir;
+    const gchar *proj_dir;
 
     /* Initial */
     s[1] = '\0';
 
     /* Project directory */
-    app_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->app_dir));
+    proj_dir = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_dir));
 
     /* Project directory exists */
-    if (! check_dir((char *) app_dir))
+    if (! check_dir((char *) proj_dir))
     {
-	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) app_dir);
+	res = query_dialog(p_ui->window, "Location (%s) does not exist. Create it?", (char *) proj_dir);
 
 	if (res == GTK_RESPONSE_YES)
-	    make_dir((char *) app_dir);
+	    make_dir((char *) proj_dir);
     }
 
-    if (pref_changed(APP_DIR, (char *) app_dir))
+    if (pref_changed(PROJ_DIR, (char *) proj_dir))
     	return TRUE;
 
     return FALSE;
@@ -847,7 +850,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 
 	if (dir_name)
 	{
-	    gtk_entry_set_text (GTK_ENTRY (p_ui->app_dir), dir_name);
+	    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_dir), dir_name);
 
 	    if (! check_dir(dir_name))
 	    {

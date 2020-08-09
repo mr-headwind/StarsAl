@@ -56,6 +56,7 @@ extern void main_ui(MainUi *);
 extern int check_app_dir();
 extern int reset_log();
 extern void close_log();
+extern int read_user_prefs(GtkWidget *);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 //extern void debug_session();
 
@@ -106,6 +107,10 @@ void initialise(MainUi *m_ui)
     	exit(-1);
 
     log_msg("SYS9001", NULL, NULL, NULL);
+
+    /* Load the user preferences */
+    if (! read_user_prefs(NULL))
+    	log_msg("APP0005", "No user preferences", NULL, NULL);
 
     return;
 }

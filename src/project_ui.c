@@ -101,8 +101,8 @@ extern int make_dir(char *);
 
 static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
-static char *app_dir;
-static int app_dir_len;
+static char *proj_dir;
+static int proj_dir_len;
 
 
 /* Display and maintenance of project details */
@@ -117,7 +117,7 @@ int project_main(ProjectData *proj_in, GtkWidget *window)
     	return FALSE;
 
     /* Load and/or initialise project */
-    if (! proj)
+    if (! proj_in)
     	proj = new_proj_data();
     else
     	proj = proj_in;
@@ -144,7 +144,7 @@ int project_init(GtkWidget *window)
     save_indi = FALSE;
 
     /* Get the application working directory */
-    get_user_pref(APP_DIR, &p);
+    get_user_pref(PROJ_DIR, &p);
 
     if (p == NULL)
     {
@@ -152,8 +152,8 @@ int project_init(GtkWidget *window)
     	return FALSE;
     }
 
-    app_dir = p;
-    app_dir_len = strlen(p);
+    proj_dir = p;
+    proj_dir_len = strlen(p);
 
     return TRUE;
 }
@@ -179,6 +179,9 @@ ProjectData * new_proj_data()
 {
     ProjectData *proj = (ProjectData *) malloc(sizeof(ProjectData));
     memset(proj, 0, sizeof(ProjectData));
+
+    proj->project_path = (char *) malloc(proj_dir_len + 1);
+    strcpy(proj->project_path, proj_dir);
 
     return proj;
 }
@@ -227,6 +230,9 @@ void project_ui(ProjectData *proj, ProjectUi *p_ui)
 
     /* Exit when window closed */
     p_ui->close_handler = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnProjDelete), NULL);
+
+    /* Show */
+    gtk_widget_show_all(p_ui->window);
 
     return;
 }
@@ -540,8 +546,8 @@ void setup_proj(ProjectData *proj, const gchar *nm, GList *images_gl, GList *dar
     {
     	proj->project_name = (char *) malloc(strlen(nm) + 1);
 	proj->project_name[0] = '\0';
-	proj->project_path = (char *) malloc(strlen(app_dir) + 1);
-	strcpy(proj->project_path, app_dir);
+	proj->project_path = (char *) malloc(strlen(proj_dir) + 1);
+	strcpy(proj->project_path, proj_dir);
 	proj->status = 0;
     }
 
@@ -571,14 +577,14 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     nml = strlen(proj->project_name);
     pathl = strlen(proj->project_path);
 
-    path = (char *) malloc(app_dir_len + pathl + nml + 3);
-    sprintf(path, "%s/%s/%s", app_dir, proj->project_path, proj->project_name);
+    path = (char *) malloc(proj_dir_len + pathl + nml + 3);
+    sprintf(path, "%s/%s/%s", proj_dir, proj->project_path, proj->project_name);
 
     if (! check_dir((char *) path))
 	make_dir((char *) path);
 
     /* New or overwrite file */
-    proj_fn = (char *) malloc(app_dir_len + pathl + nml + nml + 8);
+    proj_fn = (char *) malloc(proj_dir_len + pathl + nml + nml + 8);
     sprintf(proj_fn, "%s/%s_data", path, proj->project_name);
 
     if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)

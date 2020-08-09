@@ -25,7 +25,7 @@
 ** Author:	Anthony Buckley
 **
 ** History
-**	xx-xxx-2021	Initial
+**	06-Aug-2021	Initial
 **
 */
 
@@ -50,7 +50,7 @@ typedef struct _UserPrefData
 
 // Key values for each preference setting detail stored
 
-#define SAMPLE_KEY "SAMPLEKEY1"
-#define APP_DIR "APPDIR"
+//#define SAMPLE_KEY "SAMPLEKEY1"
+#define PROJ_DIR "PROJDIR"
 
 #endif
