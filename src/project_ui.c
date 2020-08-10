@@ -251,18 +251,26 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     gtk_container_set_border_width (GTK_CONTAINER (p_ui->proj_cntr), 10);
 
     /* Project title and path */
+    p_ui->title_fr = gtk_frame_new("Project Title");
     p_ui->nm_grid = gtk_grid_new();
+    gtk_grid_set_row_spacing (GTK_GRID (p_ui->nm_grid), 5);
+    gtk_grid_set_column_spacing (GTK_GRID (p_ui->nm_grid), 7);
 
-    create_label2(&(p_ui->proj_nm_lbl), "title_4", "Project Name", p_ui->nm_grid, 0, 0, 1, 1);
+    create_label2(&(p_ui->proj_path_lbl), "lbl", proj->project_path, p_ui->nm_grid, 1, 0, 1, 1);
 
-    create_entry(&(p_ui->proj_nm), "proj_nm", p_ui->nm_grid, 0, 1);
+    create_label2(&(p_ui->proj_nm_lbl), "title_4", "Name", p_ui->nm_grid, 0, 1, 1, 1);
+    gtk_widget_set_halign(p_ui->proj_nm_lbl, GTK_ALIGN_END);
+    gtk_widget_set_margin_start (GTK_WIDGET (p_ui->proj_nm_lbl), 20);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_nm_lbl), 5);
+
+    create_entry(&(p_ui->proj_nm), "proj_nm", p_ui->nm_grid, 1, 1);
     gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_nm), GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_nm), 5);
     gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_nm), 256);
-    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 40);
+    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 30);
 
-    create_label2(&(p_ui->proj_path_lbl), "title_4", proj->project_path, p_ui->nm_grid, 1, 1, 1, 1);
-
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->nm_grid, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER (p_ui->title_fr), p_ui->nm_grid);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->title_fr, FALSE, FALSE, 0);
 
     /* Images selection */
     select_images(&(p_ui->images), p_ui, "Select Images");

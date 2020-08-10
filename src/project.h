@@ -53,6 +53,7 @@ typedef struct _ImageListUi
 typedef struct _ProjectUi
 {
     GtkWidget *window;
+    GtkWidget *title_fr, *images_fr, *darks_fr;
     GtkWidget *main_vbox, *nm_grid, *btn_hbox, *proj_cntr;
     GtkWidget *proj_nm_lbl, *proj_nm, *proj_path_lbl;
     ImageListUi images;
