@@ -41,23 +41,23 @@
 #define PROJECT_H
 
 
-typedef struct _ImageListUi
+typedef struct _SelectListUi
 {
-    GtkWidget *img_grid;
-    GtkWidget *img_lbl, *sel_btn, *clear_btn, *remove_btn;
-    GtkWidget *btn_vbox, *list_box, *scroll_win;
+    GtkWidget *sel_fr, *sel_hbox;
+    GtkWidget *btn_vbox, *sel_btn, *clear_btn, *remove_btn;
+    GtkWidget *list_box, *scroll_win;
     GList *files;
-} ImageListUi;
+} SelectListUi;
 
 
 typedef struct _ProjectUi
 {
     GtkWidget *window;
-    GtkWidget *title_fr, *images_fr, *darks_fr;
+    GtkWidget *title_fr;
     GtkWidget *main_vbox, *nm_grid, *btn_hbox, *proj_cntr;
     GtkWidget *proj_nm_lbl, *proj_nm, *proj_path_lbl;
-    ImageListUi images;
-    ImageListUi darks;
+    SelectListUi images;
+    SelectListUi darks;
     GtkWidget *save_btn, *cancel_btn;
     int close_handler;
 } ProjectUi;

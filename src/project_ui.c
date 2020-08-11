@@ -65,8 +65,8 @@ void project_ui(ProjectData *, ProjectUi *);
 void close_project(ProjectData *);
 void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
-void select_images(ImageListUi *, ProjectUi *, char *);
-void show_list(ImageListUi *, GSList *);
+void select_images(SelectListUi *, ProjectUi *, char *);
+void show_list(SelectListUi *, GSList *);
 int proj_save_reqd(ProjectData *, ProjectUi *);
 void setup_proj(ProjectData *, const gchar *, GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
@@ -198,7 +198,7 @@ void project_ui(ProjectData *proj, ProjectUi *p_ui)
     p_ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(p_ui->window), PROJECT_UI);
     gtk_window_set_position(GTK_WINDOW(p_ui->window), GTK_WIN_POS_NONE);
-    gtk_window_set_default_size(GTK_WINDOW(p_ui->window), 475, 400);
+    gtk_window_set_default_size(GTK_WINDOW(p_ui->window), 400, 400);
     gtk_container_set_border_width(GTK_CONTAINER(p_ui->window), 10);
     g_object_set_data (G_OBJECT (p_ui->window), "ui", p_ui);
     g_object_set_data (G_OBJECT (p_ui->window), "proj", proj);
@@ -252,6 +252,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
 
     /* Project title and path */
     p_ui->title_fr = gtk_frame_new("Project Title");
+    gtk_widget_set_name(p_ui->title_fr, "clr1");
     p_ui->nm_grid = gtk_grid_new();
     gtk_grid_set_row_spacing (GTK_GRID (p_ui->nm_grid), 5);
     gtk_grid_set_column_spacing (GTK_GRID (p_ui->nm_grid), 7);
@@ -284,14 +285,20 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
 
 /* Widgets for selecting images and darks */
 
-void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
+void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 {  
-    lst->img_grid = gtk_grid_new();
+    /* Set up containers */
+    lst->sel_fr = gtk_frame_new(desc);
+    gtk_widget_set_name(lst->sel_fr, "clr1");
 
-    create_label2(&(lst->img_lbl), "title_4", desc, lst->img_grid, 0, 0, 1, 1);
+    lst->sel_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
 
-    lst->btn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
+    lst->btn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_widget_set_halign(GTK_WIDGET (lst->btn_vbox), GTK_ALIGN_END);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (lst->btn_vbox), 5);
+    gtk_widget_set_margin_top (GTK_WIDGET (lst->btn_vbox), 5);
 
+    /* List maintenance buttons */
     lst->sel_btn = gtk_button_new_with_label("Browse...");
     g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
     g_object_set_data_full (G_OBJECT (lst->sel_btn), "heading", g_strdup (desc), (GDestroyNotify) g_free);
@@ -309,15 +316,19 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_box_pack_start (GTK_BOX (lst->btn_vbox), lst->remove_btn, FALSE, FALSE, 0);
     g_signal_connect(lst->remove_btn, "clicked", G_CALLBACK(OnListRemove), (gpointer) p_ui);
 
-    gtk_grid_attach(GTK_GRID (lst->img_grid), lst->btn_vbox, 1, 1, 1, 1);
-
+    /* Images or Darks list */
     lst->list_box = gtk_list_box_new();
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (lst->scroll_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
-    gtk_grid_attach(GTK_GRID (lst->img_grid), lst->scroll_win, 0, 1, 1, 1);
 
-    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->img_grid, FALSE, FALSE, 0);
+    /* List heading */
+
+    /* Pack them up */
+    gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->btn_vbox, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->sel_hbox);
+    gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->sel_fr, FALSE, FALSE, 0);
 
     return;
 }
@@ -325,7 +336,7 @@ void select_images(ImageListUi *lst, ProjectUi *p_ui, char *desc)
 
 /* Set up the list box with the selected files and maintain a selected glist */
 
-void show_list(ImageListUi *lst, GSList *gsl)
+void show_list(SelectListUi *lst, GSList *gsl)
 {  
     char *path1, *path2, *nm, *dir;
     GList *l;
@@ -396,8 +407,8 @@ int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *nm;
-    ImageListUi images;
-    ImageListUi darks;
+    SelectListUi images;
+    SelectListUi darks;
     GList *images_gl;
     GList *darks_gl;
 
@@ -695,7 +706,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 {  
     GtkWidget *dialog;
     ProjectUi *p_ui;
-    ImageListUi *lst;
+    SelectListUi *lst;
     GSList *gsl;
     char *heading;
     gint res;
@@ -703,7 +714,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     /* Get data */
     p_ui = (ProjectUi *) user_data;
     g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
-    lst = (ImageListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
+    lst = (SelectListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
     heading = (char *) g_object_get_data (G_OBJECT (browse_btn), "heading");
 
     /* Selection */
