@@ -690,12 +690,18 @@ void basename_dirname(char *path, char **nm, char **dir)
 
     len = strlen(path);
     s = strrchr(path, '/');
-    i = s - path;
-    *nm = (char *) malloc(len - i + 2);
+    i = s - path + 1;
+printf("%s basename_dirname 1 len %d i %d\n", debug_hdr, len, i); fflush(stdout);
+    *nm = (char *) malloc(len - i + 1);
     strncpy(*nm, path + i, len - i + 1);
-    *dir = (char *) malloc(len - i);
-    strncpy(*dir, path,len - i);
-    *dir[i] = '\0';
+printf("%s basename_dirname 2 nm %s %d\n", debug_hdr, *nm, strlen(*nm)); fflush(stdout);
+    *dir = (char *) malloc(i);
+printf("%s basename_dirname 4 \n", debug_hdr); fflush(stdout);
+    //memset (*dir, '\0', i);
+    strncpy(*dir, path, i - 1);
+    *(*dir + i - 1) = '\0';
+    //*dir[i - 1] = '\0';
+printf("%s basename_dirname 5 dir %s %d\n", debug_hdr, *dir, strlen(*dir)); fflush(stdout);
 
     return;
 }

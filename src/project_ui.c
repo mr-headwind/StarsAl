@@ -85,6 +85,7 @@ static void OnListClear(GtkWidget*, gpointer);
 static void OnListRemove(GtkWidget*, gpointer);
 
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
+extern void create_label3(GtkWidget **, char *, char *);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern int get_user_pref(char *, char **);
 extern void basename_dirname(char *, char **, char **);
@@ -287,6 +288,8 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
 
 void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 {  
+    GtkWidget *heading_lbl;
+
     /* Set up containers */
     lst->sel_fr = gtk_frame_new(desc);
     gtk_widget_set_name(lst->sel_fr, "clr1");
@@ -323,6 +326,9 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
 
     /* List heading */
+    create_label3(&(heading_lbl), "title_3", "Image Files");
+    //gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), heading_lbl, 1);
+    gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
 
     /* Pack them up */
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
@@ -346,10 +352,15 @@ void show_list(SelectListUi *lst, GSList *gsl)
 
     for(sl = gsl; sl != NULL; sl = sl->next)
     {
+printf("%s show_list 1\n", debug_hdr); fflush(stdout);
 	path1 = (char *) sl->data;
+printf("%s show_list 2  %s\n", debug_hdr, path1); fflush(stdout);
 
+	/*
+	*/
 	for(l = lst->files; l != NULL; l = l->next)
 	{
+printf("%s show_list 3\n", debug_hdr); fflush(stdout);
 	    path2 = (char *) l->data;
 
 	    if (strcmp(path1, path2) == 0)
@@ -358,8 +369,10 @@ void show_list(SelectListUi *lst, GSList *gsl)
 
 	if (l == NULL)
 	{
+printf("%s show_list 4\n", debug_hdr); fflush(stdout);
 	    basename_dirname(path1, &nm, &dir);
 
+printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
 	    GtkWidget *lbl = gtk_label_new(nm);
 	    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
 	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
@@ -713,35 +726,42 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
-    g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
     lst = (SelectListUi *) g_object_get_data (G_OBJECT (browse_btn), "list");
     heading = (char *) g_object_get_data (G_OBJECT (browse_btn), "heading");
 
-    /* Selection */
+    /* Selection  dialog */
     dialog = gtk_file_chooser_dialog_new (heading,
 					  GTK_WINDOW (p_ui->window),
-					  GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER,
+					  GTK_FILE_CHOOSER_ACTION_OPEN,
 					  "_Cancel", GTK_RESPONSE_CANCEL,
 					  "_Apply", GTK_RESPONSE_APPLY,
 					  NULL);
 
+    GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+    gtk_file_chooser_set_action (chooser, GTK_FILE_CHOOSER_ACTION_OPEN);
+    gtk_file_chooser_set_select_multiple (chooser, TRUE);
+
     res = gtk_dialog_run (GTK_DIALOG (dialog));
 
+printf("%s OnDirBrowse 1\n", debug_hdr); fflush(stdout);
+    /* Add the selected files to the List widget */
     if (res == GTK_RESPONSE_APPLY)
     {
-	GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
-	gtk_file_chooser_set_select_multiple (chooser, TRUE);
-	gtk_file_chooser_set_action (chooser, GTK_FILE_CHOOSER_ACTION_OPEN);
+printf("%s OnDirBrowse 2\n", debug_hdr); fflush(stdout);
 	gsl = gtk_file_chooser_get_filenames (chooser);
+printf("%s OnDirBrowse 3\n", debug_hdr); fflush(stdout);
 
-	if (lst->files != NULL)
+	if (gsl != NULL)
+	{
 	    save_indi = TRUE;
+printf("%s OnDirBrowse 4\n", debug_hdr); fflush(stdout);
+	    show_list(lst, gsl);
+printf("%s OnDirBrowse 5\n", debug_hdr); fflush(stdout);
+	}
     }
 
     gtk_widget_destroy (dialog);
-
-    /* Add the selected files to the List widget */
-    show_list(lst, gsl);
+printf("%s OnDirBrowse 6\n", debug_hdr); fflush(stdout);
 
     return;
 }
