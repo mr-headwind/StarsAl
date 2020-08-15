@@ -357,8 +357,6 @@ printf("%s show_list 1\n", debug_hdr); fflush(stdout);
 	path1 = (char *) sl->data;
 printf("%s show_list 2  %s\n", debug_hdr, path1); fflush(stdout);
 
-	/*
-	*/
 	for(l = lst->files; l != NULL; l = l->next)
 	{
 printf("%s show_list 3\n", debug_hdr); fflush(stdout);
@@ -370,13 +368,17 @@ printf("%s show_list 3\n", debug_hdr); fflush(stdout);
 
 	if (l == NULL)
 	{
-printf("%s show_list 4\n", debug_hdr); fflush(stdout);
 	    basename_dirname(path1, &nm, &dir);
-
 printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
+
+	    GtkWidget *row = gtk_list_box_row_new();
+	    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), TRUE);
 	    GtkWidget *lbl = gtk_label_new(nm);
 	    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
-	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), lbl, -1);
+	    gtk_container_add(GTK_CONTAINER (row), lbl);
+	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
+	    gtk_widget_show(lbl);
+	    gtk_widget_show(row);
 printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
 	    lst->files = g_list_prepend(lst->files, g_strdup(path1));
 
@@ -385,6 +387,7 @@ printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
 	}
     }
 
+    gtk_widget_show_all(lst->list_box);
     lst->files = g_list_reverse(lst->files);
     g_slist_free_full(gsl, (GDestroyNotify) g_free);
 for(l = lst->files; l != NULL; l = l->next)
@@ -764,17 +767,31 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     gtk_widget_destroy (dialog);
     gtk_widget_show_all(p_ui->window);
 
+GList *l, *ll, *lc;
+for(l = lst->files; l != NULL; l = l->next)
+{
+printf("%s OnDirBrowse lst->files 1 %s\n", debug_hdr, (char *) l->data); fflush(stdout);
+}
+
 gtk_list_box_select_all (GTK_LIST_BOX (lst->list_box));
 gtk_widget_show_all(p_ui->window);
 GList *ls = gtk_list_box_get_selected_rows (GTK_LIST_BOX (lst->list_box));
-GList *l;
+GtkListBoxRow *row;
 GtkLabel *lbl;
 for(l = ls; l != NULL; l = l->next)
 {
-lbl = (GtkLabel *) l->data;
-printf("%s OnDirBrowse 1 list box %s\n", debug_hdr, gtk_label_get_text(GTK_LABEL (lbl))); fflush(stdout);
+row = (GtkListBoxRow *) l->data;
+lc = gtk_container_get_children (GTK_CONTAINER (row));
+for(ll = lc; ll != NULL; ll = ll->next)
+{
+lbl = (GtkLabel *) ll->data;
+printf("%s OnDirBrowse 2a row label %s\n", debug_hdr, gtk_label_get_text(GTK_LABEL (lbl))); fflush(stdout);
+}
+printf("%s OnDirBrowse 2 list box rows\n", debug_hdr); fflush(stdout);
 }
 g_list_free(l);
+g_list_free(ll);
+g_list_free(lc);
 
     return;
 }
