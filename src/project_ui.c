@@ -321,14 +321,17 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 
     /* Images or Darks list */
     lst->list_box = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX (lst->list_box), GTK_SELECTION_MULTIPLE);
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (lst->scroll_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_scrolled_window_set_propagate_natural_width (GTK_SCROLLED_WINDOW (lst->scroll_win), TRUE);
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
 
     /* List heading */
+    /*
     create_label3(&(heading_lbl), "title_3", "Image Files");
     gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
+    */
 
     /* Pack them up */
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
@@ -348,8 +351,8 @@ void show_list(SelectListUi *lst, GSList *gsl)
     GList *l;
     GSList *sl;
 
-    lst->list_box = gtk_list_box_new();
-    gtk_list_box_set_selection_mode(GTK_LIST_BOX (lst->list_box), GTK_SELECTION_MULTIPLE);
+    //lst->list_box = gtk_list_box_new();
+    //gtk_list_box_set_selection_mode(GTK_LIST_BOX (lst->list_box), GTK_SELECTION_MULTIPLE);
 
     for(sl = gsl; sl != NULL; sl = sl->next)
     {
@@ -371,17 +374,25 @@ printf("%s show_list 3\n", debug_hdr); fflush(stdout);
 	    basename_dirname(path1, &nm, &dir);
 printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
 
+/*
 	    GtkWidget *row = gtk_list_box_row_new();
 	    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), TRUE);
 	    GtkWidget *lbl = gtk_label_new(nm);
 	    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
 	    gtk_container_add(GTK_CONTAINER (row), lbl);
 	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
-	    gtk_widget_show(lbl);
 	    gtk_widget_show(row);
+	    gtk_widget_show(lbl);
 printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
 	    lst->files = g_list_prepend(lst->files, g_strdup(path1));
+*/
 
+    GtkWidget *lbl = gtk_label_new(nm);
+    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
+    //gtk_container_add(GTK_CONTAINER (lst->list_box), lbl);
+    gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), lbl);
+    gtk_widget_show(lbl);
+    lst->files = g_list_prepend(lst->files, g_strdup(path1));
 	    free(nm);
 	    free(dir);
 	}
