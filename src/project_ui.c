@@ -67,6 +67,7 @@ void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(SelectListUi *, ProjectUi *, char *);
 void show_list(SelectListUi *, GSList *);
+GtkWidget * create_lstbox_row(char *, char *);
 int proj_save_reqd(ProjectData *, ProjectUi *);
 void setup_proj(ProjectData *, const gchar *, GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
@@ -324,14 +325,13 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_list_box_set_selection_mode(GTK_LIST_BOX (lst->list_box), GTK_SELECTION_MULTIPLE);
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (lst->scroll_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_propagate_natural_width (GTK_SCROLLED_WINDOW (lst->scroll_win), TRUE);
+    //gtk_scrolled_window_set_propagate_natural_width (GTK_SCROLLED_WINDOW (lst->scroll_win), TRUE);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (lst->scroll_win), 150);
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
 
     /* List heading */
-    /*
-    create_label3(&(heading_lbl), "title_3", "Image Files");
+    create_label3(&(heading_lbl), "title_3", "Selected Files");
     gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
-    */
 
     /* Pack them up */
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
@@ -348,21 +348,16 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 void show_list(SelectListUi *lst, GSList *gsl)
 {  
     char *path1, *path2, *nm, *dir;
+    GtkWidget *row;
     GList *l;
     GSList *sl;
 
-    //lst->list_box = gtk_list_box_new();
-    //gtk_list_box_set_selection_mode(GTK_LIST_BOX (lst->list_box), GTK_SELECTION_MULTIPLE);
-
     for(sl = gsl; sl != NULL; sl = sl->next)
     {
-printf("%s show_list 1\n", debug_hdr); fflush(stdout);
 	path1 = (char *) sl->data;
-printf("%s show_list 2  %s\n", debug_hdr, path1); fflush(stdout);
 
 	for(l = lst->files; l != NULL; l = l->next)
 	{
-printf("%s show_list 3\n", debug_hdr); fflush(stdout);
 	    path2 = (char *) l->data;
 
 	    if (strcmp(path1, path2) == 0)
@@ -372,27 +367,13 @@ printf("%s show_list 3\n", debug_hdr); fflush(stdout);
 	if (l == NULL)
 	{
 	    basename_dirname(path1, &nm, &dir);
-printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
-
-/*
-	    GtkWidget *row = gtk_list_box_row_new();
-	    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), TRUE);
-	    GtkWidget *lbl = gtk_label_new(nm);
-	    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
-	    gtk_container_add(GTK_CONTAINER (row), lbl);
+	    row = create_lstbox_row(nm, dir);
 	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
-	    gtk_widget_show(row);
-	    gtk_widget_show(lbl);
-printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
 	    lst->files = g_list_prepend(lst->files, g_strdup(path1));
-*/
 
-    GtkWidget *lbl = gtk_label_new(nm);
-    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
-    //gtk_container_add(GTK_CONTAINER (lst->list_box), lbl);
-    gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), lbl);
-    gtk_widget_show(lbl);
-    lst->files = g_list_prepend(lst->files, g_strdup(path1));
+	    //gtk_widget_show(row);
+	    //gtk_widget_show(lbl);
+
 	    free(nm);
 	    free(dir);
 	}
@@ -401,12 +382,37 @@ printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
     gtk_widget_show_all(lst->list_box);
     lst->files = g_list_reverse(lst->files);
     g_slist_free_full(gsl, (GDestroyNotify) g_free);
+
+/*
+printf("%s show_list 1\n", debug_hdr); fflush(stdout);
+printf("%s show_list 2  %s\n", debug_hdr, path1); fflush(stdout);
+printf("%s show_list 3\n", debug_hdr); fflush(stdout);
+printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
+printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
 for(l = lst->files; l != NULL; l = l->next)
 {
 printf("%s show_list 7  files: %s\n", debug_hdr, (char *) l->data); fflush(stdout);
 }
+*/
 
     return;
+}
+
+
+/* Create a row with a label to include in a list box */
+
+GtkWidget * create_lstbox_row(char *nm, char *dir)
+{  
+    GtkWidget *row, *lbl;
+
+    row = gtk_list_box_row_new();
+    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), TRUE);
+
+    lbl = gtk_label_new(nm);
+    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
+    gtk_container_add(GTK_CONTAINER (row), lbl);
+
+    return row;
 }
 
 
@@ -778,6 +784,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
     gtk_widget_destroy (dialog);
     gtk_widget_show_all(p_ui->window);
 
+/*
 GList *l, *ll, *lc;
 for(l = lst->files; l != NULL; l = l->next)
 {
@@ -803,6 +810,7 @@ printf("%s OnDirBrowse 2 list box rows\n", debug_hdr); fflush(stdout);
 g_list_free(l);
 g_list_free(ll);
 g_list_free(lc);
+*/
 
     return;
 }
