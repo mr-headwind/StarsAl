@@ -46,6 +46,7 @@
 void create_label(GtkWidget **, char *, char *, GtkWidget *);
 void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
 void create_label3(GtkWidget **, char *, char *);
+void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
@@ -104,6 +105,20 @@ void create_label3(GtkWidget **lbl, char *nm, char *txt)
     *lbl = gtk_label_new(txt);  
     gtk_widget_set_name(*lbl, nm);
     gtk_widget_set_valign(*lbl, GTK_ALIGN_CENTER);
+
+    return;
+}
+
+
+/* Create standard label */
+
+void create_label4(GtkWidget **lbl, char *nm, char *txt, gint start, gint bottom, GtkAlign h_align)
+{  
+    *lbl = gtk_label_new(txt);
+    gtk_widget_set_name (GTK_WIDGET (*lbl), nm);
+    gtk_widget_set_halign (GTK_WIDGET (*lbl), h_align);
+    gtk_widget_set_margin_start (GTK_WIDGET (*lbl), start);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (*lbl), bottom);
 
     return;
 }

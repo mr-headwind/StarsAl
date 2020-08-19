@@ -84,9 +84,11 @@ static void OnProjSave(GtkWidget*, gpointer);
 static void OnDirBrowse(GtkWidget*, gpointer);
 static void OnListClear(GtkWidget*, gpointer);
 static void OnListRemove(GtkWidget*, gpointer);
+static void OnRowSelect(GtkListBox*, GtkListBoxRow*, gpointer);
 
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
 extern void create_label3(GtkWidget **, char *, char *);
+extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern int get_user_pref(char *, char **);
 extern void basename_dirname(char *, char **, char **);
@@ -323,6 +325,8 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 
     /* Images or Darks list */
     lst->list_box = gtk_list_box_new();
+    g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) p_ui);
+
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_margin_start (GTK_WIDGET (lst->scroll_win), 5);
     gtk_widget_set_margin_top (GTK_WIDGET (lst->scroll_win), 5);
@@ -334,13 +338,17 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
 
     /* List heading */
-    create_label3(&(heading_lbl), "title_3", "Selected Files");
+    create_label3(&(heading_lbl), "head_1", "Selected Files");
     gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
+
+    /* Image meta data for selected list box row */
+    create_label4(&(lst->meta_lbl), "data_4", " xxxx", 4, 3, GTK_ALIGN_START);
 
     /* Pack them up */
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->btn_vbox, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->sel_hbox);
+    gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->meta_lbl);
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->sel_fr, FALSE, FALSE, 0);
 
     return;
@@ -374,9 +382,6 @@ void show_list(SelectListUi *lst, GSList *gsl)
 	    row = create_lstbox_row(nm, dir);
 	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
 	    lst->files = g_list_prepend(lst->files, g_strdup(path1));
-
-	    //gtk_widget_show(row);
-	    //gtk_widget_show(lbl);
 
 	    free(nm);
 	    free(dir);
@@ -412,10 +417,7 @@ GtkWidget * create_lstbox_row(char *nm, char *dir)
     row = gtk_list_box_row_new();
     gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), TRUE);
 
-    lbl = gtk_label_new(nm);
-    gtk_widget_set_halign (GTK_WIDGET (lbl), GTK_ALIGN_START);
-    gtk_widget_set_margin_start (GTK_WIDGET (lbl), 4);
-    gtk_widget_set_margin_bottom (GTK_WIDGET (lbl), 3);
+    create_label4(&lbl, "data_4", nm, 4, 3, GTK_ALIGN_START);
     g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
     gtk_container_add(GTK_CONTAINER (row), lbl);
 
@@ -820,6 +822,23 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
     p_ui = (ProjectUi *) user_data;
 
     save_indi = TRUE;
+
+    return;
+}
+
+
+/* Callback - Select row */
+
+void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data);
+{  
+    ProjectUi *p_ui;
+    GList *lc;
+    GtkWidget *lbl;
+
+    /* Get data */
+    p_ui = (ProjectUi *) user_data;
+    lc = gtk_container_get_children(GTK_CONTAINER (row));
+    lbl = (gtkWidget *) lc->data;
 
     return;
 }
