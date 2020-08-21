@@ -66,16 +66,16 @@ void close_project(ProjectData *);
 void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(SelectListUi *, ProjectUi *, char *);
-void show_list(SelectListUi *, GSList *);
+void show_list(SelectListUi *, GSList *, ProjectUi *p_ui);
 GtkWidget * create_lstbox_row(char *, char *);
-int proj_save_reqd(ProjectData *, ProjectUi *);
-void setup_proj(ProjectData *, const gchar *, GList *, GList *);
-int save_proj(ProjectData *, ProjectUi *);
-int setup_proj_validate(ProjectData *, ProjectUi *);
-void img_list(GList *, GList **, ProjectUi *);
-Image * setup_image(char *, ProjectUi *);
-int load_exif_data(Image *, ProjectUi *);
+Image * setup_image(char *, char *, char *, ProjectUi *);
+int load_exif_data(Image *, char *, ProjectUi *);
 static char * get_tag(ExifData *, ExifIfd, ExifTag);
+int proj_save_reqd(ProjectData *, ProjectUi *);
+int setup_proj_validate(ProjectData *, ProjectUi *);
+void setup_proj(ProjectData *, const gchar *, ProjectUi *p_ui);
+void copy_glist(GList *, GList *);
+int save_proj(ProjectData *, ProjectUi *);
 void window_cleanup(GtkWidget *, ProjectUi *);
 
 static void OnProjCancel(GtkWidget*, gpointer);
@@ -305,6 +305,8 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_widget_set_margin_bottom (GTK_WIDGET (lst->btn_vbox), 15);
     gtk_widget_set_margin_top (GTK_WIDGET (lst->btn_vbox), 15);
 
+    lst->sel_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+
     /* List maintenance buttons */
     lst->sel_btn = gtk_button_new_with_label("Browse...");
     g_object_set_data (G_OBJECT (lst->sel_btn), "list", lst);
@@ -342,33 +344,35 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
 
     /* Image meta data for selected list box row */
-    create_label4(&(lst->meta_lbl), "data_4", " xxxx", 4, 3, GTK_ALIGN_START);
+    create_label4(&(lst->meta_lbl), "data_4", " ", 4, 3, GTK_ALIGN_START);
 
     /* Pack them up */
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->btn_vbox, FALSE, FALSE, 0);
-    gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->sel_hbox);
-    gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->meta_lbl);
+    gtk_box_pack_start (GTK_BOX (lst->sel_vbox), lst->sel_hbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (lst->sel_vbox), lst->meta_lbl, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->sel_vbox);
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->sel_fr, FALSE, FALSE, 0);
 
     return;
 }
 
 
-/* Set up the list box with the selected files and maintain a selected glist */
+/* Add and maintain the selected files for the list box along with full image details in the selected glist */
 
-void show_list(SelectListUi *lst, GSList *gsl)
+void show_list(SelectListUi *lst, GSList *gsl, ProjectUi *p_ui)
 {  
     char *path1, *path2, *nm, *dir;
     GtkWidget *row;
     GList *l;
     GSList *sl;
+    Image *image;
 
     for(sl = gsl; sl != NULL; sl = sl->next)
     {
 	path1 = (char *) sl->data;
 
-	for(l = lst->files; l != NULL; l = l->next)
+	for(l = lst->img_files; l != NULL; l = l->next)
 	{
 	    path2 = (char *) l->data;
 
@@ -381,7 +385,9 @@ void show_list(SelectListUi *lst, GSList *gsl)
 	    basename_dirname(path1, &nm, &dir);
 	    row = create_lstbox_row(nm, dir);
 	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
-	    lst->files = g_list_prepend(lst->files, g_strdup(path1));
+
+	    image = setup_image(nm, dir, path1, p_ui);
+	    lst->img_files = g_list_prepend(lst->img_files, image);
 
 	    free(nm);
 	    free(dir);
@@ -389,7 +395,7 @@ void show_list(SelectListUi *lst, GSList *gsl)
     }
 
     gtk_widget_show_all(lst->list_box);
-    lst->files = g_list_reverse(lst->files);
+    lst->img_files = g_list_reverse(lst->img_files);
     g_slist_free_full(gsl, (GDestroyNotify) g_free);
 
 /*
@@ -398,7 +404,7 @@ printf("%s show_list 2  %s\n", debug_hdr, path1); fflush(stdout);
 printf("%s show_list 3\n", debug_hdr); fflush(stdout);
 printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
 printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
-for(l = lst->files; l != NULL; l = l->next)
+for(l = lst->img_files; l != NULL; l = l->next)
 {
 printf("%s show_list 7  files: %s\n", debug_hdr, (char *) l->data); fflush(stdout);
 }
@@ -422,6 +428,97 @@ GtkWidget * create_lstbox_row(char *nm, char *dir)
     gtk_container_add(GTK_CONTAINER (row), lbl);
 
     return row;
+}
+
+
+/* Set up all Image data */
+
+Image * setup_image(char *nm, char *dir, char *image_full_path, ProjectUi *p_ui)
+{  
+    Image *img;
+
+    img = (Image *) malloc(sizeof(Image));
+    strcpy(img->nm, nm);
+    strcpy(img->path, dir);
+
+printf("%s setup_image 1\n", debug_hdr);fflush(stdout);
+    load_exif_data(img, image_full_path, p_ui);
+printf("%s setup_image 2\n", debug_hdr);fflush(stdout);
+
+    return img;
+}
+
+
+/* Extract the image Exif data (if any) */
+
+int load_exif_data(Image *img, char *full_path, ProjectUi *p_ui)
+{  
+    ExifData *ed;
+    ExifEntry *entry;
+
+printf("%s load_exif_data 1\n", debug_hdr);fflush(stdout);
+printf("%s load_exif_data 1a  path %s\n", debug_hdr, full_path);fflush(stdout);
+    /* Load an ExifData object from an EXIF file */
+    ed = exif_data_new_from_file(full_path);
+
+printf("%s load_exif_data 2\n", debug_hdr);fflush(stdout);
+    if (!ed)
+    {
+	log_msg("APP0010", full_path, "APP0010", p_ui->window);
+        free(full_path);
+        return FALSE;
+    }
+
+printf("%s load_exif_data 3\n", debug_hdr);fflush(stdout);
+    img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
+    img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
+    img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
+    img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img->img_exif.width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
+    img->img_exif.height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
+    img->img_exif.iso = get_tag(ed, EXIF_IFD_0, EXIF_TAG_ISO_SPEED_RATINGS);
+    img->img_exif.exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
+    img->img_exif.f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
+    
+    /* Free the EXIF */
+    exif_data_unref(ed);
+
+printf("%s load_exif_data 4\n", debug_hdr);fflush(stdout);
+    return TRUE;
+}
+
+
+/* Extract tag and contents if exists */
+
+static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
+{
+    char buf[1024];
+    char *s;
+
+    /* See if this tag exists */
+    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], tag);
+
+    if (entry) 
+    {
+        /* Get the contents of the tag in human-readable form */
+        exif_entry_get_value(entry, buf, sizeof(buf));
+
+        /* Don't bother printing it if it's entirely blank */
+        trim_spaces(buf);
+
+        if (*buf)
+        {
+            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf);
+	    s = (char *) malloc(strlen(buf) + 1);
+	    strcpy(s, buf);
+        }
+	else
+	{
+	    s = NULL;
+	}
+    }
+
+    return s;
 }
 
 
@@ -476,137 +573,20 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
     	return FALSE;
     }
 
-    /* Need to compile a list of Images and exif data */
-    img_list(p_ui->images.files, &images_gl, p_ui);
-
-    /* Need to compile a list of Darks and exif data */
-    img_list(p_ui->darks.files, &darks_gl, p_ui);
-
     /* Check all the images for exposure consistency */
 
     /* Discard and warn of unusable darks */
 
     /* Set up project */
-    setup_proj(proj, nm, images_gl, darks_gl);
+    setup_proj(proj, nm, p_ui);
 
     return TRUE;
-}
-
-
-/* Compile a list of images and exif data */
-
-void img_list(GList *in_gl, GList **out_gl, ProjectUi *p_ui)
-{
-    char *f;
-    Image *img;
-    GList *l;
-
-    *out_gl = NULL;
-
-    for(l = in_gl; l != NULL; l = l->next)
-    {
-    	f = (char *) l->data;
-    	img = setup_image(f, p_ui);
-    	*out_gl = g_list_prepend(*out_gl, img);
-    }
-
-    *out_gl = g_list_reverse(*out_gl);
-
-    return;
-}
-
-
-/* Set up all Image data */
-
-Image * setup_image(char *image_path, ProjectUi *p_ui)
-{  
-    Image *img;
-
-    img = (Image *) malloc(sizeof(Image));
-    basename_dirname(image_path, &(img->nm), &(img->path));
-
-    load_exif_data(img, p_ui);
-
-    return img;
-}
-
-
-/* Extract the image Exif data (if any) */
-
-int load_exif_data(Image *img, ProjectUi *p_ui)
-{  
-    char *s;
-    ExifData *ed;
-    ExifEntry *entry;
-
-    /* Load an ExifData object from an EXIF file */
-    s = (char *) malloc(strlen(img->path) + strlen(img->nm) + 1);
-    sprintf(s, "%s/%s", img->path, img->nm);
-
-    ed = exif_data_new_from_file(s);
-
-    if (!ed)
-    {
-	log_msg("APP0010", s, "APP0010", p_ui->window);
-        free(s);
-        return FALSE;
-    }
-
-    img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
-    img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
-    img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
-    img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-    img->img_exif.width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
-    img->img_exif.height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
-    img->img_exif.iso = get_tag(ed, EXIF_IFD_0, EXIF_TAG_ISO_SPEED_RATINGS);
-    img->img_exif.exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
-    img->img_exif.f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
-    
-    /* Free the EXIF and other data */
-    free(s);
-    exif_data_unref(ed);
-
-    return TRUE;
-}
-
-
-/* Extract tag and contents if exists */
-
-static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
-{
-    char buf[1024];
-    char *s;
-
-    /* See if this tag exists */
-    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], tag);
-
-    if (entry) 
-    {
-        /* Get the contents of the tag in human-readable form */
-        exif_entry_get_value(entry, buf, sizeof(buf));
-
-        /* Don't bother printing it if it's entirely blank */
-        trim_spaces(buf);
-
-        if (*buf)
-        {
-            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf);
-	    s = (char *) malloc(strlen(buf) + 1);
-	    strcpy(s, buf);
-        }
-	else
-	{
-	    s = NULL;
-	}
-    }
-
-    return s;
 }
 
 
 /* Set up the project data */
 
-void setup_proj(ProjectData *proj, const gchar *nm, GList *images_gl, GList *darks_gl)
+void setup_proj(ProjectData *proj, const gchar *nm, ProjectUi *p_ui)
 {
     /* Project name */
     if (proj->project_name == NULL)
@@ -623,8 +603,30 @@ void setup_proj(ProjectData *proj, const gchar *nm, GList *images_gl, GList *dar
     	strcpy(proj->project_name, nm);
 
     /* Images and Darks */
-    proj->images_gl = images_gl;
-    proj->darks_gl = darks_gl;
+    copy_glist(p_ui->images.img_files, proj->images_gl);
+    copy_glist(p_ui->darks.img_files, proj->darks_gl);
+
+    return;
+}
+
+
+/* Compile a list of images and exif data */
+
+void copy_glist(GList *in_gl, GList *out_gl)
+{
+    char *f;
+    Image *img;
+    GList *l;
+
+    out_gl = NULL;
+
+    for(l = in_gl; l != NULL; l = l->next)
+    {
+    	img = (Image *) l->data;
+    	out_gl = g_list_prepend(out_gl, img);
+    }
+
+    out_gl = g_list_reverse(out_gl);
 
     return;
 }
@@ -786,7 +788,7 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 	if (gsl != NULL)
 	{
 	    save_indi = TRUE;
-	    show_list(lst, gsl);
+	    show_list(lst, gsl, p_ui);
 	}
     }
 
@@ -829,7 +831,7 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
 
 /* Callback - Select row */
 
-void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data);
+void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 {  
     ProjectUi *p_ui;
     GList *lc;
@@ -838,7 +840,7 @@ void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data);
     /* Get data */
     p_ui = (ProjectUi *) user_data;
     lc = gtk_container_get_children(GTK_CONTAINER (row));
-    lbl = (gtkWidget *) lc->data;
+    lbl = (GtkWidget *) lc->data;
 
     return;
 }
@@ -927,8 +929,8 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 void window_cleanup(GtkWidget *window, ProjectUi *ui)
 {
     /* Free any list and filenames */
-    g_list_free_full(ui->images.files, (GDestroyNotify) g_free);
-    g_list_free_full(ui->darks.files, (GDestroyNotify) g_free);
+    g_list_free_full(ui->images.img_files, (GDestroyNotify) g_free);
+    g_list_free_full(ui->darks.img_files, (GDestroyNotify) g_free);
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler);

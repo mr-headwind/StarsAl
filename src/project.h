@@ -43,11 +43,11 @@
 
 typedef struct _SelectListUi
 {
-    GtkWidget *sel_fr, *sel_hbox;
+    GtkWidget *sel_fr, *sel_hbox, *sel_vbox;
     GtkWidget *btn_vbox, *sel_btn, *clear_btn, *remove_btn;
     GtkWidget *list_box, *scroll_win;
     GtkWidget *meta_lbl;
-    GList *files;
+    GList *img_files;
 } SelectListUi;
 
 
