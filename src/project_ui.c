@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <libexif/exif-data.h>
 #include <libexif/exif-tag.h>
+#include <libexif/exif-loader.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -327,7 +328,7 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 
     /* Images or Darks list */
     lst->list_box = gtk_list_box_new();
-    g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) p_ui);
+    g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) lst);
 
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_margin_start (GTK_WIDGET (lst->scroll_win), 5);
@@ -388,6 +389,7 @@ void show_list(SelectListUi *lst, GSList *gsl, ProjectUi *p_ui)
 
 	    image = setup_image(nm, dir, path1, p_ui);
 	    lst->img_files = g_list_prepend(lst->img_files, image);
+	    g_object_set_data (G_OBJECT (row), "image", image);
 
 	    free(nm);
 	    free(dir);
@@ -438,12 +440,12 @@ Image * setup_image(char *nm, char *dir, char *image_full_path, ProjectUi *p_ui)
     Image *img;
 
     img = (Image *) malloc(sizeof(Image));
+    img->nm = (char *) malloc(strlen(nm) + 1);
+    img->path = (char *) malloc(strlen(dir) + 1);
     strcpy(img->nm, nm);
     strcpy(img->path, dir);
 
-printf("%s setup_image 1\n", debug_hdr);fflush(stdout);
     load_exif_data(img, image_full_path, p_ui);
-printf("%s setup_image 2\n", debug_hdr);fflush(stdout);
 
     return img;
 }
@@ -456,12 +458,9 @@ int load_exif_data(Image *img, char *full_path, ProjectUi *p_ui)
     ExifData *ed;
     ExifEntry *entry;
 
-printf("%s load_exif_data 1\n", debug_hdr);fflush(stdout);
-printf("%s load_exif_data 1a  path %s\n", debug_hdr, full_path);fflush(stdout);
     /* Load an ExifData object from an EXIF file */
     ed = exif_data_new_from_file(full_path);
 
-printf("%s load_exif_data 2\n", debug_hdr);fflush(stdout);
     if (!ed)
     {
 	log_msg("APP0010", full_path, "APP0010", p_ui->window);
@@ -469,7 +468,6 @@ printf("%s load_exif_data 2\n", debug_hdr);fflush(stdout);
         return FALSE;
     }
 
-printf("%s load_exif_data 3\n", debug_hdr);fflush(stdout);
     img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
     img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
     img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
@@ -483,7 +481,6 @@ printf("%s load_exif_data 3\n", debug_hdr);fflush(stdout);
     /* Free the EXIF */
     exif_data_unref(ed);
 
-printf("%s load_exif_data 4\n", debug_hdr);fflush(stdout);
     return TRUE;
 }
 
@@ -833,14 +830,25 @@ void OnListRemove(GtkWidget *browse_btn, gpointer user_data)
 
 void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 {  
-    ProjectUi *p_ui;
-    GList *lc;
-    GtkWidget *lbl;
+    char *s;
+    SelectListUi *lst;
+    Image *img;
 
     /* Get data */
-    p_ui = (ProjectUi *) user_data;
-    lc = gtk_container_get_children(GTK_CONTAINER (row));
-    lbl = (GtkWidget *) lc->data;
+printf("%s OnRowSelect 1\n", debug_hdr);fflush(stdout);
+    lst = (SelectListUi *) user_data;
+    img = (Image *) g_object_get_data (G_OBJECT (row), "image");
+    s = (char *) malloc(100);			// date, w x h, iso, exposure
+    sprintf(s, "Date: %s Iso: %s Exp: %s W x H: %s x %s", img->img_exif.date,
+							  img->img_exif.iso,
+							  img->img_exif.exposure,
+							  img->img_exif.width,
+							  img->img_exif.height);
+printf("%s OnRowSelect 2  s %s\n", debug_hdr, s);fflush(stdout);
+    gtk_label_set_text(GTK_LABEL (lst->meta_lbl), s);
+    gtk_widget_show(lst->meta_lbl);
+
+    free(s);
 
     return;
 }
