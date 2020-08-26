@@ -470,13 +470,24 @@ int load_exif_data(Image *img, char *full_path, ProjectUi *p_ui)
 
     img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
     img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
-    img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
+    //img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
     img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-    img->img_exif.width = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_X_DIMENSION);
-    img->img_exif.height = get_tag(ed, EXIF_IFD_0, EXIF_TAG_PIXEL_Y_DIMENSION);
-    img->img_exif.iso = get_tag(ed, EXIF_IFD_0, EXIF_TAG_ISO_SPEED_RATINGS);
-    img->img_exif.exposure = get_tag(ed, EXIF_IFD_0, EXIF_TAG_EXPOSURE_TIME);
-    img->img_exif.f_stop = get_tag(ed, EXIF_IFD_0, EXIF_TAG_FNUMBER);
+    img->img_exif.width = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
+    img->img_exif.height = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
+    img->img_exif.iso = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
+    img->img_exif.exposure = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
+    img->img_exif.f_stop = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
+    /*
+    img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
+    img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
+    img->img_exif.type = get_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_RECORD_MODE);
+    img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img->img_exif.width = get_tag(ed, EXIF_IFD_0, STARSAL_EXIF_IMAGE_WIDTH);
+    img->img_exif.height = get_tag(ed, EXIF_IFD_0, STARSAL_EXIF_IMAGE_HEIGHT);
+    img->img_exif.iso = get_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_ISO);
+    img->img_exif.exposure = get_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_EXP);
+    img->img_exif.f_stop = get_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_FSTOP);
+    */
     
     /* Free the EXIF */
     exif_data_unref(ed);
@@ -505,15 +516,15 @@ static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 
         if (*buf)
         {
-            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf);
+            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf); fflush(stdout);
 	    s = (char *) malloc(strlen(buf) + 1);
 	    strcpy(s, buf);
+	    return s;
         }
-	else
-	{
-	    s = NULL;
-	}
     }
+
+    s = (char *) malloc(4);
+    sprintf(s, "N/A");
 
     return s;
 }
@@ -839,11 +850,10 @@ printf("%s OnRowSelect 1\n", debug_hdr);fflush(stdout);
     lst = (SelectListUi *) user_data;
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
     s = (char *) malloc(100);			// date, w x h, iso, exposure
-    sprintf(s, "Date: %s Iso: %s Exp: %s W x H: %s x %s", img->img_exif.date,
-							  img->img_exif.iso,
-							  img->img_exif.exposure,
-							  img->img_exif.width,
-							  img->img_exif.height);
+    sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
+						 img->img_exif.exposure,
+						 img->img_exif.width,
+						 img->img_exif.height);
 printf("%s OnRowSelect 2  s %s\n", debug_hdr, s);fflush(stdout);
     gtk_label_set_text(GTK_LABEL (lst->meta_lbl), s);
     gtk_widget_show(lst->meta_lbl);

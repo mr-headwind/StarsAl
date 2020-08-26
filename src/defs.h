@@ -100,3 +100,20 @@ char app_msg_extra[1000];
 extern char app_msg_extra[1000];
 #endif
 #endif
+
+
+#ifndef __STARSAL_TAG_H__
+#define __STARSAL_TAG_H__
+
+/*! EXIF tags */
+typedef enum
+{
+    STARSAL_EXIF_TAG_RECORD_MODE	= 0x0009,
+    STARSAL_EXIF_IMAGE_WIDTH		= 0xa002,
+    STARSAL_EXIF_IMAGE_HEIGHT		= 0xa003,
+    STARSAL_EXIF_TAG_ISO		= 0x8827,
+    STARSAL_EXIF_TAG_EXP		= 0x829a,
+    STARSAL_EXIF_TAG_FSTOP		= 0x829d
+} StarsAlExifTag;
+
+#endif /* __STARSAL_TAG_H__ */
