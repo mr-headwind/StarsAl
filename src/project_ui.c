@@ -100,6 +100,7 @@ extern void string_trim(char *);
 extern void trim_spaces(char *);
 extern int check_dir(char *);
 extern int make_dir(char *);
+extern char * image_type(char *, GtkWidget *);
 
 
 /* Globals */
@@ -470,7 +471,6 @@ int load_exif_data(Image *img, char *full_path, ProjectUi *p_ui)
 
     img->img_exif.make = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
     img->img_exif.model = get_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
-    //img->img_exif.type = get_tag(ed, EXIF_IFD_0, EXIF_TAG_NEW_SUBFILE_TYPE);
     img->img_exif.date = get_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
     img->img_exif.width = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
     img->img_exif.height = get_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
@@ -491,6 +491,9 @@ int load_exif_data(Image *img, char *full_path, ProjectUi *p_ui)
     
     /* Free the EXIF */
     exif_data_unref(ed);
+    
+    /* Not really exif data, as far as possible, but get the image type here */
+    img->img_exif.type = image_type(full_path, p_ui->window);
 
     return TRUE;
 }

@@ -22,7 +22,7 @@ CFLAGS=-I. `pkg-config --cflags gtk+-3.0 libexif`
 CXXFLAGS=-I. `pkg-config --cflags gtk+-3.0` 
 CFLAGS2=-Wno-deprecated-declarations
 DEPS = defs.h main.h user_data.h version.h project.h preferences.h
-OBJ = starsal.o callbacks.o main_ui.o project_ui.o prefs_ui.o date_util.o utility.o about_ui.o view_file_ui.o css.o gtk_common.o
+OBJ = starsal.o callbacks.o main_ui.o project_ui.o prefs_ui.o date_util.o utility.o about_ui.o view_file_ui.o css.o gtk_common.o image.o
 LIBS = `pkg-config --libs gtk+-3.0 libexif`
 #LIBS2 = -lxxxx
 
