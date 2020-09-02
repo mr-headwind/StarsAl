@@ -492,8 +492,9 @@ int load_exif_data(Image *img, char *full_path, ProjectUi *p_ui)
     /* Free the EXIF */
     exif_data_unref(ed);
     
-    /* Not really exif data, as far as possible, but get the image type here */
+    /* Not really exif data, but as far as possible, get the image type here */
     img->img_exif.type = image_type(full_path, p_ui->window);
+    printf("%s - Type: %s\n", debug_hdr, img->img_exif.type); fflush(stdout);
 
     return TRUE;
 }
@@ -849,15 +850,15 @@ void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
     Image *img;
 
     /* Get data */
-printf("%s OnRowSelect 1\n", debug_hdr);fflush(stdout);
     lst = (SelectListUi *) user_data;
+printf("%s OnRowSelect 1 \n", debug_hdr);fflush(stdout);
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
+printf("%s OnRowSelect 2 \n", debug_hdr);fflush(stdout);
     s = (char *) malloc(100);			// date, w x h, iso, exposure
     sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
 						 img->img_exif.exposure,
 						 img->img_exif.width,
 						 img->img_exif.height);
-printf("%s OnRowSelect 2  s %s\n", debug_hdr, s);fflush(stdout);
     gtk_label_set_text(GTK_LABEL (lst->meta_lbl), s);
     gtk_widget_show(lst->meta_lbl);
 
@@ -949,9 +950,12 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 
 void window_cleanup(GtkWidget *window, ProjectUi *ui)
 {
+printf("%s window_cleanup 1 \n", debug_hdr);fflush(stdout);
     /* Free any list and filenames */
     g_list_free_full(ui->images.img_files, (GDestroyNotify) g_free);
+printf("%s window_cleanup 2 \n", debug_hdr);fflush(stdout);
     g_list_free_full(ui->darks.img_files, (GDestroyNotify) g_free);
+printf("%s window_cleanup 5 \n", debug_hdr);fflush(stdout);
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler);
@@ -959,6 +963,7 @@ void window_cleanup(GtkWidget *window, ProjectUi *ui)
     deregister_window(window);
     gtk_window_close(GTK_WINDOW(window));
 
+printf("%s window_cleanup 9 \n", debug_hdr);fflush(stdout);
     free(ui);
 
     return;

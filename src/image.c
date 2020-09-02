@@ -58,6 +58,8 @@ static const char *debug_hdr = "DEBUG-image.c ";
 
 /* Determine image type */
 /*
+ * (Probably overkill, but interesting !)
+ *
  * Image Type	Bytes	  Value
  * ----------   -----     -----
  * JPG	        1,2,3     0xFF 0xD8 0xFF
@@ -72,14 +74,31 @@ static const char *debug_hdr = "DEBUG-image.c ";
 char * image_type(char *path, GtkWidget *window) 
 {  
     FILE *fd = NULL;
-    int err;
+    int i, j, c, err;
     struct stat filestat;
     char buf[10];
     char *s;
+    
+    const int max_types = 8;
+    const int max_cols = 11;
+
+    int candidates[8] = { 1, 1, 1, 1, 1, 1, 1, 1 };
+    const char *img_types[] = { "JPG", "TIFF", "TIFF", "BMP", "GIF87a", "GIF89a", "PNG", "CR2" };
+    const int byte_vals[8][11] = 
+    	{
+	    { 0xFF, 0xD8, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },	// JPG 
+	    { 0x49, 0x49, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, 	// TIFF Intel
+	    { 0x4D, 0x4D, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, 	// TIFF Mac
+	    { 0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, 	// BMP
+	    { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00 }, 	// GIF87a
+	    { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00 }, 	// GIF89a
+	    { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00 }, 	// PNG
+	    { 0x49, 0x49, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x43, 0x02 } 	// CR2
+	};
 
     /* Set default unknown */
-    s = (char *) malloc(7);
-    strcpy(s, "N/A");
+    s = (char *) malloc(9);
+    strcpy(s, "Unknown");
 
     /* Check file */
     err = stat(path, &filestat);
@@ -87,62 +106,50 @@ char * image_type(char *path, GtkWidget *window)
     if ((err < 0) || (filestat.st_size == 0))
     {
     	log_msg("SYS9006", path, "SYS9006", window);
-	return NULL;
+	return s;
     }
 
     if ((fd = fopen(path, "r")) == (FILE *) NULL)
     {
     	log_msg("SYS9006", path, "SYS9006", window);
-	return NULL;
+	return s;
     }
 
-    if (fgets(buf, sizeof(buf), fd) == NULL)
+    /* This is just a 'last man standing' approach */
+    for(i = 0; i < max_cols; i++)
     {
-    	log_msg("SYS9006", path, "SYS9006", window);
-	return NULL;
-    }
+printf("%s p 1 \n", debug_hdr);fflush(stdout);
+	if ((c = fgetc(fd)) == EOF)
+	{
+	    i = max_cols;
+	    break;
+	}
+	 
+	for(j = 0; j < max_types; j++)
+	{
+	    if (candidates[j] == 0)
+	    	continue;
+
+	    if (*byte_vals[i, j] == 0x00)
+	    	continue;
+
+printf("%s p 2  i %d  j %d  c %x  byte_val %x\n", debug_hdr, i, j, c, *(byte_vals[i, j]));fflush(stdout);
+	    if (c != *(byte_vals[i, j]))
+		candidates[j] = 0;
+	};
+    };
+
+    /* Should only be one still standing */
+    for(i = 0; i < max_types; i++)
+    {
+    	if (candidates[i] == TRUE)
+    	{
+	    strcpy(s, img_types[i]);
+	    break;
+    	}
+    };
 
     fclose(fd);
-
-    /* Use the table above to deetermine type */
-    switch(buf[0])
-    {
-	case 0xFF:		// JPG
-	    if (buf[1] == 0xD8 && buf[2] == 0xFF)
-	    	strcpy(s, "JPG");
-	    break;
-
-	case 0x49:		// TIFF
-	case 0x4D:	
-	    if ((buf[1] == 0x49 && buf[2] == 0x2A && buf[3] == 0x00) ||
-	        (buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2A))
-	    	strcpy(s, "TIFF");
-	    break;
-
-	case 0x42:		// BMP
-	    if (buf[1] == 0x4D)
-	    	strcpy(s, "BMP");
-	    break;
-
-	case 0x47:		// GIF87 or GIF89
-	    if (buf[1] == 0x49 && buf[2] == 0x46 && buf[3] == 0x38 && buf[5] == 0x61)
-	    	if (buf[4] == 0x37)
-		    strcpy(s, "GIF87a");
-		else if (buf[4] == 0x39)
-		    strcpy(s, "GIF89a");
-	    break;
-
-	case 0x89:		// PNG
-	    if ((buf[1] == 0x50 && buf[2] == 0x4E && buf[3] == 0x47 && buf[4] == 0x0D) &&
-	        (buf[5] == 0x0A && buf[6] == 0x1A && buf[7] == 0x0A))
-	    	strcpy(s, "PNG");
-	    break;
-
-	default:
-	    if (buf[8] == 0x52 && buf[9] == 0x43 && buf[10] == 0x02)		 // CR2
-	    	strcpy(s, "CR2");
-	    break;
-    }
 
     return s;
 }  
