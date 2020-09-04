@@ -118,7 +118,6 @@ char * image_type(char *path, GtkWidget *window)
     /* This is just a 'last man standing' approach */
     for(i = 0; i < max_cols; i++)
     {
-printf("%s p 1 \n", debug_hdr);fflush(stdout);
 	if ((c = fgetc(fd)) == EOF)
 	{
 	    i = max_cols;
@@ -130,11 +129,10 @@ printf("%s p 1 \n", debug_hdr);fflush(stdout);
 	    if (candidates[j] == 0)
 	    	continue;
 
-	    if (*byte_vals[i, j] == 0x00)
+	    if (byte_vals[j][i] == 0x00)
 	    	continue;
 
-printf("%s p 2  i %d  j %d  c %x  byte_val %x\n", debug_hdr, i, j, c, *(byte_vals[i, j]));fflush(stdout);
-	    if (c != *(byte_vals[i, j]))
+	    if (c != byte_vals[j][i])
 		candidates[j] = 0;
 	};
     };

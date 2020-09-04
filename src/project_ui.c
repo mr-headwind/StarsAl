@@ -77,7 +77,7 @@ int setup_proj_validate(ProjectData *, ProjectUi *);
 void setup_proj(ProjectData *, const gchar *, ProjectUi *p_ui);
 void copy_glist(GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
-void window_cleanup(GtkWidget *, ProjectUi *);
+static void window_cleanup(GtkWidget *, ProjectUi *);
 
 static void OnProjCancel(GtkWidget*, gpointer);
 static gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
@@ -329,7 +329,7 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 
     /* Images or Darks list */
     lst->list_box = gtk_list_box_new();
-    g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) lst);
+    lst->sel_handler = g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) lst);
 
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_margin_start (GTK_WIDGET (lst->scroll_win), 5);
@@ -851,9 +851,7 @@ void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 
     /* Get data */
     lst = (SelectListUi *) user_data;
-printf("%s OnRowSelect 1 \n", debug_hdr);fflush(stdout);
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
-printf("%s OnRowSelect 2 \n", debug_hdr);fflush(stdout);
     s = (char *) malloc(100);			// date, w x h, iso, exposure
     sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
 						 img->img_exif.exposure,
@@ -948,14 +946,15 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 
 /* Window cleanup */
 
-void window_cleanup(GtkWidget *window, ProjectUi *ui)
+static void window_cleanup(GtkWidget *window, ProjectUi *ui)
 {
-printf("%s window_cleanup 1 \n", debug_hdr);fflush(stdout);
+    /* Unwanted callback action */
+    g_signal_handler_block (ui->images.list_box, ui->images.sel_handler);
+    g_signal_handler_block (ui->darks.list_box, ui->darks.sel_handler);
+    
     /* Free any list and filenames */
     g_list_free_full(ui->images.img_files, (GDestroyNotify) g_free);
-printf("%s window_cleanup 2 \n", debug_hdr);fflush(stdout);
     g_list_free_full(ui->darks.img_files, (GDestroyNotify) g_free);
-printf("%s window_cleanup 5 \n", debug_hdr);fflush(stdout);
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler);
@@ -963,7 +962,6 @@ printf("%s window_cleanup 5 \n", debug_hdr);fflush(stdout);
     deregister_window(window);
     gtk_window_close(GTK_WINDOW(window));
 
-printf("%s window_cleanup 9 \n", debug_hdr);fflush(stdout);
     free(ui);
 
     return;

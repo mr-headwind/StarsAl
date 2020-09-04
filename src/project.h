@@ -48,6 +48,7 @@ typedef struct _SelectListUi
     GtkWidget *list_box, *scroll_win;
     GtkWidget *meta_lbl;
     GList *img_files;
+    int sel_handler;
 } SelectListUi;
 
 
