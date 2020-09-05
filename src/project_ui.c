@@ -368,7 +368,7 @@ void show_list(SelectListUi *lst, GSList *gsl, ProjectUi *p_ui)
     GtkWidget *row;
     GList *l;
     GSList *sl;
-    Image *image;
+    Image *image, *tmpimg;
 
     for(sl = gsl; sl != NULL; sl = sl->next)
     {
@@ -376,7 +376,9 @@ void show_list(SelectListUi *lst, GSList *gsl, ProjectUi *p_ui)
 
 	for(l = lst->img_files; l != NULL; l = l->next)
 	{
-	    path2 = (char *) l->data;
+	    tmpimg = (Image *) l->data;
+	    path2 = (char *) malloc(strlen(tmpimg->path) + strlen(tmpimg->nm) + 2);
+	    sprintf(path2, "%s/%s", tmpimg->path, tmpimg->nm);
 
 	    if (strcmp(path1, path2) == 0)
 	    	break;
