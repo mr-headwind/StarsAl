@@ -455,32 +455,26 @@ void remove_list_row(SelectListUi *lst, GtkWidget *list_box, GtkListBoxRow *row)
     /* Remove the image from the associated GList */
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
 
-printf("%s remove_list_row 1   nm %s\n", debug_hdr, img->nm); fflush(stdout);
     for(l = lst->img_files; l != NULL; l = l->next)
     {
 	tmp = (Image *) l->data;
 
-printf("%s remove_list_row 2   nm %s\n", debug_hdr, tmp->nm); fflush(stdout);
 	if (strcmp(tmp->nm, img->nm) == 0 && strcmp(tmp->path, img->path) == 0)
 	{
 	    free_img(img);
-printf("%s remove_list_row 3\n", debug_hdr); fflush(stdout);
 	    lst->img_files = g_list_delete_link(l, l);
-printf("%s remove_list_row 4\n", debug_hdr); fflush(stdout);
 	    break;
 	}
-    }
+    };
 
     /* Destroy the row container and show the new list box */
-printf("%s remove_list_row 5\n", debug_hdr); fflush(stdout);
-    gtk_container_remove(GTK_CONTAINER (list_box), GTK_WIDGET (row));
-printf("%s remove_list_row 6\n", debug_hdr); fflush(stdout);
+    g_signal_handler_block (lst->list_box, lst->sel_handler);
     gtk_widget_destroy (GTK_WIDGET (row));
-printf("%s remove_list_row 7\n", debug_hdr); fflush(stdout);
     gtk_widget_show_all(list_box);
+    gtk_label_set_text(GTK_LABEL (lst->meta_lbl), "");
 
-printf("%s remove_list_row 8\n", debug_hdr); fflush(stdout);
     save_indi = TRUE;
+    g_signal_handler_unblock (lst->list_box, lst->sel_handler);
 
     return;
 }
@@ -868,11 +862,23 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 void OnListClear(GtkWidget *clear_btn, gpointer user_data)
 {  
     ProjectUi *p_ui;
+    SelectListUi *lst;
+    GtkListBoxRow *row;
+    int rows;
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
+    lst = (SelectListUi *) g_object_get_data (G_OBJECT (clear_btn), "list");
+    rows = g_list_length();
+    row = gtk_list_box_get_selected_row (GTK_LIST_BOX (lst->list_box));
 
-    save_indi = TRUE;
+    if (row == NULL)
+    {
+    	app_msg("APP0011", "a row", p_ui->window);
+    	return;
+    }
+
+    remove_list_row(lst, lst->list_box, row);
 
     return;
 }
