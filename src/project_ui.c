@@ -69,7 +69,8 @@ void proj_data(ProjectData *, ProjectUi *);
 void select_images(SelectListUi *, ProjectUi *, char *);
 void show_list(SelectListUi *, GSList *, ProjectUi *p_ui);
 GtkWidget * create_lstbox_row(char *, char *);
-void remove_list_row(SelectListUi *, GtkWidget *, GtkListBoxRow *);
+void remove_image_list_row(SelectListUi *, GtkWidget *, GtkListBoxRow *);
+void clear_image_list(SelectListUi *, GtkWidget *);
 Image * setup_image(char *, char *, char *, ProjectUi *);
 int load_exif_data(Image *, char *, ProjectUi *);
 static char * get_tag(ExifData *, ExifIfd, ExifTag);
@@ -350,12 +351,14 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
 
     /* Image meta data for selected list box row */
+    create_label4(&(lst->dir_lbl), "data_4", " ", 4, 3, GTK_ALIGN_START);
     create_label4(&(lst->meta_lbl), "data_4", " ", 4, 3, GTK_ALIGN_START);
 
     /* Pack them up */
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (lst->sel_hbox), lst->btn_vbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (lst->sel_vbox), lst->sel_hbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (lst->sel_vbox), lst->dir_lbl, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (lst->sel_vbox), lst->meta_lbl, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->sel_vbox);
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->sel_fr, FALSE, FALSE, 0);
@@ -445,9 +448,9 @@ GtkWidget * create_lstbox_row(char *nm, char *dir)
 }
 
 
-/* Remove a row from a list box and the associated GList */
+/* Remove a row from a list box of selected images and the associated GList */
 
-void remove_list_row(SelectListUi *lst, GtkWidget *list_box, GtkListBoxRow *row)
+void remove_image_list_row(SelectListUi *lst, GtkWidget *list_box, GtkListBoxRow *row)
 {  
     Image *img, *tmp;
     GList *l;
@@ -471,10 +474,42 @@ void remove_list_row(SelectListUi *lst, GtkWidget *list_box, GtkListBoxRow *row)
     g_signal_handler_block (lst->list_box, lst->sel_handler);
     gtk_widget_destroy (GTK_WIDGET (row));
     gtk_widget_show_all(list_box);
+    gtk_label_set_text(GTK_LABEL (lst->dir_lbl), "");
     gtk_label_set_text(GTK_LABEL (lst->meta_lbl), "");
 
-    save_indi = TRUE;
     g_signal_handler_unblock (lst->list_box, lst->sel_handler);
+    save_indi = TRUE;
+
+    return;
+}
+
+
+/* Remove all rows from a list box of selected images and the associated GList */
+
+void clear_image_list(SelectListUi *lst, GtkWidget *list_box)
+{  
+    int i, rows;
+    GtkListBoxRow *row;
+
+    /* Clear the associated GList */
+    rows = g_list_length(lst->img_files);
+    g_list_free_full(lst->img_files, (GDestroyNotify) free_img);
+    lst->img_files = NULL;
+
+    /* Destroy each row container */
+    g_signal_handler_block (lst->list_box, lst->sel_handler);
+
+    for(i = rows; i > 0; i--)
+    {
+	row = gtk_list_box_get_row_at_index (GTK_LIST_BOX (lst->list_box), i);
+	gtk_widget_destroy (GTK_WIDGET (row));
+    };
+
+    g_signal_handler_unblock (lst->list_box, lst->sel_handler);
+    gtk_widget_show_all(list_box);
+    gtk_label_set_text(GTK_LABEL (lst->dir_lbl), "");
+    gtk_label_set_text(GTK_LABEL (lst->meta_lbl), "");
+    save_indi = TRUE;
 
     return;
 }
@@ -857,34 +892,27 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 }
 
 
-/* Callback - Clear Image List */
+/* Callback - Clear the images selected list */
 
 void OnListClear(GtkWidget *clear_btn, gpointer user_data)
 {  
     ProjectUi *p_ui;
     SelectListUi *lst;
-    GtkListBoxRow *row;
-    int rows;
 
     /* Get data */
     p_ui = (ProjectUi *) user_data;
     lst = (SelectListUi *) g_object_get_data (G_OBJECT (clear_btn), "list");
-    rows = g_list_length();
-    row = gtk_list_box_get_selected_row (GTK_LIST_BOX (lst->list_box));
 
-    if (row == NULL)
-    {
-    	app_msg("APP0011", "a row", p_ui->window);
+    if (lst->img_files == NULL)
     	return;
-    }
 
-    remove_list_row(lst, lst->list_box, row);
+    clear_image_list(lst, lst->list_box);
 
     return;
 }
 
 
-/* Callback - Clear Image List */
+/* Callback - Remove a row from the images selected list */
 
 void OnListRemove(GtkWidget *remove_btn, gpointer user_data)
 {  
@@ -903,7 +931,7 @@ void OnListRemove(GtkWidget *remove_btn, gpointer user_data)
     	return;
     }
 
-    remove_list_row(lst, lst->list_box, row);
+    remove_image_list_row(lst, lst->list_box, row);
 
     return;
 }
@@ -920,6 +948,10 @@ void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
     /* Get data */
     lst = (SelectListUi *) user_data;
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
+
+    gtk_label_set_text(GTK_LABEL (lst->dir_lbl), img->path);
+    gtk_widget_show(lst->dir_lbl);
+
     s = (char *) malloc(100);			// date, w x h, iso, exposure
     sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
 						 img->img_exif.exposure,
