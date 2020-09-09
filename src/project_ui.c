@@ -406,6 +406,7 @@ void show_list(SelectListUi *lst, GSList *gsl, ProjectUi *p_ui)
 	    lst->img_files = g_list_prepend(lst->img_files, image);
 	    g_object_set_data (G_OBJECT (row), "image", image);
 
+	    save_indi = TRUE;
 	    free(nm);
 	    free(dir);
 	}
@@ -623,18 +624,24 @@ static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *s;
+    int len;
 
     /* Project name */
     s = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_nm));
+    len = (int) gtk_entry_get_text_length(GTK_ENTRY (p_ui->proj_nm));
+
+    if (proj->project_name == NULL && len == 0)
+	return save_indi;
 
     if (proj->project_name == NULL)
-    	return TRUE;
-
-    if (s == NULL)			// Error - but continue to validate
-    	return TRUE;
-
-    if (strcmp(s, proj->project_name) != 0)
-    	return TRUE;
+    {
+	save_indi = TRUE;
+    }
+    else
+    {
+	if (strcmp(s, proj->project_name) != 0)
+	    save_indi = TRUE;
+    }
     	
     return save_indi;
 }
@@ -652,14 +659,8 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
 
     /* Project name must be present */
     nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
-
-    if (nm == NULL)
-    {
-	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
-    	return FALSE;
-    }
-
     string_trim((char *) nm);
+
     if (*nm == '\0')
     {
 	log_msg("APP0005", "Project Name", "APP0005", p_ui->window);
@@ -667,11 +668,51 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
     }
 
     /* Check all the images for exposure consistency */
+    if ((validate_images(p_ui->images.img_files, p_ui)) == FALSE)
+    	return FALSE;
 
     /* Discard and warn of unusable darks */
 
     /* Set up project */
     setup_proj(proj, nm, p_ui);
+
+    return TRUE;
+}
+
+
+/* Validate images for exposure consistency (iso, exposure, width, height) */
+
+int validate_images(GList *img_files, ProjectUi *p_ui)
+{
+    typedef struct
+    {
+	int iso_cnt;
+	int exp_cnt;
+	int width_cnt;
+	int height_cnt;
+    } Array;
+
+    Array *img_arr;
+    int i, img_cnt;
+    Image *img;
+    ImgExif e;
+    GList *l;
+
+    /* Set up a dynamic array as count of each element to check */
+    img_cnt = g_list_length(img_files);
+    img_arr = malloc(img_cnt * sizeof(Array));
+
+    /* Iterate each image file and check the exposure data */
+    for(l = img_files; l != NULL; l = l->next)
+    {
+	img = (Image *) l->data;
+	img_exif = img->img_exif;
+
+	for(i = 0; i < img_cnt; i++)
+	{
+	    if (e->iso)
+	};
+    };
 
     return TRUE;
 }
@@ -880,7 +921,6 @@ void OnDirBrowse(GtkWidget *browse_btn, gpointer user_data)
 
 	if (gsl != NULL)
 	{
-	    save_indi = TRUE;
 	    show_list(lst, gsl, p_ui);
 	}
     }
