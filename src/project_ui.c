@@ -76,6 +76,8 @@ int load_exif_data(Image *, char *, ProjectUi *);
 static char * get_tag(ExifData *, ExifIfd, ExifTag);
 int proj_save_reqd(ProjectData *, ProjectUi *);
 int setup_proj_validate(ProjectData *, ProjectUi *);
+int validate_images(GList *, ProjectUi *);
+int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void setup_proj(ProjectData *, const gchar *, ProjectUi *p_ui);
 void copy_glist(GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
@@ -104,6 +106,7 @@ extern void trim_spaces(char *);
 extern int check_dir(char *);
 extern int make_dir(char *);
 extern char * image_type(char *, GtkWidget *);
+extern int val_str2numb(char *, int *, char *, GtkWidget *);
 
 
 /* Globals */
@@ -686,14 +689,15 @@ int validate_images(GList *img_files, ProjectUi *p_ui)
 {
     typedef struct
     {
-	int iso_cnt;
-	int exp_cnt;
-	int width_cnt;
-	int height_cnt;
+	int iso;
+	char *exp;
+	int width;
+	int height;
     } Array;
 
     Array *img_arr;
-    int i, img_cnt;
+    int i, img_cnt, iso, w, h, r;
+    int iso_fnd, exp_fnd, w_fnd, h_fnd;
     Image *img;
     ImgExif e;
     GList *l;
@@ -701,18 +705,90 @@ int validate_images(GList *img_files, ProjectUi *p_ui)
     /* Set up a dynamic array as count of each element to check */
     img_cnt = g_list_length(img_files);
     img_arr = malloc(img_cnt * sizeof(Array));
+    memset(img_arr, 0, img_cnt * sizeof(Array));
 
     /* Iterate each image file and check the exposure data */
     for(l = img_files; l != NULL; l = l->next)
     {
 	img = (Image *) l->data;
-	img_exif = img->img_exif;
+	e = img->img_exif;
+	iso_fnd = exp_fnd = w_fnd = h_fnd = FALSE;
+
+	if (convert_exif(&e, &iso, &w, &h, p_ui->window) == FALSE)
+	    break;
 
 	for(i = 0; i < img_cnt; i++)
 	{
-	    if (e->iso)
+	    if (! img_arr[i].exp)
+	    {
+		img_arr[i].exp = (char *) malloc(strlen(e.exposure) + 1);
+		strcpy(img_arr[i].exp, e.exposure);
+		exp_fnd = TRUE;
+	    }
+	    else
+	    {
+	    	if (strcmp(img_arr[i].exp, e.exposure) == 0);
+		    exp_fnd = TRUE;
+	    }
+
+	    if (img_arr[i].iso == 0)
+	    {
+		img_arr[i].iso = iso;
+		iso_fnd = TRUE;
+	    }
+	    else
+	    {
+	    	if (img_arr[i].iso == iso)
+		    iso_fnd = TRUE;
+	    }
+
+	    if (iso_fnd == TRUE  &&  exp_fnd == TRUE  &&  w_fnd == TRUE  &&  h_fnd == TRUE)
+	    	break;
 	};
     };
+
+    /* Check for errors - more than one row means images are not consistent */
+    for(i = 0; i < img_cnt; i++)
+    {
+	if (img_arr[i].iso == 0  &&  img_arr[i].width == 0  &&  img_arr[i].width == 0  && !(img_arr[i].exp))
+	    break;
+    }
+
+    if (i > 1)
+    {
+	log_msg("APP0012", "", "APP0012", p_ui->window);
+    	r = FALSE;
+    }
+    else
+    {
+    	r = TRUE;
+    }
+
+    /* Free the array */
+    for(i = 0; i < img_cnt; i++)
+    {
+    	if (img_arr[i].exp)
+    	    free(img_arr[i].exp);
+    }
+
+    free(img_arr);
+    
+    return r;
+}
+
+
+/* Convert iso, width and height to integer */
+
+int convert_exif(ImgExif *e, int *iso, int *w, int *h, GtkWidget *window)
+{
+    if (val_str2numb(e->iso, iso, e->iso, window) == FALSE)
+	return FALSE;
+
+    if (val_str2numb(e->width, w, e->width, window) == FALSE)
+	return FALSE;
+
+    if (val_str2numb(e->height, h, e->height, window) == FALSE)
+	return FALSE;
 
     return TRUE;
 }

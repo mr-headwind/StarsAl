@@ -105,6 +105,7 @@ static const char *app_messages[][2] =
     { "APP0009", "Working directory not found. "},
     { "APP0010", "Warning: File %s cannot be read or has no Exif data. "},
     { "APP0011", "Please select %s. "},
+    { "APP0012", "One or more images have inconsistent - ISO, Exposure, Width or Height. "},
     { "APP9999", "Application message: "},
     { "SYS9000", "Failed to start application. "},
     { "SYS9001", "Session started. "},
@@ -118,7 +119,7 @@ static const char *app_messages[][2] =
     { "SYS9999", "Error - Unknown error message given. "}			// NB - MUST be last
 };
 
-static const int Msg_Count = 22;
+static const int Msg_Count = 23;
 static char *Home;
 static char *logfile = NULL;
 static FILE *lf = NULL;
@@ -662,12 +663,12 @@ int val_str2numb(char *s, int *numb, char *subst, GtkWidget *window)
 
 	if (errno != 0)
 	{
-	    app_msg("APP0002", subst, window);
+	    app_msg("APP0001", subst, window);
 	    return FALSE;
 	}
 	else if (*end)
 	{
-	    app_msg("APP0002", subst, window);
+	    app_msg("APP0001", subst, window);
 	    return FALSE;
 	}
     }
