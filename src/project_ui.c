@@ -78,6 +78,8 @@ int proj_save_reqd(ProjectData *, ProjectUi *);
 int setup_proj_validate(ProjectData *, ProjectUi *);
 int validate_images(GList *, ProjectUi *);
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
+void check_arr_int(int, int *, int *);
+void check_arr_s(char *, char **, int *);
 void setup_proj(ProjectData *, const gchar *, ProjectUi *p_ui);
 void copy_glist(GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
@@ -716,32 +718,20 @@ int validate_images(GList *img_files, ProjectUi *p_ui)
 
 	if (convert_exif(&e, &iso, &w, &h, p_ui->window) == FALSE)
 	    break;
+printf("%s validate_images  1  exp  %s  iso %d  w %d  h %d\n", debug_hdr, e.exposure, iso, w, h); fflush(stdout);
 
 	for(i = 0; i < img_cnt; i++)
 	{
-	    if (! img_arr[i].exp)
-	    {
-		img_arr[i].exp = (char *) malloc(strlen(e.exposure) + 1);
-		strcpy(img_arr[i].exp, e.exposure);
-		exp_fnd = TRUE;
-	    }
-	    else
-	    {
-	    	if (strcmp(img_arr[i].exp, e.exposure) == 0);
-		    exp_fnd = TRUE;
-	    }
+	    check_arr_s(e.exposure, &(img_arr[i].exp), &exp_fnd);
+	    check_arr_int(iso, &(img_arr[i].iso), &iso_fnd);
+	    check_arr_int(w, &(img_arr[i].width), &w_fnd);
+	    check_arr_int(h, &(img_arr[i].height), &h_fnd);
 
-	    if (img_arr[i].iso == 0)
-	    {
-		img_arr[i].iso = iso;
-		iso_fnd = TRUE;
-	    }
-	    else
-	    {
-	    	if (img_arr[i].iso == iso)
-		    iso_fnd = TRUE;
-	    }
+printf("%s validate_images  4  array exp  %s  iso %d  w %d  h %d\n", debug_hdr, 
+			img_arr[i].exp, img_arr[i].iso, img_arr[i].width, img_arr[i].height); fflush(stdout);
 
+printf("%s validate_images  5  found iso %d  exp  %d  w %d  h %d\n", debug_hdr, iso_fnd, exp_fnd, w_fnd,
+									h_fnd); fflush(stdout);
 	    if (iso_fnd == TRUE  &&  exp_fnd == TRUE  &&  w_fnd == TRUE  &&  h_fnd == TRUE)
 	    	break;
 	};
@@ -791,6 +781,50 @@ int convert_exif(ImgExif *e, int *iso, int *w, int *h, GtkWidget *window)
 	return FALSE;
 
     return TRUE;
+}
+
+
+/* Check if an integer exif item is present and add if necessary */
+
+void check_arr_int(int i, int *arr_i, int *fnd)
+{
+    if (*arr_i == 0)
+    {
+	*arr_i = i;
+	*fnd = TRUE;
+    }
+    else
+    {
+	if (*arr_i == i)
+	    *fnd = TRUE;
+    }
+
+    return;
+}
+
+
+/* Check if a string exif item is present and add if necessary */
+
+void check_arr_s(char *s, char **arr_s, int *fnd)
+{
+    if (! (*arr_s))
+    {
+printf("%s check_arr_s  1 arr s in null\n", debug_hdr); fflush(stdout);
+	*arr_s = (char *) malloc(strlen(s) + 1);
+	strcpy(*arr_s, s);
+	*fnd = TRUE;
+    }
+    else
+    {
+printf("%s check_arr_s  2 arr s in not null  arr %s  s %s\n", debug_hdr, *arr_s, s); fflush(stdout);
+	if (strcmp(*arr_s, s) == 0)
+	{
+	    *fnd = TRUE;
+printf("%s check_arr_s  3 arr s match\n", debug_hdr); fflush(stdout);
+	}
+    }
+
+    return;
 }
 
 
