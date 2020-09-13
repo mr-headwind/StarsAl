@@ -75,12 +75,13 @@ Image * setup_image(char *, char *, char *, ProjectUi *);
 int load_exif_data(Image *, char *, ProjectUi *);
 static char * get_tag(ExifData *, ExifIfd, ExifTag);
 int proj_save_reqd(ProjectData *, ProjectUi *);
-int setup_proj_validate(ProjectData *, ProjectUi *);
-int validate_images(GList *, ProjectUi *);
+int proj_validate(ProjectData *, ProjectUi *);
+int validate_images(GList *, ImgExif *, ProjectUi *);
+void validate_darks(GList *, ImgExif *, ProjectUi *);
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void check_arr_int(int, int *, int *);
 void check_arr_s(char *, char **, int *);
-void setup_proj(ProjectData *, const gchar *, ProjectUi *p_ui);
+void setup_proj(ProjectData *, ProjectUi *p_ui);
 void copy_glist(GList *, GList *);
 int save_proj(ProjectData *, ProjectUi *);
 static void window_cleanup(GtkWidget *, ProjectUi *);
@@ -654,13 +655,14 @@ int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 
 /* Validate screen contents */
 
-int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
+int proj_validate(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *nm;
     SelectListUi images;
     SelectListUi darks;
     GList *images_gl;
     GList *darks_gl;
+    ImgExif exif;
 
     /* Project name must be present */
     nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
@@ -673,13 +675,11 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
     }
 
     /* Check all the images for exposure consistency */
-    if ((validate_images(p_ui->images.img_files, p_ui)) == FALSE)
+    if ((validate_images(p_ui->images.img_files, &exif, p_ui)) == FALSE)
     	return FALSE;
 
     /* Discard and warn of unusable darks */
-
-    /* Set up project */
-    setup_proj(proj, nm, p_ui);
+    validate_darks(p_ui->darks.img_files, &exif, p_ui);
 
     return TRUE;
 }
@@ -687,7 +687,7 @@ int proj_setup_validate(ProjectData *proj, ProjectUi *p_ui)
 
 /* Validate images for exposure consistency (iso, exposure, width, height) */
 
-int validate_images(GList *img_files, ProjectUi *p_ui)
+int validate_images(GList *img_files, ImgExif *exif, ProjectUi *p_ui)
 {
     typedef struct
     {
@@ -695,9 +695,9 @@ int validate_images(GList *img_files, ProjectUi *p_ui)
 	char *exp;
 	int width;
 	int height;
-    } Array;
+    } ExArray;
 
-    Array *img_arr;
+    ExArray *img_arr;
     int i, img_cnt, iso, w, h, r;
     int iso_fnd, exp_fnd, w_fnd, h_fnd;
     Image *img;
@@ -706,8 +706,9 @@ int validate_images(GList *img_files, ProjectUi *p_ui)
 
     /* Set up a dynamic array as count of each element to check */
     img_cnt = g_list_length(img_files);
-    img_arr = malloc(img_cnt * sizeof(Array));
-    memset(img_arr, 0, img_cnt * sizeof(Array));
+    img_arr = malloc(img_cnt * sizeof(ExArray));
+    memset(img_arr, 0, img_cnt * sizeof(ExArray));
+    r = FALSE;
 
     /* Iterate each image file and check the exposure data */
     for(l = img_files; l != NULL; l = l->next)
@@ -718,7 +719,6 @@ int validate_images(GList *img_files, ProjectUi *p_ui)
 
 	if (convert_exif(&e, &iso, &w, &h, p_ui->window) == FALSE)
 	    break;
-printf("%s validate_images  1  exp  %s  iso %d  w %d  h %d\n", debug_hdr, e.exposure, iso, w, h); fflush(stdout);
 
 	for(i = 0; i < img_cnt; i++)
 	{
@@ -727,17 +727,12 @@ printf("%s validate_images  1  exp  %s  iso %d  w %d  h %d\n", debug_hdr, e.expo
 	    check_arr_int(w, &(img_arr[i].width), &w_fnd);
 	    check_arr_int(h, &(img_arr[i].height), &h_fnd);
 
-printf("%s validate_images  4  array exp  %s  iso %d  w %d  h %d\n", debug_hdr, 
-			img_arr[i].exp, img_arr[i].iso, img_arr[i].width, img_arr[i].height); fflush(stdout);
-
-printf("%s validate_images  5  found iso %d  exp  %d  w %d  h %d\n", debug_hdr, iso_fnd, exp_fnd, w_fnd,
-									h_fnd); fflush(stdout);
 	    if (iso_fnd == TRUE  &&  exp_fnd == TRUE  &&  w_fnd == TRUE  &&  h_fnd == TRUE)
 	    	break;
 	};
     };
 
-    /* Check for errors - more than one row means images are not consistent */
+    /* Check for errors */
     for(i = 0; i < img_cnt; i++)
     {
 	if (img_arr[i].iso == 0  &&  img_arr[i].width == 0  &&  img_arr[i].width == 0  && !(img_arr[i].exp))
@@ -746,11 +741,16 @@ printf("%s validate_images  5  found iso %d  exp  %d  w %d  h %d\n", debug_hdr, 
 
     if (i > 1)
     {
-	log_msg("APP0012", "", "APP0012", p_ui->window);
-    	r = FALSE;
+	/* More than one row means images are not consistent */
+	log_msg("APP0012", NULL, "APP0012", p_ui->window);
     }
     else
     {
+    	/* The final ImgExif will still have all correct values to return */
+    	exif->exposure = strdup(e.exposure);
+    	exif->iso = strdup(e.iso);
+    	exif->width = strdup(e.width);
+    	exif->height = strdup(e.height);
     	r = TRUE;
     }
 
@@ -764,6 +764,61 @@ printf("%s validate_images  5  found iso %d  exp  %d  w %d  h %d\n", debug_hdr, 
     free(img_arr);
     
     return r;
+}
+
+
+/* Validate darks for exposure consistency with images list - discard unusable files */
+
+void validate_darks(GList *darks_files, ImgExif *exif, ProjectUi *p_ui)
+{
+    int w;
+    Image *img;
+    ImgExif e;
+    GList *l, *ll;
+    
+    /* Iterate each dark file and check the exposure data */
+    w = 0;
+
+printf("%s validate_darks 1\n", debug_hdr); fflush(stdout);
+    for(l = darks_files; l != NULL; l = l->next)
+    {
+printf("%s validate_darks 2\n", debug_hdr); fflush(stdout);
+	img = (Image *) l->data;
+	e = img->img_exif;
+
+printf("%s validate_darks 3\n", debug_hdr); fflush(stdout);
+	/* Discard any darks that do not match image exposure data */
+	if ((strcmp(e.exposure, exif->exposure) != 0) ||
+	    (strcmp(e.iso, exif->iso) != 0)      ||
+	    (strcmp(e.width, exif->width) != 0)      ||
+	    (strcmp(e.height, exif->height) != 0))
+	{
+printf("%s validate_darks 4\n", debug_hdr); fflush(stdout);
+	    free_img(img);
+	    ll = l;
+	    l = g_list_remove_link(l, ll);
+	    l->prev;
+	    w++;
+	}
+    }
+
+printf("%s validate_darks 5\n", debug_hdr); fflush(stdout);
+    /* Free the saved exif */
+    free(exif->exposure);
+    free(exif->iso);
+    free(exif->width);
+    free(exif->height);
+
+printf("%s validate_darks 6\n", debug_hdr); fflush(stdout);
+    /* Warn that one or more darks have been discarded */
+    if (w > 0)
+    {
+    	sprintf(app_msg_extra, "Exposure date was found in %d darks that \ndid not match the selected images.", w);
+    	app_msg("APP0013", NULL, p_ui->window);
+    }
+
+printf("%s validate_darks 9\n", debug_hdr); fflush(stdout);
+    return;
 }
 
 
@@ -809,19 +864,14 @@ void check_arr_s(char *s, char **arr_s, int *fnd)
 {
     if (! (*arr_s))
     {
-printf("%s check_arr_s  1 arr s in null\n", debug_hdr); fflush(stdout);
 	*arr_s = (char *) malloc(strlen(s) + 1);
 	strcpy(*arr_s, s);
 	*fnd = TRUE;
     }
     else
     {
-printf("%s check_arr_s  2 arr s in not null  arr %s  s %s\n", debug_hdr, *arr_s, s); fflush(stdout);
 	if (strcmp(*arr_s, s) == 0)
-	{
 	    *fnd = TRUE;
-printf("%s check_arr_s  3 arr s match\n", debug_hdr); fflush(stdout);
-	}
     }
 
     return;
@@ -830,9 +880,14 @@ printf("%s check_arr_s  3 arr s match\n", debug_hdr); fflush(stdout);
 
 /* Set up the project data */
 
-void setup_proj(ProjectData *proj, const gchar *nm, ProjectUi *p_ui)
+void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 {
+    const gchar *nm;
+
     /* Project name */
+    nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
+    string_trim((char *) nm);
+
     if (proj->project_name == NULL)
     {
     	proj->project_name = (char *) malloc(strlen(nm) + 1);
@@ -1132,10 +1187,11 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
     	return;
 
     /* Error check */
-    if (proj_setup_validate(proj, ui) == FALSE)
+    if (proj_validate(proj, ui) == FALSE)
     	return;
 
-    /* Save to file */
+    /* Set up and save */
+    setup_proj(proj, ui);
     save_proj(proj, ui);
 
     /* Close the window, free the screen data and block any secondary close signal */
