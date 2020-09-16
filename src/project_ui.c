@@ -780,6 +780,7 @@ void validate_darks(GList *darks_files, ImgExif *exif, ProjectUi *p_ui)
     w = 0;
 
 printf("%s validate_darks 1\n", debug_hdr); fflush(stdout);
+    //for(l = g_list_last(darks_files); l != NULL; l = l->prev)
     for(l = darks_files; l != NULL; l = l->next)
     {
 printf("%s validate_darks 2\n", debug_hdr); fflush(stdout);
@@ -795,9 +796,13 @@ printf("%s validate_darks 3\n", debug_hdr); fflush(stdout);
 	{
 printf("%s validate_darks 4\n", debug_hdr); fflush(stdout);
 	    free_img(img);
+printf("%s validate_darks 4a\n", debug_hdr); fflush(stdout);
 	    ll = l;
+printf("%s validate_darks 4b\n", debug_hdr); fflush(stdout);
 	    l = g_list_remove_link(l, ll);
+printf("%s validate_darks 4c   count %u\n", debug_hdr, g_list_length(l)); fflush(stdout);
 	    l->prev;
+printf("%s validate_darks 4d\n", debug_hdr); fflush(stdout);
 	    w++;
 	}
     }
@@ -901,6 +906,7 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     if (strcmp(nm, proj->project_name) != 0)
     	strcpy(proj->project_name, nm);
 
+return;
     /* Images and Darks */
     copy_glist(p_ui->images.img_files, proj->images_gl);
     copy_glist(p_ui->darks.img_files, proj->darks_gl);
@@ -1024,8 +1030,11 @@ void free_img(gpointer data)
     Image *img;
     ImgExif *e;
 
+printf("%s free_img 1\n", debug_hdr); fflush(stdout);
     img = (Image *) data;
+printf("%s free_img 2\n", debug_hdr); fflush(stdout);
     e = &(img->img_exif);
+printf("%s free_img 3\n", debug_hdr); fflush(stdout);
 
     free(img->nm);
     free(img->path);
