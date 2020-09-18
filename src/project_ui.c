@@ -302,7 +302,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
 
 void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 {  
-    GtkWidget *heading_lbl;
+    GtkWidget *heading_lbl, *row;
 
     /* Set up containers */
     lst->sel_fr = gtk_frame_new(desc);
@@ -353,8 +353,12 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_container_add(GTK_CONTAINER (lst->scroll_win), lst->list_box);
 
     /* List heading */
+    row = gtk_list_box_row_new();
+    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), FALSE);
     create_label3(&(heading_lbl), "head_1", "Selected Files");
-    gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), heading_lbl);
+    gtk_container_add(GTK_CONTAINER (row), heading_lbl);
+    gtk_list_box_prepend(GTK_LIST_BOX (lst->list_box), row);
+    gtk_list_box_row_set_header (GTK_LIST_BOX_ROW (row), NULL);
 
     /* Image meta data for selected list box row */
     create_label4(&(lst->dir_lbl), "data_4", " ", 4, 3, GTK_ALIGN_START);
@@ -796,12 +800,18 @@ printf("%s validate_darks 3\n", debug_hdr); fflush(stdout);
 	{
 printf("%s validate_darks 4\n", debug_hdr); fflush(stdout);
 	    free_img(img);
+	    l->data = NULL;
+	    ll = darks_files;
+	    ll = g_list_delete_link(ll, l);
+	    l = ll;
+/*
 printf("%s validate_darks 4a\n", debug_hdr); fflush(stdout);
 	    ll = l;
 printf("%s validate_darks 4b\n", debug_hdr); fflush(stdout);
 	    l = g_list_remove_link(l, ll);
 printf("%s validate_darks 4c   count %u\n", debug_hdr, g_list_length(l)); fflush(stdout);
 	    l->prev;
+*/
 printf("%s validate_darks 4d\n", debug_hdr); fflush(stdout);
 	    w++;
 	}
@@ -906,10 +916,9 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     if (strcmp(nm, proj->project_name) != 0)
     	strcpy(proj->project_name, nm);
 
-return;
     /* Images and Darks */
-    copy_glist(p_ui->images.img_files, proj->images_gl);
-    copy_glist(p_ui->darks.img_files, proj->darks_gl);
+    //copy_glist(p_ui->images.img_files, proj->images_gl);
+    //copy_glist(p_ui->darks.img_files, proj->darks_gl);
 
     return;
 }
@@ -947,22 +956,27 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     char buf[256];
     char *proj_fn;
 
+printf("%s save_proj 1\n", debug_hdr); fflush(stdout);
     /* Project directory exists */
     nml = strlen(proj->project_name);
     pathl = strlen(proj->project_path);
 
+printf("%s save_proj 2\n", debug_hdr); fflush(stdout);
     path = (char *) malloc(proj_dir_len + pathl + nml + 3);
     sprintf(path, "%s/%s/%s", proj_dir, proj->project_path, proj->project_name);
 
     if (! check_dir((char *) path))
 	make_dir((char *) path);
 
+printf("%s save_proj 4\n", debug_hdr); fflush(stdout);
     /* New or overwrite file */
     proj_fn = (char *) malloc(proj_dir_len + pathl + nml + nml + 8);
     sprintf(proj_fn, "%s/%s_data", path, proj->project_name);
 
     if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)
     {
+printf("%s save_proj 5\n", debug_hdr); fflush(stdout);
+printf("%s save_proj 5a   x:%s\n", debug_hdr, proj_fn); fflush(stdout);
 	free(proj_fn);
 	return FALSE;
     }
@@ -1030,11 +1044,8 @@ void free_img(gpointer data)
     Image *img;
     ImgExif *e;
 
-printf("%s free_img 1\n", debug_hdr); fflush(stdout);
     img = (Image *) data;
-printf("%s free_img 2\n", debug_hdr); fflush(stdout);
     e = &(img->img_exif);
-printf("%s free_img 3\n", debug_hdr); fflush(stdout);
 
     free(img->nm);
     free(img->path);
@@ -1162,6 +1173,11 @@ void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
     /* Get data */
     lst = (SelectListUi *) user_data;
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
+
+    /*
+    if (img == NULL)
+	return;
+	*/
 
     gtk_label_set_text(GTK_LABEL (lst->dir_lbl), img->path);
     gtk_widget_show(lst->dir_lbl);
