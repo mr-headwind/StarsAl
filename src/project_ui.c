@@ -782,49 +782,37 @@ void validate_darks(GList *darks_files, ImgExif *exif, ProjectUi *p_ui)
     
     /* Iterate each dark file and check the exposure data */
     w = 0;
+    l = g_list_last(darks_files); 
 
-printf("%s validate_darks 1\n", debug_hdr); fflush(stdout);
-    //for(l = g_list_last(darks_files); l != NULL; l = l->prev)
-    for(l = darks_files; l != NULL; l = l->next)
+    while(l != NULL)
     {
-printf("%s validate_darks 2\n", debug_hdr); fflush(stdout);
 	img = (Image *) l->data;
 	e = img->img_exif;
 
-printf("%s validate_darks 3\n", debug_hdr); fflush(stdout);
 	/* Discard any darks that do not match image exposure data */
 	if ((strcmp(e.exposure, exif->exposure) != 0) ||
 	    (strcmp(e.iso, exif->iso) != 0)      ||
 	    (strcmp(e.width, exif->width) != 0)      ||
 	    (strcmp(e.height, exif->height) != 0))
 	{
-printf("%s validate_darks 4\n", debug_hdr); fflush(stdout);
 	    free_img(img);
 	    l->data = NULL;
-	    ll = darks_files;
-	    ll = g_list_delete_link(ll, l);
-	    l = ll;
-/*
-printf("%s validate_darks 4a\n", debug_hdr); fflush(stdout);
-	    ll = l;
-printf("%s validate_darks 4b\n", debug_hdr); fflush(stdout);
-	    l = g_list_remove_link(l, ll);
-printf("%s validate_darks 4c   count %u\n", debug_hdr, g_list_length(l)); fflush(stdout);
-	    l->prev;
-*/
-printf("%s validate_darks 4d\n", debug_hdr); fflush(stdout);
+	    darks_files = g_list_delete_link(darks_files, l);
+	    l = g_list_last(darks_files); 
 	    w++;
+	}
+	else
+	{
+	    l = l->prev;
 	}
     }
 
-printf("%s validate_darks 5\n", debug_hdr); fflush(stdout);
     /* Free the saved exif */
     free(exif->exposure);
     free(exif->iso);
     free(exif->width);
     free(exif->height);
 
-printf("%s validate_darks 6\n", debug_hdr); fflush(stdout);
     /* Warn that one or more darks have been discarded */
     if (w > 0)
     {
@@ -832,7 +820,6 @@ printf("%s validate_darks 6\n", debug_hdr); fflush(stdout);
     	app_msg("APP0013", NULL, p_ui->window);
     }
 
-printf("%s validate_darks 9\n", debug_hdr); fflush(stdout);
     return;
 }
 
@@ -956,27 +943,23 @@ int save_proj(ProjectData *proj, ProjectUi *p_ui)
     char buf[256];
     char *proj_fn;
 
-printf("%s save_proj 1\n", debug_hdr); fflush(stdout);
     /* Project directory exists */
     nml = strlen(proj->project_name);
     pathl = strlen(proj->project_path);
 
-printf("%s save_proj 2\n", debug_hdr); fflush(stdout);
-    path = (char *) malloc(proj_dir_len + pathl + nml + 3);
-    sprintf(path, "%s/%s/%s", proj_dir, proj->project_path, proj->project_name);
+    path = (char *) malloc(pathl + nml + 2);
+    sprintf(path, "%s/%s", proj->project_path, proj->project_name);
 
-    if (! check_dir((char *) path))
-	make_dir((char *) path);
+    if (check_dir((char *) path) == FALSE)
+	if (make_dir((char *) path) == FALSE)
+	    return FALSE;
 
-printf("%s save_proj 4\n", debug_hdr); fflush(stdout);
     /* New or overwrite file */
-    proj_fn = (char *) malloc(proj_dir_len + pathl + nml + nml + 8);
+    proj_fn = (char *) malloc(pathl + nml + 7);
     sprintf(proj_fn, "%s/%s_data", path, proj->project_name);
 
     if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)
     {
-printf("%s save_proj 5\n", debug_hdr); fflush(stdout);
-printf("%s save_proj 5a   x:%s\n", debug_hdr, proj_fn); fflush(stdout);
 	free(proj_fn);
 	return FALSE;
     }
@@ -1285,7 +1268,11 @@ static void window_cleanup(GtkWidget *window, ProjectUi *ui)
     
     /* Free any list and filenames */
     g_list_free_full(ui->images.img_files, (GDestroyNotify) free_img);
-    g_list_free_full(ui->darks.img_files, (GDestroyNotify) free_img);
+printf("%s window_cleanup 1\n", debug_hdr); fflush(stdout);
+    
+    if (ui->darks.img_files)
+	g_list_free_full(ui->darks.img_files, (GDestroyNotify) free_img);
+printf("%s window_cleanup 2\n", debug_hdr); fflush(stdout);
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler);
