@@ -77,7 +77,7 @@ static char * get_tag(ExifData *, ExifIfd, ExifTag);
 int proj_save_reqd(ProjectData *, ProjectUi *);
 int proj_validate(ProjectData *, ProjectUi *);
 int validate_images(GList *, ImgExif *, ProjectUi *);
-void validate_darks(GList *, ImgExif *, ProjectUi *);
+void validate_darks(GList **, ImgExif *, ProjectUi *);
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void check_arr_int(int, int *, int *);
 void check_arr_s(char *, char **, int *);
@@ -194,9 +194,6 @@ ProjectData * new_proj_data()
 {
     ProjectData *proj = (ProjectData *) malloc(sizeof(ProjectData));
     memset(proj, 0, sizeof(ProjectData));
-
-    proj->project_path = (char *) malloc(proj_dir_len + 1);
-    strcpy(proj->project_path, proj_dir);
 
     return proj;
 }
@@ -683,7 +680,7 @@ int proj_validate(ProjectData *proj, ProjectUi *p_ui)
     	return FALSE;
 
     /* Discard and warn of unusable darks */
-    validate_darks(p_ui->darks.img_files, &exif, p_ui);
+    validate_darks(&(p_ui->darks.img_files), &exif, p_ui);
 
     return TRUE;
 }
@@ -773,16 +770,16 @@ int validate_images(GList *img_files, ImgExif *exif, ProjectUi *p_ui)
 
 /* Validate darks for exposure consistency with images list - discard unusable files */
 
-void validate_darks(GList *darks_files, ImgExif *exif, ProjectUi *p_ui)
+void validate_darks(GList **darks_files, ImgExif *exif, ProjectUi *p_ui)
 {
     int w;
     Image *img;
     ImgExif e;
-    GList *l, *ll;
+    GList *l;
     
     /* Iterate each dark file and check the exposure data */
     w = 0;
-    l = g_list_last(darks_files); 
+    l = g_list_last(*darks_files); 
 
     while(l != NULL)
     {
@@ -797,8 +794,8 @@ void validate_darks(GList *darks_files, ImgExif *exif, ProjectUi *p_ui)
 	{
 	    free_img(img);
 	    l->data = NULL;
-	    darks_files = g_list_delete_link(darks_files, l);
-	    l = g_list_last(darks_files); 
+	    *darks_files = g_list_delete_link(*darks_files, l);
+	    l = g_list_last(*darks_files); 
 	    w++;
 	}
 	else
@@ -816,7 +813,7 @@ void validate_darks(GList *darks_files, ImgExif *exif, ProjectUi *p_ui)
     /* Warn that one or more darks have been discarded */
     if (w > 0)
     {
-    	sprintf(app_msg_extra, "Exposure date was found in %d darks that \ndid not match the selected images.", w);
+    	sprintf(app_msg_extra, "Exposure data was found in %d darks that \ndid not match the selected images.", w);
     	app_msg("APP0013", NULL, p_ui->window);
     }
 
@@ -880,28 +877,58 @@ void check_arr_s(char *s, char **arr_s, int *fnd)
 }
 
 
-/* Set up the project data */
+/* Set up the project data - anything down this path (new or editing) starts from scratch again */
 
 void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *nm;
+    int len, set;
+    char *s;
 
     /* Project name */
     nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
     string_trim((char *) nm);
+    len strlen(nm);
+    set = FALSE;
 
-    if (proj->project_name == NULL)
+    if (proj->project_name == NULL)			// New project
     {
-    	proj->project_name = (char *) malloc(strlen(nm) + 1);
+    	proj->project_name = (char *) malloc(len + 1);
 	proj->project_name[0] = '\0';
-	proj->project_path = (char *) malloc(strlen(proj_dir) + 1);
-	strcpy(proj->project_path, proj_dir);
-	proj->status = 0;
+	set = TRUE;
+    }
+    else
+    {
+	if (strcmp(nm, proj->project_name) != 0)	// Edit
+	{
+	    s = (char*) malloc(strlen(proj->project_path) + 5);
+	    sprintf(s, "%s.bak", proj->project_path);
+
+	    if (rename(proj->project_path, s) < 0)
+	    {
+		log_msg(failed to back up project dir, errno...);
+		return;
+	    }
+	    else
+	    {
+		log_msg(backed up);
+	    }
+
+	    realloc(proj->project_name, len + 1);
+	    free(s);
+	    set = TRUE;
+	}
     }
 
-    /* Make sure it's changed */
-    if (strcmp(nm, proj->project_name) != 0)
-    	strcpy(proj->project_name, nm);
+    if (set == TRUE)
+    {
+	strcpy(proj->project_name, nm);
+	proj->project_path = (char *) malloc(proj_dir_len + len + 2);
+	sprintf(proj->project_path, "%s/%s", proj_dir, nm);
+    }
+
+    /* Project status */
+    proj->status = 0;
 
     /* Images and Darks */
     //copy_glist(p_ui->images.img_files, proj->images_gl);
@@ -1157,11 +1184,6 @@ void OnRowSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
     lst = (SelectListUi *) user_data;
     img = (Image *) g_object_get_data (G_OBJECT (row), "image");
 
-    /*
-    if (img == NULL)
-	return;
-	*/
-
     gtk_label_set_text(GTK_LABEL (lst->dir_lbl), img->path);
     gtk_widget_show(lst->dir_lbl);
 
@@ -1267,12 +1289,14 @@ static void window_cleanup(GtkWidget *window, ProjectUi *ui)
     g_signal_handler_block (ui->darks.list_box, ui->darks.sel_handler);
     
     /* Free any list and filenames */
+    /*
     g_list_free_full(ui->images.img_files, (GDestroyNotify) free_img);
-printf("%s window_cleanup 1\n", debug_hdr); fflush(stdout);
     
     if (ui->darks.img_files)
 	g_list_free_full(ui->darks.img_files, (GDestroyNotify) free_img);
-printf("%s window_cleanup 2\n", debug_hdr); fflush(stdout);
+    else
+    	g_list_free(ui->darks.img_files);
+    */
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler);
