@@ -877,62 +877,54 @@ void check_arr_s(char *s, char **arr_s, int *fnd)
 }
 
 
-/* Set up the project data - anything down this path (new or editing) starts from scratch again */
+/* Set up the new or edited project data - for edits, backup the old one and start again */
 
 void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *nm;
-    int len, set;
+    int len;
     char *s;
 
     /* Project name */
     nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
     string_trim((char *) nm);
-    len strlen(nm);
-    set = FALSE;
+    len = strlen(nm);
 
     if (proj->project_name == NULL)			// New project
     {
     	proj->project_name = (char *) malloc(len + 1);
 	proj->project_name[0] = '\0';
-	set = TRUE;
     }
-    else
+    else 						// Edit
     {
-	if (strcmp(nm, proj->project_name) != 0)	// Edit
+	s = (char*) malloc(strlen(proj->project_path) + 5);
+	sprintf(s, "%s.bak", proj->project_path);
+
+	if (rename(proj->project_path, s) < 0)
 	{
-	    s = (char*) malloc(strlen(proj->project_path) + 5);
-	    sprintf(s, "%s.bak", proj->project_path);
-
-	    if (rename(proj->project_path, s) < 0)
-	    {
-		log_msg(failed to back up project dir, errno...);
-		return;
-	    }
-	    else
-	    {
-		log_msg(backed up);
-	    }
-
-	    realloc(proj->project_name, len + 1);
-	    free(s);
-	    set = TRUE;
+	    sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	    log_msg("SYS9009", proj->project_name, "SYS9009", p_ui->window);
+	    return;
 	}
+	else
+	{
+	    log_msg("SYS9010", proj->project_name, NULL, NULL);
+	}
+
+	proj->project_name = (char *) realloc(proj->project_name, len + 1);
+	free(s);
     }
 
-    if (set == TRUE)
-    {
-	strcpy(proj->project_name, nm);
-	proj->project_path = (char *) malloc(proj_dir_len + len + 2);
-	sprintf(proj->project_path, "%s/%s", proj_dir, nm);
-    }
+    strcpy(proj->project_name, nm);
+    proj->project_path = (char *) malloc(proj_dir_len + len + 2);
+    sprintf(proj->project_path, "%s/%s", proj_dir, nm);
 
     /* Project status */
     proj->status = 0;
 
     /* Images and Darks */
-    //copy_glist(p_ui->images.img_files, proj->images_gl);
-    //copy_glist(p_ui->darks.img_files, proj->darks_gl);
+    proj->images_gl = g_list_copy(p_ui->images.img_files);
+    proj->darks_gl = g_list_copy(p_ui->darks.img_files);
 
     return;
 }
@@ -1288,7 +1280,9 @@ static void window_cleanup(GtkWidget *window, ProjectUi *ui)
     g_signal_handler_block (ui->images.list_box, ui->images.sel_handler);
     g_signal_handler_block (ui->darks.list_box, ui->darks.sel_handler);
     
-    /* Free any list and filenames */
+    /* Free the images and darks lists, but not the images attached as they are now attached to the project */
+    g_list_free(ui->images.img_files);
+    g_list_free(ui->darks.img_files);
     /*
     g_list_free_full(ui->images.img_files, (GDestroyNotify) free_img);
     

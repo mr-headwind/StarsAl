@@ -117,10 +117,13 @@ static const char *app_messages[][2] =
     { "SYS9006", "File %s does not exist or cannot be read. "},
     { "SYS9007", "Failed to get parent container widget. %s "},
     { "SYS9008", "Failed to find widget. %s "},
+    { "SYS9009", "Error: Failed to backup Project %s. "},
+    { "SYS9010", "Project %s has been backed up. "},
+    { "SYS9011", "Failed to create directory: %s "},
     { "SYS9999", "Error - Unknown error message given. "}			// NB - MUST be last
 };
 
-static const int Msg_Count = 24;
+static const int Msg_Count = 27;
 static char *Home;
 static char *logfile = NULL;
 static FILE *lf = NULL;
@@ -300,7 +303,7 @@ int check_app_dir()
 
     if ((Home = getenv("HOME")) == NULL)
     {
-    	log_msg("SYS9001", NULL, NULL, NULL);
+    	log_msg("SYS9003", NULL, NULL, NULL);
     	return FALSE;
     }
 
@@ -312,7 +315,7 @@ int check_app_dir()
     {
 	if ((err = mkdir(app_dir, 0700)) != 0)
 	{
-	    log_msg("SYS9002", app_dir, NULL, NULL);
+	    log_msg("SYS9004", app_dir, NULL, NULL);
 	    free(app_dir);
 	    return FALSE;
 	}
@@ -593,7 +596,7 @@ int make_dir(char *s)
 
     if ((err = mkdir(s, 0700)) != 0)
     {
-	log_msg("SYS9002", s, NULL, NULL);
+	log_msg("SYS9011", s, NULL, NULL);
 	return FALSE;
     }
 
