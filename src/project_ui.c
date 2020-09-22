@@ -1,5 +1,5 @@
 /*
-**  Copyright (C) 2021 Anthony Buckley
+**  Copyright (C) 2020 Anthony Buckley
 ** 
 **  This file is part of StarsAl.
 ** 
@@ -25,7 +25,7 @@
 ** Author:	Anthony Buckley
 **
 ** History
-**	12-Jul-2021	Initial code
+**	12-Jul-2020	Initial code
 **
 */
 
@@ -35,10 +35,7 @@
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <libexif/exif-data.h>
 #include <libexif/exif-tag.h>
 #include <libexif/exif-loader.h>
@@ -61,10 +58,7 @@
 int project_main(ProjectData *, GtkWidget *);
 int project_init(GtkWidget *);
 ProjectUi * new_proj_ui();
-ProjectData * new_proj_data();
 void project_ui(ProjectData *, ProjectUi *);
-void close_project(ProjectData *);
-void free_img(gpointer);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(SelectListUi *, ProjectUi *, char *);
 void show_list(SelectListUi *, GSList *, ProjectUi *p_ui);
@@ -78,12 +72,10 @@ int proj_save_reqd(ProjectData *, ProjectUi *);
 int proj_validate(ProjectData *, ProjectUi *);
 int validate_images(GList *, ImgExif *, ProjectUi *);
 void validate_darks(GList **, ImgExif *, ProjectUi *);
-int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void check_arr_int(int, int *, int *);
 void check_arr_s(char *, char **, int *);
 void setup_proj(ProjectData *, ProjectUi *p_ui);
-void copy_glist(GList *, GList *);
-int save_proj(ProjectData *, ProjectUi *);
+//void copy_glist(GList *, GList *);
 static void window_cleanup(GtkWidget *, ProjectUi *);
 
 static void OnProjCancel(GtkWidget*, gpointer);
@@ -94,6 +86,10 @@ static void OnListClear(GtkWidget*, gpointer);
 static void OnListRemove(GtkWidget*, gpointer);
 static void OnRowSelect(GtkListBox*, GtkListBoxRow*, gpointer);
 
+extern ProjectData * new_proj_data();
+extern int save_proj_init(ProjectData *, ProjectUi *);
+extern void free_img(gpointer);
+extern int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
 extern void create_label3(GtkWidget **, char *, char *);
 extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
@@ -106,10 +102,7 @@ extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
 extern void string_trim(char *);
 extern void trim_spaces(char *);
-extern int check_dir(char *);
-extern int make_dir(char *);
 extern char * image_type(char *, GtkWidget *);
-extern int val_str2numb(char *, int *, char *, GtkWidget *);
 
 
 /* Globals */
@@ -185,17 +178,6 @@ ProjectUi * new_proj_ui()
     memset(ui, 0, sizeof(ProjectUi));
 
     return ui;
-}
-
-
-/* Create new project data structure*/
-
-ProjectData * new_proj_data()
-{
-    ProjectData *proj = (ProjectData *) malloc(sizeof(ProjectData));
-    memset(proj, 0, sizeof(ProjectData));
-
-    return proj;
 }
 
 
@@ -821,23 +803,6 @@ void validate_darks(GList **darks_files, ImgExif *exif, ProjectUi *p_ui)
 }
 
 
-/* Convert iso, width and height to integer */
-
-int convert_exif(ImgExif *e, int *iso, int *w, int *h, GtkWidget *window)
-{
-    if (val_str2numb(e->iso, iso, e->iso, window) == FALSE)
-	return FALSE;
-
-    if (val_str2numb(e->width, w, e->width, window) == FALSE)
-	return FALSE;
-
-    if (val_str2numb(e->height, h, e->height, window) == FALSE)
-	return FALSE;
-
-    return TRUE;
-}
-
-
 /* Check if an integer exif item is present and add if necessary */
 
 void check_arr_int(int i, int *arr_i, int *fnd)
@@ -931,6 +896,7 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 
 
 /* Compile a list of images and exif data */
+/*
 
 void copy_glist(GList *in_gl, GList *out_gl)
 {
@@ -950,122 +916,7 @@ void copy_glist(GList *in_gl, GList *out_gl)
 
     return;
 }
-
-
-/* Write the project file */
-
-int save_proj(ProjectData *proj, ProjectUi *p_ui)
-{
-    int nml, pathl;
-    char *path;
-    FILE *fd = NULL;
-    char buf[256];
-    char *proj_fn;
-
-    /* Project directory exists */
-    nml = strlen(proj->project_name);
-    pathl = strlen(proj->project_path);
-
-    path = (char *) malloc(pathl + nml + 2);
-    sprintf(path, "%s/%s", proj->project_path, proj->project_name);
-
-    if (check_dir((char *) path) == FALSE)
-	if (make_dir((char *) path) == FALSE)
-	    return FALSE;
-
-    /* New or overwrite file */
-    proj_fn = (char *) malloc(pathl + nml + 7);
-    sprintf(proj_fn, "%s/%s_data", path, proj->project_name);
-
-    if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)
-    {
-	free(proj_fn);
-	return FALSE;
-    }
-
-    /* Write new values */
-    /*
-    pref_list = g_list_first(pref_list_head);
-
-    while(pref_list != NULL)
-    {
-    	UserPrefData *Preference = (UserPrefData *) pref_list->data;
-
-    	if (Preference->val != NULL)
-    	{
-	    sprintf(buf, "%s|%s\n", Preference->key, Preference->val);
-	    
-	    if ((fputs(buf, fd)) == EOF)
-	    {
-		free(prefs_fn);
-		log_msg("SYS9005", prefs_fn, "SYS9005", window);
-		return FALSE;
-	    }
-    	}
-
-	pref_list = g_list_next(pref_list);
-    }
-    */
-
-    /* Close off */
-    fclose(fd);
-    free(proj_fn);
-    free(path);
-    save_indi = FALSE;
-
-    return TRUE;
-}
-
-
-/* Close the current project */
-
-void close_project(ProjectData *proj)
-{
-    /* Free the listed images and darks */
-    g_list_free_full(proj->images_gl, (GDestroyNotify) free_img);
-    g_list_free_full(proj->darks_gl, (GDestroyNotify) free_img);
-
-    proj->images_gl = NULL;
-    proj->darks_gl = NULL;
-
-    /* Free remaining */
-    free(proj->project_name);
-    free(proj->project_path);
-
-    /* Free project */
-    free(proj);
-
-    return;
-}
-
-
-/* Free an image or dark */
-
-void free_img(gpointer data)
-{
-    Image *img;
-    ImgExif *e;
-
-    img = (Image *) data;
-    e = &(img->img_exif);
-
-    free(img->nm);
-    free(img->path);
-
-    free(e->make);
-    free(e->model);
-    free(e->type);
-    free(e->date);
-    free(e->width);
-    free(e->height);
-    free(e->iso);
-    free(e->exposure);
-    free(e->f_stop);
-
-    free(img);
-
-    return;
-}
+*/
 
 
 /* CALLBACKS */
@@ -1214,7 +1065,9 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
 
     /* Set up and save */
     setup_proj(proj, ui);
-    save_proj(proj, ui);
+
+    if (save_proj_init(proj, ui) == TRUE)
+    	save_indi == FALSE;
 
     /* Close the window, free the screen data and block any secondary close signal */
     window_cleanup(ui->window, ui);
