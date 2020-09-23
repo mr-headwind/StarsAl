@@ -59,15 +59,31 @@ ProjectData * new_proj_data();
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
 void close_project(ProjectData *);
-int save_proj_init(ProjectData *, ProjectUi *);
+int save_proj_init(ProjectData *, GtkWidget *);
+int write_proj(FILE *, const char *, GtkWidget *);
 
 extern int val_str2numb(char *, int *, char *, GtkWidget *);
 extern int check_dir(char *);
 extern int make_dir(char *);
+extern void log_msg(char*, char*, char*, GtkWidget*);
 
 
 /* Globals */
 
+static const char *proj_tags[][2] = 
+{ 
+  { "<?xml version=\"1.0\"?>", "" },
+    { "<StarsAl>", "</StarsAl>" },
+      { "<Project>", "</Project>" },
+        { "<Title>", "</Title>" },
+        { "<Status>", "</Status>" },
+        { "<Images>", "</Images>" },
+          { "<File>", "</File>" },
+        { "<Darks>", "</Darks>" },
+          { "<File>", "</File>" }
+};
+
+static const int Tag_Count = 9;
 static const char *debug_hdr = "DEBUG-project.c ";
 
 
@@ -154,11 +170,11 @@ void close_project(ProjectData *proj)
 
 /* Write the initial project file */
 
-int save_proj_init(ProjectData *proj, ProjectUi *p_ui)
+int save_proj_init(ProjectData *proj, GtkWidget *window)
 {
-    int nml, pathl;
+    int nml, pathl, i, buf_sz, err;
     FILE *fd = NULL;
-    char buf[256];
+    char *buf;
     char *proj_fn;
 
     /* Project directory exists */
@@ -169,16 +185,58 @@ int save_proj_init(ProjectData *proj, ProjectUi *p_ui)
     /* New or overwrite file */
     nml = strlen(proj->project_name);
     pathl = strlen(proj->project_path);
-    proj_fn = (char *) malloc(pathl + nml + 7);
-    sprintf(proj_fn, "%s/%s_data", proj->project_path, proj->project_name);
+    proj_fn = (char *) malloc(pathl + nml + 11);
+    sprintf(proj_fn, "%s/%s_data.xml", proj->project_path, proj->project_name);
 
     if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)
     {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9005", proj_fn, "SYS9005", window);
 	free(proj_fn);
 	return FALSE;
     }
 
-    /* Write new values */
+    /* Determine the buffer size required for headers */
+    buf_sz = 0;
+
+    for(i = 0; i < Tag_Count; i++)
+    {
+    	if (strcmp(proj_tags[i][0], "<File>") == 0)
+	    continue;
+
+    	buf_sz += ((strlen(proj_tags[i][0]) * 2) + 2);
+    }
+
+    /* Add size for project title and status */
+    buf_sz += (nml + 3);
+
+    /* Write the project details to file based on the XML tag array (above) */
+
+    /* Initial */
+    if (write_proj(fd, proj_tags[0][0], window) == FALSE)		// XML header
+    	return FALSE;
+
+    if (write_proj(fd, proj_tags[1][0], window) == FALSE)		// StarsAl header
+    	return FALSE;
+
+    if (write_proj(fd, proj_tags[2][0], window) == FALSE)		// Project header
+    	return FALSE;
+
+    /* Project Title */
+    if ((err = fprintf(fd, "%s%s%s", proj_tags[3][0], proj->project_name, proj_tags[3][1])) < 0)
+    {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9012", proj_fn, "SYS9012", window);
+	free(proj_fn);
+	return FALSE;
+    }
+
+    /* Header close tags */
+    if (write_proj(fd, proj_tags[2][1], window) == FALSE)		// Project header
+    	return FALSE;
+
+    if (write_proj(fd, proj_tags[1][1], window) == FALSE)		// StarsAl header
+    	return FALSE;
     /*
     	create xml template
     	determine size of buffer required
@@ -211,6 +269,21 @@ int save_proj_init(ProjectData *proj, ProjectUi *p_ui)
     /* Close off */
     fclose(fd);
     free(proj_fn);
+
+    return TRUE;
+}
+
+
+/* General write function */
+
+int write_proj(FILE *fd, const char *s, GtkWidget *window)
+{
+    if ((fputs(s, fd)) == EOF)
+    {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9012", (char *) s, "SYS9012", window);
+	return FALSE;
+    }
 
     return TRUE;
 }

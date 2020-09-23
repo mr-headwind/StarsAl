@@ -87,7 +87,7 @@ static void OnListRemove(GtkWidget*, gpointer);
 static void OnRowSelect(GtkListBox*, GtkListBoxRow*, gpointer);
 
 extern ProjectData * new_proj_data();
-extern int save_proj_init(ProjectData *, ProjectUi *);
+extern int save_proj_init(ProjectData *, GtkWidget *);
 extern void free_img(gpointer);
 extern int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
@@ -1066,7 +1066,7 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
     /* Set up and save */
     setup_proj(proj, ui);
 
-    if (save_proj_init(proj, ui) == TRUE)
+    if (save_proj_init(proj, ui->window) == TRUE)
     	save_indi == FALSE;
 
     /* Close the window, free the screen data and block any secondary close signal */
