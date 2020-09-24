@@ -76,6 +76,7 @@ static const char *proj_tags[][2] =
     { "<StarsAl>", "</StarsAl>" },
       { "<Project>", "</Project>" },
         { "<Title>", "</Title>" },
+        { "<Path>", "</Path>" },
         { "<Status>", "</Status>" },
         { "<Images>", "</Images>" },
           { "<File>", "</File>" },
@@ -83,7 +84,7 @@ static const char *proj_tags[][2] =
           { "<File>", "</File>" }
 };
 
-static const int Tag_Count = 9;
+static const int Tag_Count = 10;
 static const char *debug_hdr = "DEBUG-project.c ";
 
 
@@ -174,7 +175,7 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
 {
     int nml, pathl, i, buf_sz, err;
     FILE *fd = NULL;
-    char *buf;
+    char *buf1;
     char *proj_fn;
 
     /* Project directory exists */
@@ -207,10 +208,23 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     	buf_sz += ((strlen(proj_tags[i][0]) * 2) + 2);
     }
 
-    /* Add size for project title and status */
-    buf_sz += (nml + 3);
+    /* Add size for project title, path and status */
+    buf_sz += (nml + pathl + 4);
 
     /* Write the project details to file based on the XML tag array (above) */
+    buf1 = (char *) malloc(buf_sz);
+    sprintf(buf1, "%s\n%s\n%s\n%s%s%s\n%s%s%s\n%s%d%s\n", proj_tags[0][0],	// XML header
+    	    						  proj_tags[1][0],	// StarsAl header
+    	    						  proj_tags[2][0],	// Project header
+    	    						  proj_tags[3][0],	// Title tag
+    	    						  proj->project_name,	// Title
+    	    						  proj_tags[3][1],	// End Title tag
+    	    						  proj_tags[4][0],	// Path tag
+    	    						  proj->project_path,	// Path
+    	    						  proj_tags[4][1],	// End Path tag
+    	    						  proj_tags[4][0],	// Status tag
+    	    						  proj->status,		// Status
+    	    						  proj_tags[4][1]); 	// End Status tag
 
     /* Initial */
     if (write_proj(fd, proj_tags[0][0], window) == FALSE)		// XML header
