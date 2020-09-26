@@ -61,6 +61,9 @@ void free_img(gpointer);
 void close_project(ProjectData *);
 int save_proj_init(ProjectData *, GtkWidget *);
 int write_proj(FILE *, const char *, GtkWidget *);
+int get_hdr_sz();
+int get_image_sz(int, GList *);
+void set_image_xml(char **, GList *, int);
 
 extern int val_str2numb(char *, int *, char *, GtkWidget *);
 extern int check_dir(char *);
@@ -75,16 +78,15 @@ static const char *proj_tags[][2] =
   { "<?xml version=\"1.0\"?>", "" },
     { "<StarsAl>", "</StarsAl>" },
       { "<Project>", "</Project>" },
-        { "<Title>", "</Title>" },
-        { "<Path>", "</Path>" },
-        { "<Status>", "</Status>" },
-        { "<Images>", "</Images>" },
-          { "<File>", "</File>" },
-        { "<Darks>", "</Darks>" },
-          { "<File>", "</File>" }
+      { "<Path>", "</Path>" },
+      { "<Status>", "</Status>" },
+      { "<Images>", "</Images>" },
+        { "<File>", "</File>" },
+      { "<Darks>", "</Darks>" },
+        { "<File>", "</File>" }
 };
 
-static const int Tag_Count = 10;
+static const int Tag_Count = 9;
 static const char *debug_hdr = "DEBUG-project.c ";
 
 
@@ -173,12 +175,12 @@ void close_project(ProjectData *proj)
 
 int save_proj_init(ProjectData *proj, GtkWidget *window)
 {
-    int nml, pathl, i, buf_sz, err;
+    int nml, pathl, buf_sz, err;
     FILE *fd = NULL;
-    char *buf1;
+    char *buf;
     char *proj_fn;
 
-    /* Project directory exists */
+    /* Create Project directory if necessary */
     if (check_dir((char *) proj->project_path) == FALSE)
 	if (make_dir((char *) proj->project_path) == FALSE)
 	    return FALSE;
@@ -199,86 +201,41 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
 
     /* Determine the buffer size required for headers */
     buf_sz = 0;
-
-    for(i = 0; i < Tag_Count; i++)
-    {
-    	if (strcmp(proj_tags[i][0], "<File>") == 0)
-	    continue;
-
-    	buf_sz += ((strlen(proj_tags[i][0]) * 2) + 2);
-    }
+    buf_sz += get_hdr_sz();
 
     /* Add size for project title, path and status */
     buf_sz += (nml + pathl + 4);
 
-    /* Write the project details to file based on the XML tag array (above) */
-    buf1 = (char *) malloc(buf_sz);
-    sprintf(buf1, "%s\n%s\n%s\n%s%s%s\n%s%s%s\n%s%d%s\n", proj_tags[0][0],	// XML header
-    	    						  proj_tags[1][0],	// StarsAl header
-    	    						  proj_tags[2][0],	// Project header
-    	    						  proj_tags[3][0],	// Title tag
-    	    						  proj->project_name,	// Title
-    	    						  proj_tags[3][1],	// End Title tag
-    	    						  proj_tags[4][0],	// Path tag
-    	    						  proj->project_path,	// Path
-    	    						  proj_tags[4][1],	// End Path tag
-    	    						  proj_tags[4][0],	// Status tag
-    	    						  proj->status,		// Status
-    	    						  proj_tags[4][1]); 	// End Status tag
+    /* Add size for images and darks */
+    buf_sz += get_image_sz(strlen(proj_tags[6][0]), proj->images_gl);
+    buf_sz += get_image_sz(strlen(proj_tags[8][0]), proj->darks_gl);
 
-    /* Initial */
-    if (write_proj(fd, proj_tags[0][0], window) == FALSE)		// XML header
+    /* Prepare the project header details and tags */
+    buf = (char *) malloc(buf_sz);
+
+    sprintf(buf, "%s\n%s\n%s%s%s\n%s%s%s\n%s%d%s\n", proj_tags[0][0],		// XML header tag
+						     proj_tags[1][0],		// StarsAl header tag
+						     proj_tags[2][0],		// Project tag
+						     proj->project_name,	// Title
+						     proj_tags[2][1],		// End Project tag
+						     proj_tags[3][0],		// Path tag
+						     proj->project_path,	// Path
+						     proj_tags[3][1],		// End Path tag
+						     proj_tags[4][0],		// Status tag
+						     proj->status,		// Status
+						     proj_tags[4][1]); 		// End Status tag
+
+    
+    /* Prepare the Prepare the file names and tags */
+    set_image_xml(&buf, proj->images_gl, 5);
+    set_image_xml(&buf, proj->darks_gl, 7);
+
+    /* Prepare the project header end tag */
+    sprintf(buf, "%s%s\n", buf, proj_tags[1][1]);		// End StarsAl tag
+
+    /* Write to file */
+    if (write_proj(fd, buf, window) == FALSE)
     	return FALSE;
-
-    if (write_proj(fd, proj_tags[1][0], window) == FALSE)		// StarsAl header
-    	return FALSE;
-
-    if (write_proj(fd, proj_tags[2][0], window) == FALSE)		// Project header
-    	return FALSE;
-
-    /* Project Title */
-    if ((err = fprintf(fd, "%s%s%s", proj_tags[3][0], proj->project_name, proj_tags[3][1])) < 0)
-    {
-	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
-	log_msg("SYS9012", proj_fn, "SYS9012", window);
-	free(proj_fn);
-	return FALSE;
-    }
-
-    /* Header close tags */
-    if (write_proj(fd, proj_tags[2][1], window) == FALSE)		// Project header
-    	return FALSE;
-
-    if (write_proj(fd, proj_tags[1][1], window) == FALSE)		// StarsAl header
-    	return FALSE;
-    /*
-    	create xml template
-    	determine size of buffer required
-    	construct data inside xml tags
-    	write file
-    */
-    /*
-    pref_list = g_list_first(pref_list_head);
-
-    while(pref_list != NULL)
-    {
-    	UserPrefData *Preference = (UserPrefData *) pref_list->data;
-
-    	if (Preference->val != NULL)
-    	{
-	    sprintf(buf, "%s|%s\n", Preference->key, Preference->val);
-	    
-	    if ((fputs(buf, fd)) == EOF)
-	    {
-		free(prefs_fn);
-		log_msg("SYS9005", prefs_fn, "SYS9005", window);
-		return FALSE;
-	    }
-    	}
-
-	pref_list = g_list_next(pref_list);
-    }
-    */
 
     /* Close off */
     fclose(fd);
@@ -295,9 +252,72 @@ int write_proj(FILE *fd, const char *s, GtkWidget *window)
     if ((fputs(s, fd)) == EOF)
     {
 	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
-	log_msg("SYS9012", (char *) s, "SYS9012", window);
+	log_msg("SYS9012", "Project file", "SYS9012", window);
 	return FALSE;
     }
 
     return TRUE;
+}
+
+
+/* Get the total size of header tags */
+
+int get_hdr_sz()
+{
+    int i, len;
+
+    len = 0;
+
+    for(i = 0; i < Tag_Count; i++)
+    {
+    	if (strcmp(proj_tags[i][0], "<File>") == 0)
+	    continue;
+
+    	len += ((strlen(proj_tags[i][0]) * 2) + 2);
+    }
+
+    return len;
+}
+
+
+/* Get the total size of all the image file names */
+
+int get_image_sz(int tag_len, GList *gl)
+{
+    int len;
+    GList *l;
+    Image *img;
+
+    len = 0;
+
+    for(l = gl; l != NULL; l = l->next)
+    {
+	img = (Image *) l->data;
+	len += ((tag_len * 2) + strlen(img->nm) + strlen(img->path) + 3);
+    };
+
+    return len;
+}
+
+
+/* Set up the image files xml */
+
+void set_image_xml(char **buf, GList *gl, int idx)
+{
+    int i;
+    GList *l;
+    Image *img;
+
+    sprintf(*buf, "%s%s\n", *buf, proj_tags[idx][0]);		// Images start tag
+    i = idx + 1;
+
+    for(l = gl; l != NULL; l = l->next)
+    {
+	img = (Image *) l->data;
+	sprintf(*buf, "%s%s%s/%s%s\n", *buf, proj_tags[i][0], img->nm, img->path, proj_tags[i][1]);
+    };
+
+    sprintf(*buf, "%s%s\n", *buf, proj_tags[idx][1]);		// Images end tag
+
+    return;
 }
