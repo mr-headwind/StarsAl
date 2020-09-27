@@ -113,7 +113,7 @@ static const char *app_messages[][2] =
     { "SYS9002", "Session ends. "},
     { "SYS9003", "Failed to read $HOME variable. "},
     { "SYS9004", "Failed to create Application directory: %s "},
-    { "SYS9005", "Failed to create file: %s "},
+    { "SYS9005", "Failed to open file: %s "},
     { "SYS9006", "File %s does not exist or cannot be read. "},
     { "SYS9007", "Failed to get parent container widget. %s "},
     { "SYS9008", "Failed to find widget. %s "},
@@ -121,10 +121,11 @@ static const char *app_messages[][2] =
     { "SYS9010", "Project %s has been backed up. "},
     { "SYS9011", "Failed to create directory: %s "},
     { "SYS9012", "Failed to write file: %s "},
+    { "SYS9013", "Failed to read file: %s "},
     { "SYS9999", "Error - Unknown error message given. "}			// NB - MUST be last
 };
 
-static const int Msg_Count = 28;
+static const int Msg_Count = 29;
 static char *Home;
 static char *logfile = NULL;
 static FILE *lf = NULL;

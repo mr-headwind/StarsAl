@@ -60,7 +60,9 @@ int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
 void close_project(ProjectData *);
 int save_proj_init(ProjectData *, GtkWidget *);
+FILE * open_proj(char *, char *, GtkWidget *);
 int write_proj(FILE *, const char *, GtkWidget *);
+int read_proj(FILE *, char *, int, GtkWidget *);
 int get_hdr_sz();
 int get_image_sz(int, GList *);
 void set_image_xml(char **, GList *, int);
@@ -149,6 +151,42 @@ void free_img(gpointer data)
 }
 
 
+/* Open a project */
+
+int open_project(char *nm, ProjectData *proj, GtkWidget *window)
+{
+    int count, sz;
+    char *fn, *buf;
+    FILE *fd = NULL;
+
+    /* Set project file name and path */
+    /*
+     * get PROJDIR
+     * set path
+     */
+
+    if ((fd = open_proj(fn, "r", window)) == FALSE)
+    {
+	free(fn);
+    	return FALSE;
+    }
+
+    /* 
+     * stat filename to get size
+     */
+
+    /* read file */
+    if ((count = read_proj(fd, buf, sz, window)) < 0)
+    	return FALSE;
+
+    /*
+     * load projectdata
+     */
+
+    return TRUE;
+}
+
+
 /* Close (not delete) the current project */
 
 void close_project(ProjectData *proj)
@@ -191,12 +229,10 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     proj_fn = (char *) malloc(pathl + nml + 11);
     sprintf(proj_fn, "%s/%s_data.xml", proj->project_path, proj->project_name);
 
-    if ((fd = fopen(proj_fn, "w")) == (FILE *) NULL)
+    if ((fd = open_proj(proj_fn, "w", window)) == FALSE)
     {
-	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
-	log_msg("SYS9005", proj_fn, "SYS9005", window);
 	free(proj_fn);
-	return FALSE;
+    	return FALSE;
     }
 
     /* Determine the buffer size required for headers */
@@ -240,21 +276,6 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     /* Close off */
     fclose(fd);
     free(proj_fn);
-
-    return TRUE;
-}
-
-
-/* General write function */
-
-int write_proj(FILE *fd, const char *s, GtkWidget *window)
-{
-    if ((fputs(s, fd)) == EOF)
-    {
-	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
-	log_msg("SYS9012", "Project file", "SYS9012", window);
-	return FALSE;
-    }
 
     return TRUE;
 }
@@ -320,4 +341,52 @@ void set_image_xml(char **buf, GList *gl, int idx)
     sprintf(*buf, "%s%s\n", *buf, proj_tags[idx][1]);		// Images end tag
 
     return;
+}
+
+
+/* General open function */
+
+FILE * open_proj(char *fn, char *action, GtkWidget *window)
+{
+    FILE *fd = NULL;
+
+    if ((fd = fopen(fn, action)) == (FILE *) NULL)
+    {
+	sprintf(app_msg_extra, "Action: %s  Error: (%d) %s", action, errno, strerror(errno));
+	log_msg("SYS9005", fn, "SYS9005", window);
+	return NULL;
+    }
+
+    return fd;
+}
+
+
+/* General read function */
+
+int read_proj(FILE *fd, char *buf, int sz, GtkWidget *window)
+{
+    int count = 0;
+
+    if ((count = (read(fd, buf, sz))) < 0)
+    {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9013", "Project file", "SYS9013", window);
+    }
+
+    return count;
+}
+
+
+/* General write function */
+
+int write_proj(FILE *fd, const char *s, GtkWidget *window)
+{
+    if ((fputs(s, fd)) == EOF)
+    {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9012", "Project file", "SYS9012", window);
+	return FALSE;
+    }
+
+    return TRUE;
 }
