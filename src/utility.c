@@ -79,6 +79,7 @@ void strlower(char *, char *);
 void dttm_stamp(char *, size_t);
 int check_dir(char *);
 int make_dir(char *);
+int get_file_stat(char *, struct stat *);
 FILE * open_file(char *, char *);
 int read_file(FILE *, char *, int);
 int val_str2numb(char *, int *, char *, GtkWidget *);
@@ -107,6 +108,7 @@ static const char *app_messages[][2] =
     { "APP0011", "Please select %s. "},
     { "APP0012", "One or more images have inconsistent - \n\tISO, Exposure, Width or Height. "},
     { "APP0013", "Warning: One or more darks have been discarded. "},
+    { "APP0014", "File error: Failed to find tag - %s. "},
     { "APP9999", "Application message: "},
     { "SYS9000", "Failed to start application. "},
     { "SYS9001", "Session started. "},
@@ -125,7 +127,7 @@ static const char *app_messages[][2] =
     { "SYS9999", "Error - Unknown error message given. "}			// NB - MUST be last
 };
 
-static const int Msg_Count = 29;
+static const int Msg_Count = 30;
 static char *Home;
 static char *logfile = NULL;
 static FILE *lf = NULL;
@@ -601,6 +603,19 @@ int make_dir(char *s)
 	log_msg("SYS9011", s, NULL, NULL);
 	return FALSE;
     }
+
+    return TRUE;
+}
+
+
+/* Get file details */
+
+int get_file_stat(char *s, struct stat *fileStat)
+{
+    int err;
+
+    if ((err = stat(s, fileStat)) < 0)
+	return FALSE;
 
     return TRUE;
 }

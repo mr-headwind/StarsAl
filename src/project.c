@@ -58,18 +58,22 @@
 ProjectData * new_proj_data();
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
+int load_proj_from_file(ProjectData *, char *, GtkWidget *);
 void close_project(ProjectData *);
 int save_proj_init(ProjectData *, GtkWidget *);
-FILE * open_proj(char *, char *, GtkWidget *);
-int write_proj(FILE *, const char *, GtkWidget *);
-int read_proj(FILE *, char *, int, GtkWidget *);
+ProjectData * open_project(char *, GtkWidget *);
+FILE * open_proj_file(char *, char *, GtkWidget *);
+int write_proj_file(FILE *, const char *, GtkWidget *);
+int read_proj_file(FILE *, char *, int, GtkWidget *);
 int get_hdr_sz();
 int get_image_sz(int, GList *);
 void set_image_xml(char **, GList *, int);
 
+extern int get_user_pref(char *, char **);
 extern int val_str2numb(char *, int *, char *, GtkWidget *);
 extern int check_dir(char *);
 extern int make_dir(char *);
+extern int get_file_stat(char *, struct stat *);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 
 
@@ -153,35 +157,65 @@ void free_img(gpointer data)
 
 /* Open a project */
 
-int open_project(char *nm, ProjectData *proj, GtkWidget *window)
+ProjectData * open_project(char *nm, GtkWidget *window)
 {
     int count, sz;
-    char *fn, *buf;
+    char *fn, *buf, *p;
     FILE *fd = NULL;
+    ProjectData *proj;
+    struct stat fileStat;
 
-    /* Set project file name and path */
-    /*
-     * get PROJDIR
-     * set path
-     */
+    /* Open the project file */
+    get_user_pref(PROJ_DIR, &p);
+    fn = (char *) malloc(strlen(p) + (strlen(nm) * 2) + 12);
+    sprintf(fn, "%s/%s/%s_data.xml", p, nm, nm);
 
-    if ((fd = open_proj(fn, "r", window)) == FALSE)
+    if ((fd = open_proj_file(fn, "r", window)) == FALSE)
     {
 	free(fn);
-    	return FALSE;
+    	return NULL;
     }
 
-    /* 
-     * stat filename to get size
-     */
+    /* Stat filename to get size */
+    get_file_stat(fn, &fileStat);
+    sz = fileStat.st_size + 1;
+    buf = (char *) malloc(sz);
+    free(fn);
 
     /* read file */
-    if ((count = read_proj(fd, buf, sz, window)) < 0)
-    	return FALSE;
+    if ((count = read_proj_file(fd, buf, sz - 1, window)) < 0)
+    	return NULL;
 
-    /*
-     * load projectdata
-     */
+    /* Set project and load the data from the buffer */
+    proj = new_proj_data();
+
+    if (load_proj_from_file(proj, buf, window) == FALSE)
+    {
+	close_project(proj);
+	free(buf);
+    	return NULL;
+    }
+    //proj->project_name = (char *) malloc(strlen(nm) + 1);
+    //strcpy(proj->project_name, nm);
+    //proj->project_path = (char *) malloc(strlen(p) + 1);
+    //strcpy(proj->project_path, p);
+
+    return proj;
+}
+
+
+/* Load the project details from the buffer */
+
+int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
+{
+    char *buf_ptr;
+
+    /* Check that it's a StarsAl file */
+    if ((buf_ptr = strstr(buf, proj_tags[1][0])) == NULL)
+    {
+	log_msg("SYS9014", proj_tags[1][0], "SYS9014", window);
+    	return FALSE;
+    }
 
     return TRUE;
 }
@@ -229,7 +263,7 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     proj_fn = (char *) malloc(pathl + nml + 11);
     sprintf(proj_fn, "%s/%s_data.xml", proj->project_path, proj->project_name);
 
-    if ((fd = open_proj(proj_fn, "w", window)) == FALSE)
+    if ((fd = open_proj_file(proj_fn, "w", window)) == FALSE)
     {
 	free(proj_fn);
     	return FALSE;
@@ -270,7 +304,7 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     sprintf(buf, "%s%s\n", buf, proj_tags[1][1]);		// End StarsAl tag
 
     /* Write to file */
-    if (write_proj(fd, buf, window) == FALSE)
+    if (write_proj_file(fd, buf, window) == FALSE)
     	return FALSE;
 
     /* Close off */
@@ -346,7 +380,7 @@ void set_image_xml(char **buf, GList *gl, int idx)
 
 /* General open function */
 
-FILE * open_proj(char *fn, char *action, GtkWidget *window)
+FILE * open_proj_file(char *fn, char *action, GtkWidget *window)
 {
     FILE *fd = NULL;
 
@@ -363,23 +397,29 @@ FILE * open_proj(char *fn, char *action, GtkWidget *window)
 
 /* General read function */
 
-int read_proj(FILE *fd, char *buf, int sz, GtkWidget *window)
+int read_proj_file(FILE *fd, char *buf, int sz, GtkWidget *window)
 {
     int count = 0;
 
-    if ((count = (read(fd, buf, sz))) < 0)
-    {
-	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
-	log_msg("SYS9013", "Project file", "SYS9013", window);
-    }
+    count = (fread(buf, 1, sz, fd));
 
-    return count;
+    if (ferror(fd) != 0)
+    {
+	log_msg("SYS9013", "Project file", "SYS9013", window);
+	clearerr(fd);
+	return -1;
+    }
+    else
+    {
+	buf[sz - 1] = '\0';
+	return count;
+    }
 }
 
 
 /* General write function */
 
-int write_proj(FILE *fd, const char *s, GtkWidget *window)
+int write_proj_file(FILE *fd, const char *s, GtkWidget *window)
 {
     if ((fputs(s, fd)) == EOF)
     {
