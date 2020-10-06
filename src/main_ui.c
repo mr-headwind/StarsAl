@@ -1,5 +1,5 @@
 /*
-**  Copyright (C) 2021 Anthony Buckley
+**  Copyright (C) 2020 Anthony Buckley
 ** 
 **  This file is part of StarsAl.
 ** 
@@ -131,7 +131,7 @@ void main_ui(MainUi *m_ui)
 ** Menu function for StarsAl application.
 **
 **  File	        Edit		        Help
-**   - New Project    	 - Project settings	 - View log
+**   - New Project    	 - Project 		 - View log
 **   - Open Project      - User settings         - About
 **   - Close Project   
 **   - Exit    	      
@@ -177,26 +177,38 @@ void create_menu(MainUi *m_ui)
     m_ui->edit_menu = gtk_menu_new();
 
     /* Option menu items */
-    m_ui->edit_proj = gtk_menu_item_new_with_mnemonic ("_Project Settings...");
-    m_ui->edit_prefs = gtk_menu_item_new_with_mnemonic ("_User Settings...");
+    m_ui->edit_proj = gtk_menu_item_new_with_mnemonic ("_Project...");
 
     /* Add to menu */
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_proj);
-    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_prefs);
 
     /* Callbacks */
     g_signal_connect (m_ui->edit_proj, "activate", G_CALLBACK (OnEditProj), m_ui->window);
-    g_signal_connect (m_ui->edit_prefs, "activate", G_CALLBACK (OnPrefs), m_ui->window);
 
     /* Show menu items */
     gtk_widget_show (m_ui->edit_proj);
-    gtk_widget_show (m_ui->edit_prefs);
+
+
+    /* OPTIONS MENU */
+    m_ui->opt_menu = gtk_menu_new();
+
+    /* Option menu items */
+    m_ui->opt_prefs = gtk_menu_item_new_with_mnemonic ("_User Settings...");
+
+    /* Add to menu */
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->opt_menu), m_ui->opt_prefs);
+
+    /* Callbacks */
+    g_signal_connect (m_ui->opt_prefs, "activate", G_CALLBACK (OnPrefs), m_ui->window);
+
+    /* Show menu items */
+    gtk_widget_show (m_ui->opt_prefs);
 
 
     /* HELP MENU */
     m_ui->help_menu = gtk_menu_new();
 
-    /* Option menu items */
+    /* Help menu items */
     m_ui->help_about = gtk_menu_item_new_with_mnemonic ("About...");
     m_ui->view_log = gtk_menu_item_new_with_mnemonic ("View Log...");
 
@@ -222,10 +234,16 @@ void create_menu(MainUi *m_ui)
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->menu_bar), m_ui->file_hdr);
 
     /* Edit header menu */
-    m_ui->edit_hdr = gtk_menu_item_new_with_mnemonic ("_Options");
+    m_ui->edit_hdr = gtk_menu_item_new_with_mnemonic ("_Edit");
     gtk_widget_show (m_ui->edit_hdr);
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (m_ui->edit_hdr), m_ui->edit_menu);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->menu_bar), m_ui->edit_hdr);
+
+    /* Option header menu */
+    m_ui->opt_hdr = gtk_menu_item_new_with_mnemonic ("_Options");
+    gtk_widget_show (m_ui->opt_hdr);
+    gtk_menu_item_set_submenu (GTK_MENU_ITEM (m_ui->opt_hdr), m_ui->opt_menu);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->menu_bar), m_ui->opt_hdr);
 
     /* Help header menu */
     m_ui->help_hdr = gtk_menu_item_new_with_mnemonic ("_Help");
@@ -240,7 +258,7 @@ void create_menu(MainUi *m_ui)
 
     gtk_widget_add_accelerator(m_ui->file_exit, "activate", m_ui->accel_group, GDK_KEY_q,
     			       GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); 
-    gtk_widget_add_accelerator(m_ui->edit_prefs, "activate", m_ui->accel_group, GDK_KEY_F10,
+    gtk_widget_add_accelerator(m_ui->opt_prefs, "activate", m_ui->accel_group, GDK_KEY_F10,
     			       GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);		/* Alt key */ 
 
     return;

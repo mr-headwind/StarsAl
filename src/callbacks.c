@@ -1,5 +1,5 @@
 /*
-**  Copyright (C) 2021 Anthony Buckley
+**  Copyright (C) 2020 Anthony Buckley
 ** 
 **  This file is part of StarsAl.
 ** 
@@ -57,7 +57,7 @@ void OnAbout(GtkWidget*, gpointer *user_data);
 void OnQuit(GtkWidget*, gpointer *user_data);
 
 
-extern void project_main(ProjectData *, GtkWidget *);
+extern void edit_project_main(ProjectData *, GtkWidget *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -90,7 +90,7 @@ void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 
     window = (GtkWidget *) user_data;
 
-    project_main(NULL, window);
+    edit_project_main(NULL, window);
 
     return;
 }  
@@ -119,12 +119,12 @@ void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
 void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
 {  
     GtkWidget *window;
-    ProjectData *proj;
+    MainUi *m_ui;
 
     window = (GtkWidget *) user_data;
-    proj = (ProjectData *) g_object_get_data (G_OBJECT (window), "proj");
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
-    project_main(proj, window);
+    edit_project_main(m_ui->proj, window);
 
     return;
 }  

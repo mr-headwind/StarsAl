@@ -55,7 +55,7 @@
 
 /* Prototypes */
 
-int project_main(ProjectData *, GtkWidget *);
+int edit_project_main(ProjectData *, GtkWidget *);
 int project_init(GtkWidget *);
 ProjectUi * new_proj_ui();
 void project_ui(ProjectData *, ProjectUi *);
@@ -115,7 +115,7 @@ static int proj_dir_len;
 
 /* Display and maintenance of project details */
 
-int project_main(ProjectData *proj_in, GtkWidget *window)
+int edit_project_main(ProjectData *proj_in, GtkWidget *window)
 {
     ProjectData *proj;
     ProjectUi *ui;

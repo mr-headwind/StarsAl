@@ -59,7 +59,8 @@ ProjectData * new_proj_data();
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
 int load_proj_from_file(ProjectData *, char *, GtkWidget *);
-char * get_tag_val(char **, const char *, const char *, GtkWidget *);
+int load_files(GList *, char *, const char *, const char *, GtkWidget *);
+char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
 void close_project(ProjectData *);
 int save_proj_init(ProjectData *, GtkWidget *);
 ProjectData * open_project(char *, GtkWidget *);
@@ -209,7 +210,7 @@ ProjectData * open_project(char *nm, GtkWidget *window)
 
 int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 {
-    char *buf_ptr;
+    char *buf_ptr, *tmp_status;
 
     /* Check that it's a StarsAl file */
     if ((buf_ptr = strstr(buf, proj_tags[1][0])) == NULL)
@@ -218,8 +219,54 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     	return FALSE;
     }
 
-    /* Title */
-    proj->project_name = get_tag_val(&buf_ptr, proj_tags[2][0], proj_tags[2][1], window);
+    /* Title, Path and Status */
+    proj->project_name = get_tag_val(&buf_ptr, proj_tags[2][0], proj_tags[2][1], TRUE, window);
+    proj->project_path = get_tag_val(&buf_ptr, proj_tags[3][0], proj_tags[3][1], TRUE, window);
+    tmp_status = get_tag_val(&buf_ptr, proj_tags[4][0], proj_tags[4][1], TRUE, window);
+    proj->status = atoi(tmp_status);
+    free(tmp_status);
+
+    /* Images and Darks */
+    load_files(proj->images_gl, buf_ptr, proj_tags[5][0], proj_tags[5][1], window);
+    load_files(proj->darks_gl, buf_ptr, proj_tags[7][0], proj_tags[7][1], window);
+
+    return TRUE;
+}
+
+
+/* Extract the files from the buffer */
+
+int load_files(GList *gl, char *buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
+{
+    char *ptr, *end_ptr, *fn;
+
+    /* Start pointer */
+    if ((ptr = strstr(buf_ptr, start_tag)) == NULL)
+    {
+	log_msg("SYS9014", (char *) start_tag, "SYS9014", window);
+    	return FALSE;
+    }
+
+    /* End pointer */
+    if ((end_ptr = strstr(ptr, end_tag)) == NULL)
+    {
+	log_msg("SYS9014", (char *) end_tag, "SYS9014", window);
+    	return FALSE;
+    }
+
+    /* Iterate all the File tags in the range */
+    while(end_ptr >= ptr)
+    {
+	fn = get_tag_val(&ptr, proj_tags[6][0], proj_tags[6][1], FALSE, NULL);
+	
+	if (fn == NULL)
+	    break;
+
+	gl = g_list_prepend(gl, g_strdup(fn));
+	free(fn);
+    };
+
+    gl = g_list_reverse(gl);
 
     return TRUE;
 }
@@ -227,7 +274,7 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 
 /* Extract the value of a tag from the buffer */
 
-char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
+char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, int err, GtkWidget *window)
 {
     int len, sz;
     char *tag_val, *ptr, *end_ptr;
@@ -236,16 +283,18 @@ char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, G
 
     /* Position of both tags */
     if ((ptr = strstr(*buf_ptr, start_tag)) == NULL)
-    {
-	log_msg("SYS9014", (char *) start_tag, "SYS9014", window);
-    	return NULL;
-    }
+    	if (err == TRUE)
+	{
+	    log_msg("SYS9014", (char *) start_tag, "SYS9014", window);
+	    return NULL;
+	}
 
     if ((end_ptr = strstr(ptr, end_tag)) == NULL)
-    {
-	log_msg("SYS9014", (char *) end_tag, "SYS9014", window);
-    	return NULL;
-    }
+    	if (err == TRUE)
+	{
+	    log_msg("SYS9014", (char *) end_tag, "SYS9014", window);
+	    return NULL;
+	}
 
     /* Value length */
     sz = end_ptr - (ptr + len);
@@ -254,9 +303,8 @@ char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, G
     /* Extract value */
     memcpy(tag_val, (ptr + len), sz);
     tag_val[sz] = '\0';
+    end_ptr += (len + 1);
     *buf_ptr = end_ptr;
-    *(buf_ptr++);
-    **buf_ptr += (end_ptr + len + 1);
 
     return tag_val;
 }

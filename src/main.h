@@ -31,6 +31,10 @@
 
 
 
+/* Includes */
+
+#include <project.h>
+
 
 /* Defines */
 
@@ -49,10 +53,10 @@ typedef struct _main_ui
 
     /* Menu items */
     GtkWidget *menu_bar;  
-    GtkWidget *file_menu, *edit_menu, *help_menu;
-    GtkWidget *file_hdr, *edit_hdr, *help_hdr;
+    GtkWidget *file_menu, *edit_menu, *opt_menu, *help_menu;
+    GtkWidget *file_hdr, *edit_hdr, *opt_hdr, *help_hdr;
     GtkWidget *new_proj, *open_proj, *close_proj, *file_exit;
-    GtkWidget *edit_proj, *edit_prefs;
+    GtkWidget *edit_proj, *opt_prefs;
     GtkWidget *view_log, *help_about;
     GtkWidget *sep, *sep2;
     GtkAccelGroup *accel_group;
@@ -70,4 +74,5 @@ typedef struct _main_ui
     int close_hndlr_id;
 
     /* Other */
+    ProjectData *proj;
 } MainUi;
