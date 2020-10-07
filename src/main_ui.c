@@ -111,7 +111,7 @@ void main_ui(MainUi *m_ui)
 
     /* Combine everything onto the window */
     gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->menu_bar, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->app_box, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->app_vbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->status_info, TRUE, TRUE, 0);
 
     gtk_container_add(GTK_CONTAINER(m_ui->window), m_ui->cntl_box);  
@@ -269,9 +269,57 @@ void create_menu(MainUi *m_ui)
 
 void create_main_view(MainUi *m_ui)
 {  
-    m_ui->app_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    /* Control containers */
+    m_ui->app_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    m_ui->proc_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
 
-    create_label(&(m_ui->dummy), "Dummy", "Application main items go here", m_ui->app_box);
+    /* Create drawing area for graphs */
+    m_ui->image_area = gtk_drawing_area_new();
+    gtk_widget_set_margin_top (m_ui->image_area, 10);
+    gtk_widget_set_size_request (m_ui->image_area, 600, 400);
+    gtk_widget_set_halign (m_ui->image_area, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign (m_ui->image_area, GTK_ALIGN_CENTER);
+
+    /* Place in scrolled window */
+    m_ui->i_scroll_win = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_margin_start (GTK_WIDGET (m_ui->i_scroll_win), 5);
+    gtk_widget_set_margin_top (GTK_WIDGET (m_ui->i_scroll_win), 5);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (m_ui->i_scroll_win), 5);
+    gtk_widget_set_halign(GTK_WIDGET (m_ui->i_scroll_win), GTK_ALIGN_START);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->i_scroll_win), 
+				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (lst->i_scroll_win), 250);
+    gtk_container_add(GTK_CONTAINER (m_ui->i_scroll_win), m_ui->image_area);
+
+    /* Listbox for project images and darks */
+    m_ui->list_box = gtk_list_box_new();
+    m_ui->sel_handler = g_signal_connect(m_ui->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) m_ui);
+
+    /* Place in scrolled window */
+    m_ui->l_scroll_win = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_margin_start (GTK_WIDGET (m_ui->l_scroll_win), 5);
+    gtk_widget_set_margin_top (GTK_WIDGET (m_ui->l_scroll_win), 5);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (m_ui->l_scroll_win), 5);
+    gtk_widget_set_halign(GTK_WIDGET (m_ui->l_scroll_win), GTK_ALIGN_START);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->l_scroll_win), 
+				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (lst->l_scroll_win), 250);
+    gtk_container_add(GTK_CONTAINER (m_ui->l_scroll_win), m_ui->list_box);
+
+    /* List heading */
+    row = gtk_list_box_row_new();
+    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), FALSE);
+    create_label3(&(heading_lbl), "head_1", "Project Images and Darks");
+    gtk_container_add(GTK_CONTAINER (row), heading_lbl);
+    gtk_list_box_prepend(GTK_LIST_BOX (m_ui->list_box), row);
+    gtk_list_box_row_set_header (GTK_LIST_BOX_ROW (row), NULL);
+
+    /* Combine together */
+    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->i_scroll_win, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->app_vbox), m_ui->proc_hbox, FALSE, FALSE, 0);
+
+    create_label(&(m_ui->dummy), "Dummy", "Application main items go here", m_ui->app_vbox);
 
     return;
 }
