@@ -48,7 +48,7 @@ typedef struct _main_ui
 {
     /* Main view widgets */
     GtkWidget *window;
-    GtkWidget *cntl_box, *app_vbox;  
+    GtkWidget *cntl_box, *app_hbox;  
     GtkWidget *status_info;  
 
     /* Menu items */
@@ -65,8 +65,8 @@ typedef struct _main_ui
 
     /* Application widgets */
     GtkWidget *algn_vbox, *proc_hbox;  
-    GtkWidget *image_area, *i_scroll_win;  
-    GtkWidget *list_box, *l_scroll_win; 
+    GtkWidget *image_area, *img_scroll_win;  
+    GtkWidget *list_box, *lst_scroll_win; 
     GtkWidget *heading_lbl;  
     GtkWidget *dummy;  
 
