@@ -86,6 +86,7 @@ extern const GdkRGBA NIGHT;
 #define UI_TITLES
 #define ABOUT_UI "About"
 #define PROJECT_UI "Project"
+#define PROJ_SEL_UI "Project Selection"
 #define USER_PREFS_UI "User Settings"
 #define VIEW_FILE_UI "File Viewer"
 #endif

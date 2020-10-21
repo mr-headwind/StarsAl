@@ -48,7 +48,7 @@ typedef struct _SelectListUi
     GtkWidget *list_box, *scroll_win;
     GtkWidget *meta_lbl, *dir_lbl;
     GList *img_files;
-    int sel_handler;
+    int sel_handler_id;
 } SelectListUi;
 
 
@@ -61,7 +61,7 @@ typedef struct _ProjectUi
     SelectListUi images;
     SelectListUi darks;
     GtkWidget *save_btn, *cancel_btn;
-    int close_handler;
+    int close_handler_id;
 } ProjectUi;
 
 

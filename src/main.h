@@ -76,6 +76,7 @@ typedef struct _main_ui
 
     /* Callback Handlers */
     int close_hndlr_id;
+    int sel_handler_id;
 
     /* Other */
     ProjectData *proj;

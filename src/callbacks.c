@@ -51,6 +51,7 @@ void OnNewProj(GtkWidget*, gpointer *user_data);
 void OnOpenProj(GtkWidget*, gpointer *user_data);
 void OnCloseProj(GtkWidget*, gpointer *user_data);
 void OnEditProj(GtkWidget*, gpointer *user_data);
+void OnImageSelect(GtkListBox*, GtkListBoxRow*, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
 void OnViewLog(GtkWidget*, gpointer *user_data);
 void OnAbout(GtkWidget*, gpointer *user_data);
@@ -58,6 +59,8 @@ void OnQuit(GtkWidget*, gpointer *user_data);
 
 
 extern void edit_project_main(ProjectData *, GtkWidget *);
+extern void open_project_main(ProjectData *, MainUi *);
+extern void display_proj(ProjectData *, GtkWidget *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -78,7 +81,7 @@ extern int get_user_pref(char *, char **);
 static const char *debug_hdr = "DEBUG-callbacks.c ";
 
 
-/* Callbacks */
+/* Main UI Callbacks */
 
 
 /* Callback - Open a new project */
@@ -100,6 +103,14 @@ void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 
 void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 {  
+    GtkWidget *window;
+    ProjectData *proj;
+
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    open_project_main(proj, m_ui);
+    display_proj(proj, m_ui);
 
     return;
 }  
@@ -126,6 +137,34 @@ void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
 
     edit_project_main(m_ui->proj, window);
 
+    return;
+}  
+
+
+/* Callback - Image selection */
+
+void OnImageSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
+{  
+    char *s;
+    SelectListUi *lst;
+    Image *img;
+
+    /* Get data */
+    lst = (SelectListUi *) user_data;
+    img = (Image *) g_object_get_data (G_OBJECT (row), "image");
+
+    gtk_label_set_text(GTK_LABEL (lst->dir_lbl), img->path);
+    gtk_widget_show(lst->dir_lbl);
+
+    s = (char *) malloc(100);			// date, w x h, iso, exposure
+    sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
+						 img->img_exif.exposure,
+						 img->img_exif.width,
+						 img->img_exif.height);
+    gtk_label_set_text(GTK_LABEL (lst->meta_lbl), s);
+    gtk_widget_show(lst->meta_lbl);
+
+    free(s);
     return;
 }  
 

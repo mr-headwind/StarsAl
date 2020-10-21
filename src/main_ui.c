@@ -52,6 +52,9 @@
 void main_ui(MainUi *);
 void create_menu(MainUi *);
 void create_main_view(MainUi *);
+void image_area(MainUi *);
+void image_list(MainUi *);
+void display_proj(ProjectData *proj, MainUi *m_ui)
 
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
@@ -61,6 +64,7 @@ extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
 extern void OnEditProj(GtkWidget*, gpointer);
+extern void OnImageSelect(GtkWidget*, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
 extern void OnAbout(GtkWidget*, gpointer);
 extern void OnViewLog(GtkWidget*, gpointer);
@@ -69,6 +73,7 @@ extern void OnQuit(GtkWidget*, gpointer);
 extern void set_css();
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
+extern void create_label3(GtkWidget **, char *, char *);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
@@ -311,7 +316,7 @@ void image_area(MainUi *m_ui)
     gtk_widget_set_halign(GTK_WIDGET (m_ui->img_scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (lst->img_scroll_win), 250);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 250);
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
 
     return;
@@ -322,9 +327,11 @@ void image_area(MainUi *m_ui)
 
 void image_list(MainUi *m_ui)
 {  
+    GtkWidget *heading_lbl, *row;
+
     /* Listbox for project images and darks */
     m_ui->list_box = gtk_list_box_new();
-    m_ui->sel_handler = g_signal_connect(m_ui->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) m_ui);
+    m_ui->sel_handler_id = g_signal_connect(m_ui->list_box, "row-selected", G_CALLBACK(OnImageSelect), (gpointer) m_ui);
 
     /* Place in scrolled window */
     m_ui->lst_scroll_win = gtk_scrolled_window_new(NULL, NULL);
@@ -334,7 +341,7 @@ void image_list(MainUi *m_ui)
     gtk_widget_set_halign(GTK_WIDGET (m_ui->lst_scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (lst->lst_scroll_win), 250);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
     gtk_container_add(GTK_CONTAINER (m_ui->lst_scroll_win), m_ui->list_box);
 
     /* List heading */
@@ -344,6 +351,15 @@ void image_list(MainUi *m_ui)
     gtk_container_add(GTK_CONTAINER (row), heading_lbl);
     gtk_list_box_prepend(GTK_LIST_BOX (m_ui->list_box), row);
     gtk_list_box_row_set_header (GTK_LIST_BOX_ROW (row), NULL);
+
+    return;
+}
+
+
+/* Display project */
+
+void display_proj(ProjectData *proj, MainUi *m_ui)
+{  
 
     return;
 }

@@ -223,7 +223,7 @@ void project_ui(ProjectData *proj, ProjectUi *p_ui)
     gtk_container_add(GTK_CONTAINER(p_ui->window), p_ui->main_vbox);
 
     /* Exit when window closed */
-    p_ui->close_handler = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnProjDelete), NULL);
+    p_ui->close_handler_id = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnProjDelete), NULL);
 
     /* Show */
     gtk_widget_show_all(p_ui->window);
@@ -319,7 +319,7 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
 
     /* Images or Darks list */
     lst->list_box = gtk_list_box_new();
-    lst->sel_handler = g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) lst);
+    lst->sel_handler_id = g_signal_connect(lst->list_box, "row-selected", G_CALLBACK(OnRowSelect), (gpointer) lst);
 
     lst->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_margin_start (GTK_WIDGET (lst->scroll_win), 5);
@@ -461,13 +461,13 @@ void remove_image_list_row(SelectListUi *lst, GtkWidget *list_box, GtkListBoxRow
     };
 
     /* Destroy the row container and show the new list box */
-    g_signal_handler_block (lst->list_box, lst->sel_handler);
+    g_signal_handler_block (lst->list_box, lst->sel_handler_id);
     gtk_widget_destroy (GTK_WIDGET (row));
     gtk_widget_show_all(list_box);
     gtk_label_set_text(GTK_LABEL (lst->dir_lbl), "");
     gtk_label_set_text(GTK_LABEL (lst->meta_lbl), "");
 
-    g_signal_handler_unblock (lst->list_box, lst->sel_handler);
+    g_signal_handler_unblock (lst->list_box, lst->sel_handler_id);
     save_indi = TRUE;
 
     return;
@@ -487,7 +487,7 @@ void clear_image_list(SelectListUi *lst, GtkWidget *list_box)
     lst->img_files = NULL;
 
     /* Destroy each row container */
-    g_signal_handler_block (lst->list_box, lst->sel_handler);
+    g_signal_handler_block (lst->list_box, lst->sel_handler_id);
 
     for(i = rows; i > 0; i--)
     {
@@ -495,7 +495,7 @@ void clear_image_list(SelectListUi *lst, GtkWidget *list_box)
 	gtk_widget_destroy (GTK_WIDGET (row));
     };
 
-    g_signal_handler_unblock (lst->list_box, lst->sel_handler);
+    g_signal_handler_unblock (lst->list_box, lst->sel_handler_id);
     gtk_widget_show_all(list_box);
     gtk_label_set_text(GTK_LABEL (lst->dir_lbl), "");
     gtk_label_set_text(GTK_LABEL (lst->meta_lbl), "");
@@ -1130,8 +1130,8 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 static void window_cleanup(GtkWidget *window, ProjectUi *ui)
 {
     /* Unwanted callback action */
-    g_signal_handler_block (ui->images.list_box, ui->images.sel_handler);
-    g_signal_handler_block (ui->darks.list_box, ui->darks.sel_handler);
+    g_signal_handler_block (ui->images.list_box, ui->images.sel_handler_id);
+    g_signal_handler_block (ui->darks.list_box, ui->darks.sel_handler_id);
     
     /* Free the images and darks lists, but not the images attached as they are now attached to the project */
     g_list_free(ui->images.img_files);
@@ -1146,7 +1146,7 @@ static void window_cleanup(GtkWidget *window, ProjectUi *ui)
     */
 
     /* Close the window, free the screen data and block any secondary close signal */
-    g_signal_handler_block (window, ui->close_handler);
+    g_signal_handler_block (window, ui->close_handler_id);
 
     deregister_window(window);
     gtk_window_close(GTK_WINDOW(window));
