@@ -105,6 +105,7 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 {  
     GtkWidget *window;
     ProjectData *proj;
+    MainUi *m_ui;
 
     window = (GtkWidget *) user_data;
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");

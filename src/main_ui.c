@@ -54,7 +54,7 @@ void create_menu(MainUi *);
 void create_main_view(MainUi *);
 void image_area(MainUi *);
 void image_list(MainUi *);
-void display_proj(ProjectData *proj, MainUi *m_ui)
+void display_proj(ProjectData *proj, MainUi *m_ui);
 
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);

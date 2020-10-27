@@ -37,6 +37,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
 #include <defs.h>
@@ -55,30 +58,34 @@ typedef struct _SelectProjUi
     GtkWidget *window;
     GtkWidget *main_vbox;
     GtkWidget *selection_lbl, *scroll_win, *list_box, *btn_hbox;
-    GtkWidget *hdr_hbox, *proj_hbox;
+    GtkWidget *hdr_hbox, *info_hbox;
     GtkWidget *nm_hdr, *desc_hdr, *date_hdr;
-    GtkWidget *proj_nm, *proj_desc, *mod_date;
+    GtkWidget *cnt_lbl;
     GtkWidget *open_btn, *cancel_btn;
     int close_handler_id, sel_handler_id;
     ProjectData *proj;
 } SelectProjUi;
 
+typedef struct _ProjListEnt
+{
+    char *nm;
+    char *desc;
+    char *last_mod;
+} ProjListEnt;
+
 
 /* Prototypes */
 
-void open_project_main(MainUi *, GtkWidget *);
+void open_project_main(ProjectData *, MainUi *, GtkWidget *window);
 int sel_proj_init(GtkWidget *);
-ProjectUi * new_sel_proj_ui();
-void sel_proj_ui(,SelectProjUi *, MainUi *);
-void select_proj_cntr(SelectProjUi *);
-void project_list(GtkWidget *, SelectProjUi *);
-
-void select_images(SelectListUi *, ProjectUi *, char *);
-void show_list(SelectListUi *, GSList *, ProjectUi *s_ui);
-GtkWidget * create_lstbox_row(char *, char *);
-Image * setup_image(char *, char *, char *, ProjectUi *);
-static char * get_tag(ExifData *, ExifIfd, ExifTag);
-void setup_proj(ProjectData *, ProjectUi *s_ui);
+SelectProjUi * new_sel_proj_ui();
+static void sel_proj_ui(SelectProjUi *, MainUi *);
+static void select_proj_cntr(SelectProjUi *);
+static int project_list(GtkWidget *, SelectProjUi *);
+static ProjListEnt * new_list_entry(char *, struct stat *, SelectProjUi *);
+static void free_list_ent(gpointer);
+static GtkWidget * create_lstbox_row(ProjListEnt *);
+void create_info(int, SelectProjUi *);
 static void window_cleanup(GtkWidget *, ProjectUi *);
 
 static void OnProjSelect(GtkListBox*, GtkListBoxRow*, gpointer);
@@ -86,19 +93,12 @@ static void OnOpen(GtkWidget*, gpointer);
 static void OnCancel(GtkWidget*, gpointer);
 
 extern ProjectData * new_proj_data();
-extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
-extern void create_label3(GtkWidget **, char *, char *);
-extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
-extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
+extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern int get_user_pref(char *, char **);
-extern void basename_dirname(char *, char **, char **);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
-extern void string_trim(char *);
-extern void trim_spaces(char *);
-extern char * image_type(char *, GtkWidget *);
 
 
 /* Globals */
@@ -111,7 +111,7 @@ static int proj_dir_len;
 
 /* Project selection */
 
-void open_project_main(ProjectData *proj, MainUi *m_ui)
+void open_project_main(ProjectData *proj, MainUi *m_ui, , GtkWidget *window)
 {
     ProjectOpenUi *ui;
 
@@ -189,6 +189,10 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     /* Main update or view grid */
     select_proj_cntr(s_ui);
 
+    /* Info box */
+    s_ui->info_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
+    gtk_widget_set_halign(GTK_WIDGET (s_ui->info_hbox), GTK_ALIGN_START);
+
     /* Box container for action buttons */
     s_ui->btn_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
     gtk_widget_set_halign(GTK_WIDGET (s_ui->btn_hbox), GTK_ALIGN_CENTER);
@@ -204,6 +208,7 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->ok_btn, FALSE, FALSE, 0);
 
     /* Combine everything onto the window */
+    gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->info_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->btn_hbox, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER(s_ui->window), s_ui->main_vbox);
 
@@ -224,7 +229,7 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
 
 void select_proj_cntr(SelectProjUi *s_ui)
 {  
-    int row;
+    GtkWidget *row;
 
     /* Selection header */
     create_label(&(s_ui->selection_lbl), "title_4", "Please select a project", s_ui->main_vbox); 
@@ -264,177 +269,128 @@ void select_proj_cntr(SelectProjUi *s_ui)
 
 /* Search for projects to select */
 
-void project_list(GtkWidget *list_box, SelectProjUi *s_ui)
+int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
 {  
+    DIR *dp = NULL;
+    struct dirent *ep;
+    struct stat fileStat;
+    int err, cnt;
+    char *xml;
+    ProjListEnt *list_ent;
+    GtkWidget *row;
+
     char *path1, *path2, *nm, *dir;
     GtkWidget *row;
     GList *l;
     GSList *sl;
     Image *image, *tmpimg;
 
-    /*
-    get project directory
-    get the sub-dir names (projects)
-    check each directory has .xml starsal file
-    get title / desc tags
-    stat to get mod date
-    add to list
-    */
-
-    for(sl = gsl; sl != NULL; sl = sl->next)
+    /* Open project directory */
+    if((dp = opendir(proj_dir)) == NULL)
     {
-	path1 = (char *) sl->data;
-
-	for(l = lst->img_files; l != NULL; l = l->next)
-	{
-	    tmpimg = (Image *) l->data;
-	    path2 = (char *) malloc(strlen(tmpimg->path) + strlen(tmpimg->nm) + 2);
-	    sprintf(path2, "%s/%s", tmpimg->path, tmpimg->nm);
-
-	    if (strcmp(path1, path2) == 0)
-	    {
-	    	free(path2);
-	    	break;
-	    }
-
-	    free(path2);
-	}
-
-	if (l == NULL)
-	{
-	    basename_dirname(path1, &nm, &dir);
-	    row = create_lstbox_row(nm, dir);
-	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
-
-	    image = setup_image(nm, dir, path1, s_ui);
-	    lst->img_files = g_list_prepend(lst->img_files, image);
-	    g_object_set_data (G_OBJECT (row), "image", image);
-
-	    save_indi = TRUE;
-	    free(nm);
-	    free(dir);
-	}
+	log_msg("SYS9015", "Open Project directory", "SYS9015", s_ui->window);
+        return FALSE;
     }
 
-    gtk_widget_show_all(lst->list_box);
-    lst->img_files = g_list_reverse(lst->img_files);
-    g_slist_free_full(gsl, (GDestroyNotify) g_free);
+    /* Iterate thru the each project */
+    cnt = 0;
 
-/*
-printf("%s show_list 1\n", debug_hdr); fflush(stdout);
-printf("%s show_list 2  %s\n", debug_hdr, path1); fflush(stdout);
-printf("%s show_list 3\n", debug_hdr); fflush(stdout);
-printf("%s show_list 5  %s  %s\n", debug_hdr, nm, dir); fflush(stdout);
-printf("%s show_list 6  %s \n", debug_hdr, path1); fflush(stdout);
-for(l = lst->img_files; l != NULL; l = l->next)
-{
-printf("%s show_list 7  files: %s\n", debug_hdr, (char *) l->data); fflush(stdout);
+    while (ep = readdir(dp))
+    {
+	/* Each project name must be a directory */
+    	if ((err = stat(ep->d_name, &fileStat)) < 0)
+	    continue;
+
+    	if ((fileStat.st_mode & S_IFMT) != S_IFDIR)
+	    continue;
+
+	/* Each project directory must contain a 'proj_name_data.xml' file*/
+	xml = (char *) malloc((strlen(ep->d_name) * 2) + proj_dir_len + 12);
+	sprintf(xml, "%s/%s/%s_data.xml", proj_dir, ep->d_name, ep->d_name);
+
+    	if ((err = stat(xml, &fileStat)) < 0)
+	    continue;
+
+	list_ent = new_list_entry(xml, &filestat, s_ui);
+
+	if (list_ent == NULL)
+	{
+	    free(xml);
+	    continue;
+	}
+
+	cnt++;
+	row = create_lstbox_row(list_ent);
+	gtk_list_box_insert(GTK_LIST_BOX (list_box), row, -1);
+	free(xml);
+    }
+
+    create_info(cnt, s_ui);
+    gtk_widget_show_all(list_box);
+    closedir(dp);
+
+    return TRUE;
 }
-*/
-
-    return;
-}
 
 
-/* Create a row with a label to include in a list box */
+/* Create a new list entry for the list box */
 
-GtkWidget * create_lstbox_row(char *nm, char *dir)
+ProjListEnt * new_list_entry(char *xml, struct stat *fileStat, SelectProjUi *s_ui)
 {  
-    GtkWidget *row, *lbl;
+
+    return list_ent;
+}
+
+
+/* Create a row with project details to include in a list box */
+
+GtkWidget * create_lstbox_row(ProjListEnt *list_ent)
+{  
+    GtkWidget *row, *nm_lbl, *desc_lbl, *mod_lbl, *row_hbox;
 
     row = gtk_list_box_row_new();
     gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), TRUE);
+    g_object_set_data_full (G_OBJECT (row), "list_ent", list_ent, (GDestroyNotify) free_list_ent);
 
-    create_label4(&lbl, "data_4", nm, 4, 3, GTK_ALIGN_START);
-    g_object_set_data_full (G_OBJECT (lbl), "dir", g_strdup (dir), (GDestroyNotify) g_free);
-    gtk_container_add(GTK_CONTAINER (row), lbl);
+    row_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+
+    create_label(&nm_lbl, "data_2", list_ent->nm, row_hbox);
+    create_label(&desc_lbl, "data_2", list_ent->desc, row_hbox);
+    create_label(&nm_lbl, "data_2", list_ent->last_mod, row_hbox);
+
+    gtk_container_add(GTK_CONTAINER (row), row_hbox);
 
     return row;
 }
 
 
-/* Extract tag and contents if exists */
+/* Free a list entry */
 
-static char * get_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
+void free_list_ent(gpointer data)
 {
-    char buf[1024];
-    char *s;
+    ProjListEnt *ent;
 
-    /* See if this tag exists */
-    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], tag);
+    ent = (ProjListEnt *) data;
 
-    if (entry) 
-    {
-        /* Get the contents of the tag in human-readable form */
-        exif_entry_get_value(entry, buf, sizeof(buf));
+    free(ent->nm);
+    free(ent->desc);
+    free(ent->last_mod);
+    free(ent);
 
-        /* Don't bother printing it if it's entirely blank */
-        trim_spaces(buf);
-
-        if (*buf)
-        {
-            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf); fflush(stdout);
-	    s = (char *) malloc(strlen(buf) + 1);
-	    strcpy(s, buf);
-	    return s;
-        }
-    }
-
-    s = (char *) malloc(4);
-    sprintf(s, "N/A");
-
-    return s;
+    return;
 }
 
 
-/* Set up the new or edited project data - for edits, backup the old one and start again */
+/* Set up info line */
 
-void setup_proj(ProjectData *proj, ProjectUi *s_ui)
-{
-    const gchar *nm;
-    int len;
-    char *s;
+void create_info(int proj_cnt, SelectProjUi *s_ui)
+{  
+    char txt[25];
 
-    /* Project name */
-    nm = gtk_entry_get_text (GTK_ENTRY (s_ui->proj_nm));
-    string_trim((char *) nm);
-    len = strlen(nm);
+    sprintf(txt, "Projects found: %d", proj_cnt);
+    create_label(&(s_ui->cnt_lbl), "title_5", txt, s_ui->info_hbox); 
 
-    if (proj->project_name == NULL)			// New project
-    {
-    	proj->project_name = (char *) malloc(len + 1);
-	proj->project_name[0] = '\0';
-    }
-    else 						// Edit
-    {
-	s = (char*) malloc(strlen(proj->project_path) + 5);
-	sprintf(s, "%s.bak", proj->project_path);
-
-	if (rename(proj->project_path, s) < 0)
-	{
-	    sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
-	    log_msg("SYS9009", proj->project_name, "SYS9009", s_ui->window);
-	    return;
-	}
-	else
-	{
-	    log_msg("SYS9010", proj->project_name, NULL, NULL);
-	}
-
-	proj->project_name = (char *) realloc(proj->project_name, len + 1);
-	free(s);
-    }
-
-    strcpy(proj->project_name, nm);
-    proj->project_path = (char *) malloc(proj_dir_len + len + 2);
-    sprintf(proj->project_path, "%s/%s", proj_dir, nm);
-
-    /* Project status */
-    proj->status = 0;
-
-    /* Images and Darks */
-    proj->images_gl = g_list_copy(s_ui->images.img_files);
-    proj->darks_gl = g_list_copy(s_ui->darks.img_files);
+    gtk_widget_show_all(s_ui->info_hbox);
 
     return;
 }
@@ -447,26 +403,12 @@ void setup_proj(ProjectData *proj, ProjectUi *s_ui)
 
 void OnProjSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 {  
-    char *s;
     SelectListUi *s_ui;
-    Image *img;
+    ProjListEnt *list_ent;
 
     /* Get data */
     s_ui = (SelectListUi *) user_data;
-    img = (Image *) g_object_get_data (G_OBJECT (row), "image");
-
-    gtk_label_set_text(GTK_LABEL (lst->dir_lbl), img->path);
-    gtk_widget_show(lst->dir_lbl);
-
-    s = (char *) malloc(100);			// date, w x h, iso, exposure
-    sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
-						 img->img_exif.exposure,
-						 img->img_exif.width,
-						 img->img_exif.height);
-    gtk_label_set_text(GTK_LABEL (lst->meta_lbl), s);
-    gtk_widget_show(lst->meta_lbl);
-
-    free(s);
+    list_ent = (ProjListEnt *) g_object_get_data (G_OBJECT (row), "list_ent");
 
     return;
 }
@@ -474,7 +416,7 @@ void OnProjSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 
 /* Callback - Open project */
 
-void OnOpen(GtkWidget *lstboxgpointer user_data)
+void OnOpen(GtkWidget *lstbox, gpointer user_data)
 {  
 
     return;
@@ -483,35 +425,13 @@ void OnOpen(GtkWidget *lstboxgpointer user_data)
 
 // Callback for window close
 // Destroy the window and de-register the window 
-// Check for changes
 
 void OnCancel(GtkWidget *window, gpointer user_data)
 { 
-    GtkWidget *dialog;
-    ProjectUi *ui;
-    ProjectData *proj;
-    gint response;
+    SelectListUi *ui;
 
     /* Get data */
-    ui = (ProjectUi *) g_object_get_data (G_OBJECT (window), "ui");
-    proj = (ProjectData *) g_object_get_data (G_OBJECT (window), "proj");
-
-    /* Check for changes */
-    if ((save_indi = proj_save_reqd(proj, ui)) == TRUE)
-    {
-	/* Ask if OK to close without saving */
-	dialog = gtk_message_dialog_new (GTK_WINDOW (window),
-					 GTK_DIALOG_MODAL,
-					 GTK_MESSAGE_QUESTION,
-					 GTK_BUTTONS_OK_CANCEL,
-					 "Close without saving changes?");
-
-	response = gtk_dialog_run (GTK_DIALOG (dialog));
-	gtk_widget_destroy (dialog);
-
-	if (response == GTK_RESPONSE_CANCEL)
-	    return;
-    }
+    ui = (SelectListUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Close the window, free the screen data and block any secondary close signal */
     window_cleanup(window, ui);
@@ -522,9 +442,9 @@ void OnCancel(GtkWidget *window, gpointer user_data)
 
 /* Window delete event */
 
-gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
+gboolean OnOpenDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 {
-    OnProjCancel(window, user_data);
+    OnCancel(window, user_data);
 
     return TRUE;
 }
@@ -535,21 +455,8 @@ gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 static void window_cleanup(GtkWidget *window, ProjectUi *ui)
 {
     /* Unwanted callback action */
-    g_signal_handler_block (ui->images.list_box, ui->images.sel_handler_id);
-    g_signal_handler_block (ui->darks.list_box, ui->darks.sel_handler_id);
+    g_signal_handler_block (ui->list_box, ui->images.sel_handler_id);
     
-    /* Free the images and darks lists, but not the images attached as they are now attached to the project */
-    g_list_free(ui->images.img_files);
-    g_list_free(ui->darks.img_files);
-    /*
-    g_list_free_full(ui->images.img_files, (GDestroyNotify) free_img);
-    
-    if (ui->darks.img_files)
-	g_list_free_full(ui->darks.img_files, (GDestroyNotify) free_img);
-    else
-    	g_list_free(ui->darks.img_files);
-    */
-
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler_id);
 
