@@ -86,6 +86,7 @@ static const char *proj_tags[][2] =
   { "<?xml version=\"1.0\"?>", "" },
     { "<StarsAl>", "</StarsAl>" },
       { "<Project>", "</Project>" },
+      { "<Description>", "</Description>" },
       { "<Path>", "</Path>" },
       { "<Status>", "</Status>" },
       { "<Images>", "</Images>" },
@@ -94,8 +95,18 @@ static const char *proj_tags[][2] =
         { "<File>", "</File>" }
 };
 
-static const int Tag_Count = 9;
+static const int Tag_Count = 10;
 static const char *debug_hdr = "DEBUG-project.c ";
+
+static const int starsal_idx = 1;
+static const int name_idx = 2;
+static const int desc_idx = 3;
+static const int path_idx = 4;
+static const int status_idx = 5;
+static const int img_idx = 6;
+static const int dark_idx = 8;
+static const int file1_idx = 7;
+static const int file2_idx = 9;
 
 
 
@@ -213,22 +224,23 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     char *buf_ptr, *tmp_status;
 
     /* Check that it's a StarsAl file */
-    if ((buf_ptr = strstr(buf, proj_tags[1][0])) == NULL)
+    if ((buf_ptr = strstr(buf, proj_tags[starsal_idx][0])) == NULL)
     {
-	log_msg("SYS9014", (char *) proj_tags[1][0], "SYS9014", window);
+	log_msg("SYS9014", (char *) proj_tags[starsal_idx][0], "SYS9014", window);
     	return FALSE;
     }
 
-    /* Title, Path and Status */
-    proj->project_name = get_tag_val(&buf_ptr, proj_tags[2][0], proj_tags[2][1], TRUE, window);
-    proj->project_path = get_tag_val(&buf_ptr, proj_tags[3][0], proj_tags[3][1], TRUE, window);
-    tmp_status = get_tag_val(&buf_ptr, proj_tags[4][0], proj_tags[4][1], TRUE, window);
+    /* Title, Description, Path and Status */
+    proj->project_name = get_tag_val(&buf_ptr, proj_tags[name_idx][0], proj_tags[name_idx][1], TRUE, window);
+    proj->project_desc = get_tag_val(&buf_ptr, proj_tags[desc_idx][0], proj_tags[desc_idx][1], TRUE, window);
+    proj->project_path = get_tag_val(&buf_ptr, proj_tags[path_idx][0], proj_tags[path_idx][1], TRUE, window);
+    tmp_status = get_tag_val(&buf_ptr, proj_tags[status_idx][0], proj_tags[status_idx][1], TRUE, window);
     proj->status = atoi(tmp_status);
     free(tmp_status);
 
     /* Images and Darks */
-    load_files(proj->images_gl, buf_ptr, proj_tags[5][0], proj_tags[5][1], window);
-    load_files(proj->darks_gl, buf_ptr, proj_tags[7][0], proj_tags[7][1], window);
+    load_files(proj->images_gl, buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
+    load_files(proj->darks_gl, buf_ptr, proj_tags[dark_idx][0], proj_tags[dark_idx][1], window);
 
     return TRUE;
 }
@@ -257,7 +269,7 @@ int load_files(GList *gl, char *buf_ptr, const char *start_tag, const char *end_
     /* Iterate all the File tags in the range */
     while(end_ptr >= ptr)
     {
-	fn = get_tag_val(&ptr, proj_tags[6][0], proj_tags[6][1], FALSE, NULL);
+	fn = get_tag_val(&ptr, proj_tags[file1_idx][0], proj_tags[file1_idx][1], FALSE, NULL);
 	
 	if (fn == NULL)
 	    break;
@@ -323,6 +335,7 @@ void close_project(ProjectData *proj)
 
     /* Free remaining */
     free(proj->project_name);
+    free(proj->project_desc);
     free(proj->project_path);
 
     /* Free project */
@@ -336,7 +349,7 @@ void close_project(ProjectData *proj)
 
 int save_proj_init(ProjectData *proj, GtkWidget *window)
 {
-    int nml, pathl, buf_sz, err;
+    int nml, pathl, descl, buf_sz, err;
     FILE *fd = NULL;
     char *buf;
     char *proj_fn;
@@ -348,6 +361,7 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
 
     /* New or overwrite file */
     nml = strlen(proj->project_name);
+    descl = strlen(proj->project_desc);
     pathl = strlen(proj->project_path);
     proj_fn = (char *) malloc(pathl + nml + 11);
     sprintf(proj_fn, "%s/%s_data.xml", proj->project_path, proj->project_name);
@@ -363,34 +377,37 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     buf_sz += get_hdr_sz();
 
     /* Add size for project title, path and status */
-    buf_sz += (nml + pathl + 4);
+    buf_sz += (nml + descl + pathl + 4);
 
     /* Add size for images and darks */
-    buf_sz += get_image_sz(strlen(proj_tags[6][0]), proj->images_gl);
-    buf_sz += get_image_sz(strlen(proj_tags[8][0]), proj->darks_gl);
+    buf_sz += get_image_sz(strlen(proj_tags[file1_idx][0]), proj->images_gl);
+    buf_sz += get_image_sz(strlen(proj_tags[file2_idx][0]), proj->darks_gl);
 
     /* Prepare the project header details and tags */
     buf = (char *) malloc(buf_sz);
 
-    sprintf(buf, "%s\n%s\n%s%s%s\n%s%s%s\n%s%d%s\n", proj_tags[0][0],		// XML header tag
-						     proj_tags[1][0],		// StarsAl header tag
-						     proj_tags[2][0],		// Project tag
-						     proj->project_name,	// Title
-						     proj_tags[2][1],		// End Project tag
-						     proj_tags[3][0],		// Path tag
-						     proj->project_path,	// Path
-						     proj_tags[3][1],		// End Path tag
-						     proj_tags[4][0],		// Status tag
-						     proj->status,		// Status
-						     proj_tags[4][1]); 		// End Status tag
+    sprintf(buf, "%s\n%s\n%s%s%s\n%s%s%s\n%s%s%s\n%s%d%s\n", proj_tags[0][0],		// XML header tag
+							     proj_tags[starsal_idx][0],	// StarsAl header tag
+							     proj_tags[name_idx][0],	// Project tag
+							     proj->project_name,	// Project name
+							     proj_tags[name_idx][1],	// End Project tag
+							     proj_tags[desc_idx][0],	// Description tag
+							     proj->project_desc,	// Description
+							     proj_tags[desc_idx][1],	// End Description tag
+							     proj_tags[path_idx][0],	// Path tag
+							     proj->project_path,	// Path
+							     proj_tags[path_idx][1],	// End Path tag
+							     proj_tags[status_idx][0],	// Status tag
+							     proj->status,		// Status
+							     proj_tags[status_idx][1]); // End Status tag
 
     
     /* Prepare the Prepare the file names and tags */
-    set_image_xml(&buf, proj->images_gl, 5);
-    set_image_xml(&buf, proj->darks_gl, 7);
+    set_image_xml(&buf, proj->images_gl, img_idx);
+    set_image_xml(&buf, proj->darks_gl, dark_idx);
 
     /* Prepare the project header end tag */
-    sprintf(buf, "%s%s\n", buf, proj_tags[1][1]);		// End StarsAl tag
+    sprintf(buf, "%s%s\n", buf, proj_tags[starsal_idx][1]);		// End StarsAl tag
 
     /* Write to file */
     if (write_proj_file(fd, buf, window) == FALSE)

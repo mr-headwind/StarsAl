@@ -60,7 +60,7 @@ void OnQuit(GtkWidget*, gpointer *user_data);
 
 extern void edit_project_main(ProjectData *, GtkWidget *);
 extern void open_project_main(ProjectData *, MainUi *);
-extern void display_proj(ProjectData *, GtkWidget *);
+extern void display_proj(ProjectData *, MainUi *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);

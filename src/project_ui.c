@@ -244,7 +244,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     gtk_widget_set_name(p_ui->proj_cntr, "proj_cntr");
     gtk_container_set_border_width (GTK_CONTAINER (p_ui->proj_cntr), 10);
 
-    /* Project title and path */
+    /* Project title, description and path */
     p_ui->title_fr = gtk_frame_new("Project Title");
     gtk_widget_set_name(p_ui->title_fr, "clr1");
     p_ui->nm_grid = gtk_grid_new();
@@ -263,6 +263,17 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_nm), 5);
     gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_nm), 256);
     gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 30);
+
+    create_label2(&(p_ui->proj_desc_lbl), "title_4", "Description", p_ui->nm_grid, 0, 2, 1, 1);
+    gtk_widget_set_halign(p_ui->proj_desc_lbl, GTK_ALIGN_END);
+    gtk_widget_set_margin_start (GTK_WIDGET (p_ui->proj_desc_lbl), 20);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_desc_lbl), 5);
+
+    create_entry(&(p_ui->proj_desc), "proj_desc", p_ui->nm_grid, 1, 2);
+    gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_desc), GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_desc), 5);
+    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_desc), 256);
+    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_desc), 30);
 
     gtk_container_add(GTK_CONTAINER (p_ui->title_fr), p_ui->nm_grid);
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), p_ui->title_fr, FALSE, FALSE, 0);
@@ -631,6 +642,24 @@ int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 	if (strcmp(s, proj->project_name) != 0)
 	    save_indi = TRUE;
     }
+
+    /* Project description */
+    s = gtk_entry_get_text(GTK_ENTRY (p_ui->proj_desc));
+    len = (int) gtk_entry_get_text_length(GTK_ENTRY (p_ui->proj_desc));
+
+    if (proj->project_desc == NULL && len == 0)
+    {
+	return save_indi;
+    }
+    else if (proj->project_desc == NULL)
+    {
+	save_indi = TRUE;
+    }
+    else
+    {
+	if (strcmp(s, proj->project_desc) != 0)
+	    save_indi = TRUE;
+    }
     	
     return save_indi;
 }
@@ -846,11 +875,11 @@ void check_arr_s(char *s, char **arr_s, int *fnd)
 
 void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 {
-    const gchar *nm;
+    const gchar *nm, *desc;
     int len;
     char *s;
 
-    /* Project name */
+    /* Project name and path */
     nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
     string_trim((char *) nm);
     len = strlen(nm);
@@ -883,6 +912,22 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     strcpy(proj->project_name, nm);
     proj->project_path = (char *) malloc(proj_dir_len + len + 2);
     sprintf(proj->project_path, "%s/%s", proj_dir, nm);
+
+    /* Description */
+    desc = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_desc));
+    string_trim((char *) desc);
+    len = strlen(desc);
+
+    if (proj->project_desc == NULL)			// New description
+    {
+    	proj->project_desc = (char *) malloc(len + 1);
+	proj->project_desc[0] = '\0';
+    }
+    else 						// Edit
+    {
+	proj->project_desc = (char *) realloc(proj->project_desc, len + 1);
+	strcpy(proj->project_desc, desc);
+    }
 
     /* Project status */
     proj->status = 0;

@@ -57,7 +57,7 @@ typedef struct _ProjectUi
     GtkWidget *window;
     GtkWidget *title_fr;
     GtkWidget *main_vbox, *nm_grid, *btn_hbox, *proj_cntr;
-    GtkWidget *proj_nm_lbl, *proj_nm, *proj_path_lbl;
+    GtkWidget *proj_nm_lbl, *proj_nm, *proj_desc_lbl, *proj_desc, *proj_path_lbl;
     SelectListUi images;
     SelectListUi darks;
     GtkWidget *save_btn, *cancel_btn;
@@ -68,6 +68,7 @@ typedef struct _ProjectUi
 typedef struct _ProjectData
 {
     char *project_name;
+    char *project_desc;
     char *project_path;
     int status;
     GList *images_gl;

@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <time.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -76,24 +77,28 @@ typedef struct _ProjListEnt
 
 /* Prototypes */
 
-void open_project_main(ProjectData *, MainUi *, GtkWidget *window);
+int open_project_main(ProjectData *, MainUi *);
 int sel_proj_init(GtkWidget *);
 SelectProjUi * new_sel_proj_ui();
 static void sel_proj_ui(SelectProjUi *, MainUi *);
 static void select_proj_cntr(SelectProjUi *);
 static int project_list(GtkWidget *, SelectProjUi *);
-static ProjListEnt * new_list_entry(char *, struct stat *, SelectProjUi *);
+static ProjListEnt * new_list_entry(char *, char *, struct stat *, SelectProjUi *);
 static void free_list_ent(gpointer);
 static GtkWidget * create_lstbox_row(ProjListEnt *);
-void create_info(int, SelectProjUi *);
-static void window_cleanup(GtkWidget *, ProjectUi *);
+static void create_info(int, SelectProjUi *);
+static void window_cleanup(GtkWidget *, SelectProjUi *);
 
 static void OnProjSelect(GtkListBox*, GtkListBoxRow*, gpointer);
 static void OnOpen(GtkWidget*, gpointer);
 static void OnCancel(GtkWidget*, gpointer);
+gboolean OnOpenDelete(GtkWidget *, GdkEvent *, gpointer);
 
 extern ProjectData * new_proj_data();
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
+extern char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
+extern FILE * open_proj_file(char *, char *, GtkWidget *);
+extern int read_proj_file(FILE *, char *, int, GtkWidget *);
 extern int get_user_pref(char *, char **);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char*, GtkWidget*);
@@ -111,12 +116,12 @@ static int proj_dir_len;
 
 /* Project selection */
 
-void open_project_main(ProjectData *proj, MainUi *m_ui, , GtkWidget *window)
+int open_project_main(ProjectData *proj, MainUi *m_ui)
 {
-    ProjectOpenUi *ui;
+    SelectProjUi *ui;
 
     /* Initial */
-    if (! sel_proj_init(window))
+    if (! sel_proj_init(m_ui->window))
     	return FALSE;
 
     /* Initialise project */
@@ -205,7 +210,7 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     /* Open button */
     s_ui->open_btn = gtk_button_new_with_label("  Open  ");
     g_signal_connect(s_ui->open_btn, "clicked", G_CALLBACK(OnOpen), (gpointer) s_ui);
-    gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->ok_btn, FALSE, FALSE, 0);
+    gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->open_btn, FALSE, FALSE, 0);
 
     /* Combine everything onto the window */
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->info_hbox, FALSE, FALSE, 0);
@@ -279,12 +284,6 @@ int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
     ProjListEnt *list_ent;
     GtkWidget *row;
 
-    char *path1, *path2, *nm, *dir;
-    GtkWidget *row;
-    GList *l;
-    GSList *sl;
-    Image *image, *tmpimg;
-
     /* Open project directory */
     if((dp = opendir(proj_dir)) == NULL)
     {
@@ -304,14 +303,14 @@ int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
     	if ((fileStat.st_mode & S_IFMT) != S_IFDIR)
 	    continue;
 
-	/* Each project directory must contain a 'proj_name_data.xml' file*/
+	/* Each project directory must contain a 'proj_name_data.xml' file */
 	xml = (char *) malloc((strlen(ep->d_name) * 2) + proj_dir_len + 12);
 	sprintf(xml, "%s/%s/%s_data.xml", proj_dir, ep->d_name, ep->d_name);
 
     	if ((err = stat(xml, &fileStat)) < 0)
 	    continue;
 
-	list_ent = new_list_entry(xml, &filestat, s_ui);
+	list_ent = new_list_entry(xml, ep->d_name, &fileStat, s_ui);
 
 	if (list_ent == NULL)
 	{
@@ -335,8 +334,40 @@ int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
 
 /* Create a new list entry for the list box */
 
-ProjListEnt * new_list_entry(char *xml, struct stat *fileStat, SelectProjUi *s_ui)
+ProjListEnt * new_list_entry(char *xml, char *proj_nm, struct stat *fileStat, SelectProjUi *s_ui)
 {  
+    ProjListEnt *list_ent;
+    FILE *fd;
+    struct tm mod_time, *tp;
+    int count, sz;
+    char *buf, *buf_ptr;
+    const char *desc_start_tag = "<Description>";
+    const char *desc_end_tag = "</Description>";
+
+    /* New entry */
+    list_ent = (ProjListEnt *) malloc(sizeof(ProjListEnt));
+
+    /* Project name */
+    list_ent->nm = strdup(proj_nm);
+
+    /* Description */
+    sz = fileStat->st_size + 1;
+    buf = (char *) malloc(sz);
+
+    fd = open_proj_file(xml, "r", s_ui->window);
+
+    if ((count = read_proj_file(fd, buf, sz - 1, s_ui->window)) < 0)
+    	return NULL;
+
+    buf_ptr = buf;
+    list_ent->desc = get_tag_val(&buf_ptr, desc_start_tag, desc_end_tag, TRUE, s_ui->window);
+    free(buf);
+
+    /* Last mod */
+    tp = &mod_time;
+    tp = localtime((const time_t) fileStat->st_mtime);
+    list_ent->last_mod = (char *) malloc(18);
+    strftime(list_ent->last_mod, 18, "%d-%b-%Y %H:%M", tp);
 
     return list_ent;
 }
@@ -403,11 +434,11 @@ void create_info(int proj_cnt, SelectProjUi *s_ui)
 
 void OnProjSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 {  
-    SelectListUi *s_ui;
+    SelectProjUi *s_ui;
     ProjListEnt *list_ent;
 
     /* Get data */
-    s_ui = (SelectListUi *) user_data;
+    s_ui = (SelectProjUi *) user_data;
     list_ent = (ProjListEnt *) g_object_get_data (G_OBJECT (row), "list_ent");
 
     return;
@@ -428,10 +459,10 @@ void OnOpen(GtkWidget *lstbox, gpointer user_data)
 
 void OnCancel(GtkWidget *window, gpointer user_data)
 { 
-    SelectListUi *ui;
+    SelectProjUi *ui;
 
     /* Get data */
-    ui = (SelectListUi *) g_object_get_data (G_OBJECT (window), "ui");
+    ui = (SelectProjUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Close the window, free the screen data and block any secondary close signal */
     window_cleanup(window, ui);
@@ -452,10 +483,10 @@ gboolean OnOpenDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 
 /* Window cleanup */
 
-static void window_cleanup(GtkWidget *window, ProjectUi *ui)
+void window_cleanup(GtkWidget *window, SelectProjUi *ui)
 {
     /* Unwanted callback action */
-    g_signal_handler_block (ui->list_box, ui->images.sel_handler_id);
+    g_signal_handler_block (ui->list_box, ui->sel_handler_id);
     
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, ui->close_handler_id);
