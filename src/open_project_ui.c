@@ -362,10 +362,11 @@ ProjListEnt * new_list_entry(char *xml, char *proj_nm, struct stat *fileStat, Se
     buf_ptr = buf;
     list_ent->desc = get_tag_val(&buf_ptr, desc_start_tag, desc_end_tag, TRUE, s_ui->window);
     free(buf);
+    fclose(fd);
 
     /* Last mod */
     tp = &mod_time;
-    tp = localtime((const time_t) fileStat->st_mtime);
+    tp = localtime((const time_t *) fileStat->st_mtime);
     list_ent->last_mod = (char *) malloc(18);
     strftime(list_ent->last_mod, 18, "%d-%b-%Y %H:%M", tp);
 
