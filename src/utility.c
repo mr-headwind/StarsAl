@@ -600,7 +600,7 @@ int make_dir(char *s)
 {
     int err;
 
-    if ((err = mkdir(s, 0700)) != 0)
+    if ((err = mkdir(s, 0775)) != 0)
     {
 	log_msg("SYS9011", s, NULL, NULL);
 	return FALSE;

@@ -261,8 +261,8 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     create_entry(&(p_ui->proj_nm), "proj_nm", p_ui->nm_grid, 1, 1);
     gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_nm), GTK_ALIGN_START);
     gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_nm), 5);
-    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_nm), 256);
-    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 30);
+    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_nm), 30);
+    gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_nm), 20);
 
     create_label2(&(p_ui->proj_desc_lbl), "title_4", "Description", p_ui->nm_grid, 0, 2, 1, 1);
     gtk_widget_set_halign(p_ui->proj_desc_lbl, GTK_ALIGN_END);
@@ -272,7 +272,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     create_entry(&(p_ui->proj_desc), "proj_desc", p_ui->nm_grid, 1, 2);
     gtk_widget_set_halign(GTK_WIDGET (p_ui->proj_desc), GTK_ALIGN_START);
     gtk_widget_set_margin_bottom (GTK_WIDGET (p_ui->proj_desc), 5);
-    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_desc), 256);
+    gtk_entry_set_max_length(GTK_ENTRY (p_ui->proj_desc), 100);
     gtk_entry_set_width_chars(GTK_ENTRY (p_ui->proj_desc), 30);
 
     gtk_container_add(GTK_CONTAINER (p_ui->title_fr), p_ui->nm_grid);

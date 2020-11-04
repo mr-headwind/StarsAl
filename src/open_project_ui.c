@@ -82,7 +82,7 @@ int sel_proj_init(GtkWidget *);
 SelectProjUi * new_sel_proj_ui();
 static void sel_proj_ui(SelectProjUi *, MainUi *);
 static void select_proj_cntr(SelectProjUi *);
-static int project_list(GtkWidget *, SelectProjUi *);
+static int project_list(SelectProjUi *);
 static ProjListEnt * new_list_entry(char *, char *, struct stat *, SelectProjUi *);
 static void free_list_ent(gpointer);
 static GtkWidget * create_lstbox_row(ProjListEnt *);
@@ -112,6 +112,9 @@ static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
 static char *proj_dir;
 static int proj_dir_len;
+static int nm_width = 150;
+static int desc_width = 300;
+static int dt_width = 100;
 
 
 /* Project selection */
@@ -184,7 +187,7 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     gtk_window_set_title(GTK_WINDOW(s_ui->window), PROJ_SEL_UI);
     gtk_window_set_position(GTK_WINDOW(s_ui->window), GTK_WIN_POS_CENTER);
     gtk_window_set_transient_for(GTK_WINDOW(s_ui->window), GTK_WINDOW(m_ui->window));
-    gtk_window_set_default_size(GTK_WINDOW(s_ui->window), 400, 600);
+    gtk_window_set_default_size(GTK_WINDOW(s_ui->window), 600, 400);
     gtk_container_set_border_width(GTK_CONTAINER(s_ui->window), 10);
     g_object_set_data (G_OBJECT (s_ui->window), "ui", s_ui);
 
@@ -213,6 +216,8 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->open_btn, FALSE, FALSE, 0);
 
     /* Combine everything onto the window */
+    //gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->list_box, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->info_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->btn_hbox, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER(s_ui->window), s_ui->main_vbox);
@@ -220,11 +225,11 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     /* Exit when window closed */
     s_ui->close_handler_id = g_signal_connect(s_ui->window, "delete-event", G_CALLBACK(OnOpenDelete), NULL);
 
+    /* Load the available projects list */
+    project_list(s_ui);
+
     /* Show */
     gtk_widget_show_all(s_ui->window);
-
-    /* Load the available projects list */
-    project_list(s_ui->list_box, s_ui);
 
     return;
 }
@@ -250,7 +255,8 @@ void select_proj_cntr(SelectProjUi *s_ui)
     gtk_widget_set_halign(GTK_WIDGET (s_ui->scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (s_ui->scroll_win), 
     				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (s_ui->scroll_win), 250);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (s_ui->scroll_win), 600);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (s_ui->scroll_win), 250);
     gtk_container_add(GTK_CONTAINER (s_ui->scroll_win), s_ui->list_box);
 
     /* List column headers */
@@ -258,15 +264,17 @@ void select_proj_cntr(SelectProjUi *s_ui)
     create_label(&(s_ui->nm_hdr), "head_1", "Name", s_ui->hdr_hbox);
     create_label(&(s_ui->desc_hdr), "head_1", "Description", s_ui->hdr_hbox);
     create_label(&(s_ui->date_hdr), "head_1", "Date Modified", s_ui->hdr_hbox);
+    
+    gtk_widget_set_size_request (s_ui->nm_hdr, nm_width, -1);
+    gtk_widget_set_size_request (s_ui->desc_hdr, desc_width, -1);
+    gtk_widget_set_size_request (s_ui->date_hdr, dt_width, -1);
 
     /* List heading */
     row = gtk_list_box_row_new();
     gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), FALSE);
-    gtk_list_box_prepend(GTK_LIST_BOX (s_ui->list_box), row);
     gtk_container_add(GTK_CONTAINER (row), s_ui->hdr_hbox);
+    gtk_list_box_prepend(GTK_LIST_BOX (s_ui->list_box), row);
     gtk_list_box_row_set_header (GTK_LIST_BOX_ROW (row), NULL);
-
-    gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->scroll_win, FALSE, FALSE, 0);
 
     return;
 }
@@ -274,13 +282,14 @@ void select_proj_cntr(SelectProjUi *s_ui)
 
 /* Search for projects to select */
 
-int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
+int project_list(SelectProjUi *s_ui)
 {  
+    GtkWidget *list_box;
     DIR *dp = NULL;
     struct dirent *ep;
     struct stat fileStat;
     int err, cnt;
-    char *xml;
+    char *xml, *path;
     ProjListEnt *list_ent;
     GtkWidget *row;
 
@@ -292,16 +301,25 @@ int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
     }
 
     /* Iterate thru the each project */
+    list_box = s_ui->list_box;
     cnt = 0;
 
     while (ep = readdir(dp))
     {
 	/* Each project name must be a directory */
-    	if ((err = stat(ep->d_name, &fileStat)) < 0)
+	if (strcmp(ep->d_name, ".") == 0 ||strcmp(ep->d_name, "..") == 0 )
+	    continue;
+
+    	path = (char *) malloc(strlen(ep->d_name) + proj_dir_len + 2);
+    	sprintf(path, "%s/%s", proj_dir, ep->d_name);
+
+    	if ((err = stat(path, &fileStat)) < 0)
 	    continue;
 
     	if ((fileStat.st_mode & S_IFMT) != S_IFDIR)
 	    continue;
+
+	free(path);
 
 	/* Each project directory must contain a 'proj_name_data.xml' file */
 	xml = (char *) malloc((strlen(ep->d_name) * 2) + proj_dir_len + 12);
@@ -325,7 +343,7 @@ int project_list(GtkWidget *list_box, SelectProjUi *s_ui)
     }
 
     create_info(cnt, s_ui);
-    gtk_widget_show_all(list_box);
+    //gtk_widget_show_all(list_box);
     closedir(dp);
 
     return TRUE;
@@ -366,8 +384,8 @@ ProjListEnt * new_list_entry(char *xml, char *proj_nm, struct stat *fileStat, Se
 
     /* Last mod */
     tp = &mod_time;
-    tp = localtime((const time_t *) fileStat->st_mtime);
-    list_ent->last_mod = (char *) malloc(18);
+    tp = localtime((const time_t *) &(fileStat->st_mtime));
+    list_ent->last_mod = (char *) malloc(19);
     strftime(list_ent->last_mod, 18, "%d-%b-%Y %H:%M", tp);
 
     return list_ent;
@@ -389,6 +407,10 @@ GtkWidget * create_lstbox_row(ProjListEnt *list_ent)
     create_label(&nm_lbl, "data_2", list_ent->nm, row_hbox);
     create_label(&desc_lbl, "data_2", list_ent->desc, row_hbox);
     create_label(&nm_lbl, "data_2", list_ent->last_mod, row_hbox);
+
+    gtk_widget_set_size_request (nm_lbl, nm_width, -1);
+    gtk_widget_set_size_request (desc_lbl, desc_width, -1);
+    gtk_widget_set_size_request (mod_lbl, dt_width, -1);
 
     gtk_container_add(GTK_CONTAINER (row), row_hbox);
 
@@ -422,8 +444,6 @@ void create_info(int proj_cnt, SelectProjUi *s_ui)
     sprintf(txt, "Projects found: %d", proj_cnt);
     create_label(&(s_ui->cnt_lbl), "title_5", txt, s_ui->info_hbox); 
 
-    gtk_widget_show_all(s_ui->info_hbox);
-
     return;
 }
 
@@ -450,6 +470,10 @@ void OnProjSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
 
 void OnOpen(GtkWidget *lstbox, gpointer user_data)
 {  
+    SelectProjUi *s_ui;
+
+    /* Get data */
+    s_ui = (SelectProjUi *) user_data;
 
     return;
 }
