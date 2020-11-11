@@ -58,7 +58,9 @@ typedef struct _SelectProjUi
 {
     GtkWidget *window;
     GtkWidget *main_vbox;
-    GtkWidget *selection_lbl, *scroll_win, *list_box, *btn_hbox;
+    GtkWidget *selection_lbl, *scroll_win, *btn_hbox;
+    GtkWidget *tree;
+    GtkTreeModel *model;
     GtkWidget *hdr_hbox, *info_hbox;
     GtkWidget *nm_hdr, *desc_hdr, *date_hdr;
     GtkWidget *cnt_lbl;
@@ -112,10 +114,15 @@ static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
 static char *proj_dir;
 static int proj_dir_len;
-static int nm_width = 150;
-static int desc_width = 300;
-static int dt_width = 100;
 
+enum
+    {
+       PROJECT_NM,
+       PROJECT_DESC,
+       LAST_MOD,
+       TOOL_TIP,
+       N_COLUMNS
+    };
 
 /* Project selection */
 
@@ -216,7 +223,6 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->open_btn, FALSE, FALSE, 0);
 
     /* Combine everything onto the window */
-    //gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->list_box, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->info_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->btn_hbox, FALSE, FALSE, 0);
@@ -239,15 +245,10 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
 
 void select_proj_cntr(SelectProjUi *s_ui)
 {  
-    GtkWidget *row;
-
     /* Selection header */
     create_label(&(s_ui->selection_lbl), "title_4", "Please select a project", s_ui->main_vbox); 
 
-    /* Project list */
-    s_ui->list_box = gtk_list_box_new();
-    s_ui->sel_handler_id = g_signal_connect(s_ui->list_box, "row-selected", G_CALLBACK(OnProjSelect), (gpointer) s_ui);
-
+    /* Create a container for the project list */
     s_ui->scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_margin_start (GTK_WIDGET (s_ui->scroll_win), 5);
     gtk_widget_set_margin_top (GTK_WIDGET (s_ui->scroll_win), 5);
@@ -257,6 +258,22 @@ void select_proj_cntr(SelectProjUi *s_ui)
     				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (s_ui->scroll_win), 600);
     gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (s_ui->scroll_win), 250);
+
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+    s_ui->list_box = gtk_list_box_new();
+    s_ui->sel_handler_id = g_signal_connect(s_ui->list_box, "row-selected", G_CALLBACK(OnProjSelect), (gpointer) s_ui);
+
     gtk_container_add(GTK_CONTAINER (s_ui->scroll_win), s_ui->list_box);
 
     /* List column headers */
@@ -276,8 +293,9 @@ void select_proj_cntr(SelectProjUi *s_ui)
     gtk_list_box_prepend(GTK_LIST_BOX (s_ui->list_box), row);
     gtk_list_box_row_set_header (GTK_LIST_BOX_ROW (row), NULL);
 
-    return;
-}
+
+
+
 
 
 /* Search for projects to select */
@@ -290,9 +308,18 @@ int project_list(SelectProjUi *s_ui)
     struct stat fileStat;
     int err, cnt;
     char *xml, *path;
+    char desc_trunc[51];
     ProjListEnt *list_ent;
-    GtkWidget *row;
+    GtkWidget *colhdr;
+    GtkListStore *store;
+    GtkTreeIter iter;
+    GtkTreeViewColumn *column;
+    GtkCellRenderer *renderer;
 
+
+    /* Build a list view for projects */
+    store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+    
     /* Open project directory */
     if((dp = opendir(proj_dir)) == NULL)
     {
@@ -329,6 +356,7 @@ int project_list(SelectProjUi *s_ui)
 	    continue;
 
 	list_ent = new_list_entry(xml, ep->d_name, &fileStat, s_ui);
+	snprintf(desc_trunc, 50, "%s", list_ent->desc);
 
 	if (list_ent == NULL)
 	{
@@ -336,14 +364,62 @@ int project_list(SelectProjUi *s_ui)
 	    continue;
 	}
 
+	/* Acquire an iterator and load the data*/
+	gtk_list_store_append (store, &iter);
+	gtk_list_store_set (store, &iter,
+			    PROJECT_NM, list_ent->name,
+			    PROJECT_DESC, desc_trunc,
+			    LAST_MOD, list_ent->last_mod,
+			    TOOL_TIP, list_ent->desc,
+			    -1);
+
 	cnt++;
-	row = create_lstbox_row(list_ent);
-	gtk_list_box_insert(GTK_LIST_BOX (list_box), row, -1);
 	free(xml);
+	free_list_ent(list_ent);
     }
 
+    /* Tree (list) view */
+    s_ui->tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
+    g_object_unref (G_OBJECT (store));
+    s_ui->model = gtk_tree_view_get_model (GTK_TREE_VIEW (s_ui->tree));
+    gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (s_ui->tree), TOOL_TIP);
+
+    /* Column and header */
+    renderer = gtk_cell_renderer_text_new ();
+    column = gtk_tree_view_column_new_with_attributes ("Name", renderer, 
+    						       "text", PROJECT_NM, NULL);
+    gtk_tree_view_append_column (GTK_TREE_VIEW (s_ui->tree), column);
+    gtk_widget_set_name (GTK_WIDGET (column), "list_col_1");
+
+    colhdr = gtk_tree_view_column_get_button (column);
+    gtk_widget_set_name (GTK_WIDGET (colhdr), "list_hdr_1");
+
+    /* Column and header */
+    renderer = gtk_cell_renderer_text_new ();
+    column = gtk_tree_view_column_new_with_attributes ("Description", renderer, 
+    						       "text", PROJECT_DESC, NULL);
+    gtk_tree_view_append_column (GTK_TREE_VIEW (s_ui->tree), column);
+    gtk_widget_set_name (GTK_WIDGET (column), "list_col_1");
+
+    colhdr = gtk_tree_view_column_get_button (column);
+    gtk_widget_set_name (GTK_WIDGET (colhdr), "list_hdr_1");
+
+    /* Column and header */
+    renderer = gtk_cell_renderer_text_new ();
+    column = gtk_tree_view_column_new_with_attributes ("Date Modified", renderer, 
+    						       "text", LAST_MOD, NULL);
+    gtk_tree_view_append_column (GTK_TREE_VIEW (s_ui->tree), column);
+    gtk_widget_set_name (GTK_WIDGET (column), "list_col_1");
+
+    colhdr = gtk_tree_view_column_get_button (column);
+    gtk_widget_set_name (GTK_WIDGET (colhdr), "list_hdr_1");
+
+    /* Add to the window container */
+    gtk_container_add (GTK_CONTAINER (s_ui->scroll_win), s_ui->tree);
+    gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (s_ui->tree), GTK_TREE_VIEW_GRID_LINES_NONE);
+
+    /* Summary */
     create_info(cnt, s_ui);
-    //gtk_widget_show_all(list_box);
     closedir(dp);
 
     return TRUE;
@@ -406,7 +482,7 @@ GtkWidget * create_lstbox_row(ProjListEnt *list_ent)
 
     create_label(&nm_lbl, "data_2", list_ent->nm, row_hbox);
     create_label(&desc_lbl, "data_2", list_ent->desc, row_hbox);
-    create_label(&nm_lbl, "data_2", list_ent->last_mod, row_hbox);
+    create_label(&mod_lbl, "data_2", list_ent->last_mod, row_hbox);
 
     gtk_widget_set_size_request (nm_lbl, nm_width, -1);
     gtk_widget_set_size_request (desc_lbl, desc_width, -1);
