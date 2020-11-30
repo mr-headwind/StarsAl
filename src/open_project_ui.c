@@ -105,7 +105,7 @@ static void OnOpen(GtkWidget*, gpointer);
 static void OnCancel(GtkWidget*, gpointer);
 gboolean OnOpenDelete(GtkWidget *, GdkEvent *, gpointer);
 
-extern ProjectData * new_proj_data();
+extern ProjectData * open_project(char *, GtkWidget *);
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
 extern FILE * open_proj_file(char *, char *, GtkWidget *);
@@ -122,6 +122,7 @@ extern void deregister_window(GtkWidget *);
 static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
 static char *proj_dir;
+static gchar *curr_proj_nm;
 static int proj_dir_len;
 static GtkTreeSelection *select_proj;
 
@@ -137,7 +138,6 @@ int open_project_main(ProjectData *proj, MainUi *m_ui)
     	return FALSE;
 
     /* Initialise project */
-    proj = new_proj_data();
     ui = new_sel_proj_ui();
     ui->proj = proj;
 
@@ -349,7 +349,7 @@ int project_list(SelectProjUi *s_ui)
     /* Selection */
     select_proj = gtk_tree_view_get_selection (GTK_TREE_VIEW (s_ui->tree));
     gtk_tree_selection_set_mode (select_proj, GTK_SELECTION_SINGLE);
-    g_signal_connect (G_OBJECT (select_proj), "changed", G_CALLBACK (OnProjSelect), NULL);
+    g_signal_connect (G_OBJECT (select_proj), "changed", G_CALLBACK (OnProjSelect), s_ui);
 
     /* Column and headers for Name, Description & Date Modified */
     new_proj_col("Name", PROJECT_NM, s_ui);
@@ -473,25 +473,36 @@ void OnProjSelect (GtkTreeSelection *selection, gpointer data)
 {
     GtkTreeIter iter;
     GtkTreeModel *model;
-    gchar *proj_nm;
+    SelectProjUi *ui;
+
+    ui = (SelectProjUi *) data;
 
     if (gtk_tree_selection_get_selected (selection, &model, &iter))
     {
-	gtk_tree_model_get (model, &iter, PROJECT_NM, &proj_nm, -1);
-	g_print ("You selected a project: %s\n", proj_nm);
-	g_free (proj_nm);
+	if (curr_proj_nm)
+	    g_free (curr_proj_nm);
+
+	gtk_tree_model_get (model, &iter, PROJECT_NM, &curr_proj_nm, -1);
+	g_print ("You selected a project: %s\n", curr_proj_nm);
     }
 }
 
 
 /* Callback - Open project */
 
-void OnOpen(GtkWidget *lstbox, gpointer user_data)
+void OnOpen(GtkWidget *btn, gpointer user_data)
 {  
-    SelectProjUi *s_ui;
+    SelectProjUi *ui;
 
     /* Get data */
-    s_ui = (SelectProjUi *) user_data;
+    ui = (SelectProjUi *) user_data;
+printf("%s OnOpen 1\n", debug_hdr); fflush(stdout);
+    ui->proj = open_project(curr_proj_nm, ui->window);
+printf("%s OnOpen 2\n", debug_hdr); fflush(stdout);
+    g_free (curr_proj_nm);
+printf("%s OnOpen 3\n", debug_hdr); fflush(stdout);
+    window_cleanup(ui->window, ui);
+printf("%s OnOpen 4\n", debug_hdr); fflush(stdout);
 
     return;
 }
@@ -508,6 +519,7 @@ void OnCancel(GtkWidget *window, gpointer user_data)
     ui = (SelectProjUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Close the window, free the screen data and block any secondary close signal */
+    g_free (curr_proj_nm);
     window_cleanup(window, ui);
 
     return;
