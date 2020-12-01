@@ -202,7 +202,6 @@ ProjectData * open_project(char *nm, GtkWidget *window)
     /* Set project and load the data from the buffer */
     proj = new_proj_data();
 
-printf("%s open_project 1\n", debug_hdr); fflush(stdout);
     if (load_proj_from_file(proj, buf, window) == FALSE)
     {
 	close_project(proj);
@@ -214,7 +213,6 @@ printf("%s open_project 1\n", debug_hdr); fflush(stdout);
     //proj->project_path = (char *) malloc(strlen(p) + 1);
     //strcpy(proj->project_path, p);
 
-printf("%s open_project 8\n", debug_hdr); fflush(stdout);
     return proj;
 }
 
@@ -225,7 +223,6 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 {
     char *buf_ptr, *tmp_status;
 
-printf("%s load_proj_from_file 1\n", debug_hdr); fflush(stdout);
     /* Check that it's a StarsAl file */
     if ((buf_ptr = strstr(buf, proj_tags[starsal_idx][0])) == NULL)
     {
@@ -233,7 +230,6 @@ printf("%s load_proj_from_file 1\n", debug_hdr); fflush(stdout);
     	return FALSE;
     }
 
-printf("%s load_proj_from_file 2\n", debug_hdr); fflush(stdout);
     /* Title, Description, Path and Status */
     proj->project_name = get_tag_val(&buf_ptr, proj_tags[name_idx][0], proj_tags[name_idx][1], TRUE, window);
     proj->project_desc = get_tag_val(&buf_ptr, proj_tags[desc_idx][0], proj_tags[desc_idx][1], TRUE, window);
@@ -242,10 +238,8 @@ printf("%s load_proj_from_file 2\n", debug_hdr); fflush(stdout);
     proj->status = atoi(tmp_status);
     free(tmp_status);
 
-printf("%s load_proj_from_file 3\n", debug_hdr); fflush(stdout);
     /* Images and Darks */
     load_files(proj->images_gl, buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
-printf("%s load_proj_from_file 4\n", debug_hdr); fflush(stdout);
     load_files(proj->darks_gl, buf_ptr, proj_tags[dark_idx][0], proj_tags[dark_idx][1], window);
 
     return TRUE;
@@ -301,18 +295,20 @@ char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, i
 
     /* Position of both tags */
     if ((ptr = strstr(*buf_ptr, start_tag)) == NULL)
+    {
     	if (err == TRUE)
-	{
 	    log_msg("SYS9014", (char *) start_tag, "SYS9014", window);
-	    return NULL;
-	}
+
+	return NULL;
+    }
 
     if ((end_ptr = strstr(ptr, end_tag)) == NULL)
+    {
     	if (err == TRUE)
-	{
 	    log_msg("SYS9014", (char *) end_tag, "SYS9014", window);
-	    return NULL;
-	}
+
+	return NULL;
+    }
 
     /* Value length */
     sz = end_ptr - (ptr + len);

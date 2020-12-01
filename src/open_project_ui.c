@@ -101,6 +101,7 @@ static void create_info(int, SelectProjUi *);
 static void window_cleanup(GtkWidget *, SelectProjUi *);
 
 static void OnProjSelect (GtkTreeSelection *, gpointer);
+static void OnProjDbl (GtkTreeView *, GtkTreePath *, GtkTreeViewColumn *, gpointer);
 static void OnOpen(GtkWidget*, gpointer);
 static void OnCancel(GtkWidget*, gpointer);
 gboolean OnOpenDelete(GtkWidget *, GdkEvent *, gpointer);
@@ -344,7 +345,8 @@ int project_list(SelectProjUi *s_ui)
     g_object_unref (G_OBJECT (store));
     s_ui->model = gtk_tree_view_get_model (GTK_TREE_VIEW (s_ui->tree));
     gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (s_ui->tree), TOOL_TIP);
-    //s_ui->proj_handler_id = g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK(OnProjSelect), s_ui);
+    gtk_tree_view_set_activate_on_single_click (GTK_TREE_VIEW (s_ui->tree), FALSE);
+    g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK (OnProjDbl), s_ui);
 
     /* Selection */
     select_proj = gtk_tree_view_get_selection (GTK_TREE_VIEW (s_ui->tree));
@@ -488,6 +490,35 @@ void OnProjSelect (GtkTreeSelection *selection, gpointer data)
 }
 
 
+/* Callback - Double click */
+
+void OnProjDbl (GtkTreeView *tree, GtkTreePath *path, GtkTreeViewColumn *col, gpointer data)
+{
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    SelectProjUi *ui;
+
+    ui = (SelectProjUi *) data;
+
+    g_print ("double\n");
+    gchar *pth = gtk_tree_path_to_string (path);
+    gint *ind = gtk_tree_path_get_indices (path);
+    g_print ("path  %s  %d\n", pth, *ind);
+    g_free(pth);
+
+    /*
+    if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+	if (curr_proj_nm)
+	    g_free (curr_proj_nm);
+
+	gtk_tree_model_get (model, &iter, PROJECT_NM, &curr_proj_nm, -1);
+	g_print ("You selected a project: %s\n", curr_proj_nm);
+    }
+    */
+}
+
+
 /* Callback - Open project */
 
 void OnOpen(GtkWidget *btn, gpointer user_data)
@@ -496,13 +527,9 @@ void OnOpen(GtkWidget *btn, gpointer user_data)
 
     /* Get data */
     ui = (SelectProjUi *) user_data;
-printf("%s OnOpen 1\n", debug_hdr); fflush(stdout);
     ui->proj = open_project(curr_proj_nm, ui->window);
-printf("%s OnOpen 2\n", debug_hdr); fflush(stdout);
     g_free (curr_proj_nm);
-printf("%s OnOpen 3\n", debug_hdr); fflush(stdout);
     window_cleanup(ui->window, ui);
-printf("%s OnOpen 4\n", debug_hdr); fflush(stdout);
 
     return;
 }
