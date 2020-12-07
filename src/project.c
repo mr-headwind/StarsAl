@@ -50,6 +50,7 @@
 #include <errno.h>
 #include <defs.h>
 #include <project.h>
+#include <main.h>
 #include <preferences.h>
 
 
@@ -62,6 +63,7 @@ int load_proj_from_file(ProjectData *, char *, GtkWidget *);
 int load_files(GList *, char *, const char *, const char *, GtkWidget *);
 char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
 void close_project(ProjectData *);
+void proj_close_check_save(ProjectData *, MainUi *);
 int save_proj_init(ProjectData *, GtkWidget *);
 ProjectData * open_project(char *, GtkWidget *);
 FILE * open_proj_file(char *, char *, GtkWidget *);
@@ -208,10 +210,6 @@ ProjectData * open_project(char *nm, GtkWidget *window)
 	free(buf);
     	return NULL;
     }
-    //proj->project_name = (char *) malloc(strlen(nm) + 1);
-    //strcpy(proj->project_name, nm);
-    //proj->project_path = (char *) malloc(strlen(p) + 1);
-    //strcpy(proj->project_path, p);
 
     return proj;
 }
@@ -321,6 +319,16 @@ char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, i
     *buf_ptr = end_ptr;
 
     return tag_val;
+}
+
+
+/* Check for save and close */
+
+void proj_close_check_save(ProjectData *proj, MainUi *m_ui)
+{
+    close_project(proj);
+
+    return;
 }
 
 

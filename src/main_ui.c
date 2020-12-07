@@ -360,6 +360,7 @@ void image_list(MainUi *m_ui)
 
 void display_proj(ProjectData *proj, MainUi *m_ui)
 {  
+    g_print ("You opened a project: %s\n", proj->project_name);
 
     return;
 }

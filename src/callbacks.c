@@ -59,8 +59,8 @@ void OnQuit(GtkWidget*, gpointer *user_data);
 
 
 extern void edit_project_main(ProjectData *, GtkWidget *);
-extern void open_project_main(ProjectData *, MainUi *);
-extern void display_proj(ProjectData *, MainUi *);
+extern void open_project_main(MainUi *);
+extern void proj_close_check_save(ProjectData *, MainUi *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -104,14 +104,22 @@ void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 {  
     GtkWidget *window;
-    ProjectData *proj;
     MainUi *m_ui;
 
+    /* Data */
     window = (GtkWidget *) user_data;
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
-    open_project_main(proj, m_ui);
-    display_proj(proj, m_ui);
+    /* Check if a project is already open */
+    if (m_ui->proj != NULL)
+    {
+printf("%s OnOpenProj 1\n", debug_hdr); fflush(stdout);
+    	proj_close_check_save(m_ui->proj, m_ui);
+    }
+
+printf("%s OnOpenProj 2\n", debug_hdr); fflush(stdout);
+    /* Open selection window */
+    open_project_main(m_ui);
 
     return;
 }  

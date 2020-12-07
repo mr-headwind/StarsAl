@@ -66,7 +66,7 @@ typedef struct _SelectProjUi
     GtkWidget *cnt_lbl;
     GtkWidget *open_btn, *cancel_btn;
     int close_handler_id, sel_handler_id;
-    ProjectData *proj;
+    MainUi *m_ui;
 } SelectProjUi;
 
 typedef struct _ProjListEnt
@@ -88,7 +88,7 @@ enum ProjectCol
 
 /* Prototypes */
 
-int open_project_main(ProjectData *, MainUi *);
+int open_project_main(MainUi *);
 int sel_proj_init(GtkWidget *);
 SelectProjUi * new_sel_proj_ui();
 static void sel_proj_ui(SelectProjUi *, MainUi *);
@@ -110,6 +110,8 @@ extern ProjectData * open_project(char *, GtkWidget *);
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
 extern FILE * open_proj_file(char *, char *, GtkWidget *);
+extern ProjectData * open_project(char *, GtkWidget *);
+extern void display_proj(ProjectData *, MainUi *);
 extern int read_proj_file(FILE *, char *, int, GtkWidget *);
 extern int get_user_pref(char *, char **);
 extern void log_msg(char*, char*, char*, GtkWidget*);
@@ -130,7 +132,7 @@ static GtkTreeSelection *select_proj;
 
 /* Project selection */
 
-int open_project_main(ProjectData *proj, MainUi *m_ui)
+int open_project_main(MainUi *m_ui)
 {
     SelectProjUi *ui;
 
@@ -140,7 +142,7 @@ int open_project_main(ProjectData *proj, MainUi *m_ui)
 
     /* Initialise project */
     ui = new_sel_proj_ui();
-    ui->proj = proj;
+    ui->m_ui = m_ui;
 
     /* Create the interface */
     sel_proj_ui(ui, m_ui);
@@ -475,9 +477,6 @@ void OnProjSelect (GtkTreeSelection *selection, gpointer data)
 {
     GtkTreeIter iter;
     GtkTreeModel *model;
-    SelectProjUi *ui;
-
-    ui = (SelectProjUi *) data;
 
     if (gtk_tree_selection_get_selected (selection, &model, &iter))
     {
@@ -496,9 +495,11 @@ void OnProjDbl (GtkTreeView *tree, GtkTreePath *path, GtkTreeViewColumn *col, gp
 {
     GtkTreeIter iter;
     GtkTreeModel *model;
-    SelectProjUi *ui;
+    GtkTreeSelection *selection;
+    SelectProjUi *s_ui;
+    MainUi *m_ui;
 
-    ui = (SelectProjUi *) data;
+    s_ui = (SelectProjUi *) data;
 
     g_print ("double\n");
     gchar *pth = gtk_tree_path_to_string (path);
@@ -506,16 +507,20 @@ void OnProjDbl (GtkTreeView *tree, GtkTreePath *path, GtkTreeViewColumn *col, gp
     g_print ("path  %s  %d\n", pth, *ind);
     g_free(pth);
 
-    /*
+    model = gtk_tree_view_get_model (tree);
+    selection = gtk_tree_view_get_selection (tree);
+
     if (gtk_tree_selection_get_selected (selection, &model, &iter))
     {
 	if (curr_proj_nm)
 	    g_free (curr_proj_nm);
 
 	gtk_tree_model_get (model, &iter, PROJECT_NM, &curr_proj_nm, -1);
-	g_print ("You selected a project: %s\n", curr_proj_nm);
+	m_ui = s_ui->m_ui;
+	m_ui->proj = open_project(curr_proj_nm, s_ui->window);
+	OnCancel(s_ui->window, s_ui);
+	display_proj(m_ui->proj, m_ui);
     }
-    */
 }
 
 
@@ -523,13 +528,16 @@ void OnProjDbl (GtkTreeView *tree, GtkTreePath *path, GtkTreeViewColumn *col, gp
 
 void OnOpen(GtkWidget *btn, gpointer user_data)
 {  
-    SelectProjUi *ui;
+    SelectProjUi *s_ui;
+    MainUi *m_ui;
 
     /* Get data */
-    ui = (SelectProjUi *) user_data;
-    ui->proj = open_project(curr_proj_nm, ui->window);
-    g_free (curr_proj_nm);
-    window_cleanup(ui->window, ui);
+    s_ui = (SelectProjUi *) user_data;
+    m_ui = s_ui->m_ui;
+
+    m_ui->proj = open_project(curr_proj_nm, s_ui->window);
+    OnCancel(s_ui->window, s_ui);
+    display_proj(m_ui->proj, m_ui);
 
     return;
 }
@@ -540,14 +548,14 @@ void OnOpen(GtkWidget *btn, gpointer user_data)
 
 void OnCancel(GtkWidget *window, gpointer user_data)
 { 
-    SelectProjUi *ui;
+    SelectProjUi *s_ui;
 
     /* Get data */
-    ui = (SelectProjUi *) g_object_get_data (G_OBJECT (window), "ui");
+    s_ui = (SelectProjUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Close the window, free the screen data and block any secondary close signal */
     g_free (curr_proj_nm);
-    window_cleanup(window, ui);
+    window_cleanup(window, s_ui);
 
     return;
 }
@@ -565,18 +573,18 @@ gboolean OnOpenDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 
 /* Window cleanup */
 
-void window_cleanup(GtkWidget *window, SelectProjUi *ui)
+void window_cleanup(GtkWidget *window, SelectProjUi *s_ui)
 {
     /* Unwanted callback action */
     //g_signal_handler_block (ui->list_box, ui->sel_handler_id);
     
     /* Close the window, free the screen data and block any secondary close signal */
-    g_signal_handler_block (window, ui->close_handler_id);
+    g_signal_handler_block (window, s_ui->close_handler_id);
 
     deregister_window(window);
     gtk_window_close(GTK_WINDOW(window));
 
-    free(ui);
+    free(s_ui);
 
     return;
 }
