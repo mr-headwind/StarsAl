@@ -327,6 +327,7 @@ char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, i
 void proj_close_check_save(ProjectData *proj, MainUi *m_ui)
 {
     close_project(proj);
+    m_ui->proj = NULL;
 
     return;
 }

@@ -61,11 +61,12 @@ typedef struct _SelectProjUi
     GtkWidget *selection_lbl, *scroll_win, *btn_hbox;
     GtkWidget *tree;
     GtkTreeModel *model;
+    GtkTreeSelection *select_proj;
     GtkWidget *hdr_hbox, *info_hbox;
     GtkWidget *nm_hdr, *desc_hdr, *date_hdr;
     GtkWidget *cnt_lbl;
     GtkWidget *open_btn, *cancel_btn;
-    int close_handler_id, sel_handler_id;
+    int close_handler_id, sel_handler_id, act_handler_id;
     MainUi *m_ui;
 } SelectProjUi;
 
@@ -127,7 +128,6 @@ static int save_indi;
 static char *proj_dir;
 static gchar *curr_proj_nm;
 static int proj_dir_len;
-static GtkTreeSelection *select_proj;
 
 
 /* Project selection */
@@ -171,6 +171,7 @@ int sel_proj_init(GtkWidget *window)
 
     proj_dir = p;
     proj_dir_len = strlen(p);
+    curr_proj_nm = NULL;
 
     return TRUE;
 }
@@ -348,12 +349,12 @@ int project_list(SelectProjUi *s_ui)
     s_ui->model = gtk_tree_view_get_model (GTK_TREE_VIEW (s_ui->tree));
     gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (s_ui->tree), TOOL_TIP);
     gtk_tree_view_set_activate_on_single_click (GTK_TREE_VIEW (s_ui->tree), FALSE);
-    g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK (OnProjDbl), s_ui);
+    s_ui->act_handler_id = g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK (OnProjDbl), s_ui);
 
     /* Selection */
-    select_proj = gtk_tree_view_get_selection (GTK_TREE_VIEW (s_ui->tree));
-    gtk_tree_selection_set_mode (select_proj, GTK_SELECTION_SINGLE);
-    g_signal_connect (G_OBJECT (select_proj), "changed", G_CALLBACK (OnProjSelect), s_ui);
+    s_ui->select_proj = gtk_tree_view_get_selection (GTK_TREE_VIEW (s_ui->tree));
+    gtk_tree_selection_set_mode (s_ui->select_proj, GTK_SELECTION_SINGLE);
+    s_ui->sel_handler_id = g_signal_connect (G_OBJECT (s_ui->select_proj), "changed", G_CALLBACK (OnProjSelect), s_ui);
 
     /* Column and headers for Name, Description & Date Modified */
     new_proj_col("Name", PROJECT_NM, s_ui);
@@ -501,12 +502,6 @@ void OnProjDbl (GtkTreeView *tree, GtkTreePath *path, GtkTreeViewColumn *col, gp
 
     s_ui = (SelectProjUi *) data;
 
-    g_print ("double\n");
-    gchar *pth = gtk_tree_path_to_string (path);
-    gint *ind = gtk_tree_path_get_indices (path);
-    g_print ("path  %s  %d\n", pth, *ind);
-    g_free(pth);
-
     model = gtk_tree_view_get_model (tree);
     selection = gtk_tree_view_get_selection (tree);
 
@@ -554,7 +549,9 @@ void OnCancel(GtkWidget *window, gpointer user_data)
     s_ui = (SelectProjUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Close the window, free the screen data and block any secondary close signal */
-    g_free (curr_proj_nm);
+    if (curr_proj_nm)
+	g_free (curr_proj_nm);
+
     window_cleanup(window, s_ui);
 
     return;
@@ -580,6 +577,8 @@ void window_cleanup(GtkWidget *window, SelectProjUi *s_ui)
     
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, s_ui->close_handler_id);
+    g_signal_handler_block (s_ui->tree, s_ui->act_handler_id);
+    g_signal_handler_block (s_ui->select_proj, s_ui->sel_handler_id);
 
     deregister_window(window);
     gtk_window_close(GTK_WINDOW(window));

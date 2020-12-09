@@ -113,11 +113,9 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
     /* Check if a project is already open */
     if (m_ui->proj != NULL)
     {
-printf("%s OnOpenProj 1\n", debug_hdr); fflush(stdout);
     	proj_close_check_save(m_ui->proj, m_ui);
     }
 
-printf("%s OnOpenProj 2\n", debug_hdr); fflush(stdout);
     /* Open selection window */
     open_project_main(m_ui);
 
@@ -129,6 +127,16 @@ printf("%s OnOpenProj 2\n", debug_hdr); fflush(stdout);
 
 void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
 {  
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Check if a project is already open */
+    if (m_ui->proj != NULL)
+    	proj_close_check_save(m_ui->proj, m_ui);
 
     return;
 }  
