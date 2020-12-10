@@ -97,6 +97,7 @@ void initialise(MainUi *m_ui)
     /* Set variables */
     app_msg_extra[0] = '\0';
     memset(m_ui, 0, sizeof (MainUi));
+    m_ui->proj = NULL;
 
     /* Set application directory */
     if (! check_app_dir())
