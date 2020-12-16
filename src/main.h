@@ -66,7 +66,9 @@ typedef struct _main_ui
     /* Application widgets */
     GtkWidget *algn_vbox, *proc_hbox;  
     GtkWidget *image_area, *img_scroll_win;  
-    GtkWidget *list_box, *lst_scroll_win; 
+    GtkWidget *image_list_tree, *lst_scroll_win; 
+    GtkTreeModel *model;
+    GtkTreeSelection *select_image;
     GtkWidget *heading_lbl;  
     GtkWidget *dummy;  
 

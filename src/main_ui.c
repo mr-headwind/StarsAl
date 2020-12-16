@@ -33,6 +33,8 @@
 
 /* Defines */
 #define MAIN_UI
+#define TEXT_COL 1
+#define TOGGLE_COL 2
 
 
 /* Includes */
@@ -47,6 +49,18 @@
 #include <preferences.h>
 
 
+/* Types */
+
+enum ImageCol
+    {
+       IMAGE_TYPE,
+       IMAGE_NM,
+       BASE_IMG,
+       TOOL_TIP,
+       N_COLUMNS
+    };
+
+
 /* Prototypes */
 
 void main_ui(MainUi *);
@@ -54,7 +68,9 @@ void create_menu(MainUi *);
 void create_main_view(MainUi *);
 void image_area(MainUi *);
 void image_list(MainUi *);
-void display_proj(ProjectData *proj, MainUi *m_ui);
+void display_proj(ProjectData *, MainUi *);
+void set_image_list(ProjectData *, MainUi *);
+void new_image_col(int, char *, enum ImageCol, MainUi *);
 
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
@@ -95,7 +111,7 @@ void main_ui(MainUi *m_ui)
     g_object_set_data (G_OBJECT (m_ui->window), "ui", m_ui);
     gtk_window_set_title(GTK_WINDOW(m_ui->window), TITLE);
     gtk_window_set_position(GTK_WINDOW(m_ui->window), GTK_WIN_POS_CENTER);
-    //gtk_window_set_default_size(GTK_WINDOW(m_ui->window), 200, 200);
+    gtk_window_set_default_size(GTK_WINDOW(m_ui->window), 900, 600);
     gtk_container_set_border_width(GTK_CONTAINER(m_ui->window), 10);
 
     /* Overall view container */
@@ -316,7 +332,7 @@ void image_area(MainUi *m_ui)
     gtk_widget_set_halign(GTK_WIDGET (m_ui->img_scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 250);
+    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 550);
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
 
     return;
@@ -327,13 +343,24 @@ void image_area(MainUi *m_ui)
 
 void image_list(MainUi *m_ui)
 {  
-    GtkWidget *heading_lbl, *row;
+    /* Image list will be in a scrolled window */
+    m_ui->lst_scroll_win = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_margin_start (GTK_WIDGET (m_ui->lst_scroll_win), 5);
+    gtk_widget_set_margin_top (GTK_WIDGET (m_ui->lst_scroll_win), 5);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (m_ui->lst_scroll_win), 5);
+    gtk_widget_set_halign(GTK_WIDGET (m_ui->lst_scroll_win), GTK_ALIGN_START);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 
+				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 550);
 
-    /* Listbox for project images and darks */
+
+    //GtkWidget *heading_lbl, *row;
+
+    /* Listbox for project images and darks **
     m_ui->list_box = gtk_list_box_new();
     m_ui->sel_handler_id = g_signal_connect(m_ui->list_box, "row-selected", G_CALLBACK(OnImageSelect), (gpointer) m_ui);
 
-    /* Place in scrolled window */
+    ** Place in scrolled window **
     m_ui->lst_scroll_win = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_margin_start (GTK_WIDGET (m_ui->lst_scroll_win), 5);
     gtk_widget_set_margin_top (GTK_WIDGET (m_ui->lst_scroll_win), 5);
@@ -344,13 +371,14 @@ void image_list(MainUi *m_ui)
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
     gtk_container_add(GTK_CONTAINER (m_ui->lst_scroll_win), m_ui->list_box);
 
-    /* List heading */
+    ** List heading **
     row = gtk_list_box_row_new();
     gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW (row), FALSE);
     create_label3(&(heading_lbl), "head_1", "Project Images and Darks");
     gtk_container_add(GTK_CONTAINER (row), heading_lbl);
     gtk_list_box_prepend(GTK_LIST_BOX (m_ui->list_box), row);
     gtk_list_box_row_set_header (GTK_LIST_BOX_ROW (row), NULL);
+    */
 
     return;
 }
@@ -360,7 +388,145 @@ void image_list(MainUi *m_ui)
 
 void display_proj(ProjectData *proj, MainUi *m_ui)
 {  
-    g_print ("You opened a project: %s\n", proj->project_name);
+    char *msg;
+
+    if (proj == NULL)
+    	return;
+
+    /* Create images list */
+    set_image_list(proj, m_ui);
+
+    /* Open 1st image */
+
+    /* Info status */
+    msg = (char *) malloc(strlen(proj->project_name) + 25);
+    sprintf(msg, "Currently viewing project: %s", proj->project_name);
+    gtk_label_set_text(GTK_LABEL (m_ui->status_info), msg);
+    free(msg);
+
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 650);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 450);
+
+    gtk_widget_show_all(m_ui->window);
+
+    return;
+}
+
+
+/* Display project */
+
+void set_image_list(ProjectData *proj, MainUi *m_ui)
+{  
+    GList *l;
+    Image *img;
+    gboolean base;
+    GtkListStore *store;
+    GtkTreeIter iter;
+
+    /* Build a list view for images */
+    store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING);
+
+    /* Iterate through the images and add the store */
+    base = TRUE;
+
+    for(l = proj->images_gl; l != NULL; l = l->next)
+    {
+    	img = (Image *) l->data;
+
+printf("%s set_image_list 1   %s\n", debug_hdr, img->nm); fflush(stdout);
+    	/* Acquire an iterator and load the data*/
+	gtk_list_store_append (store, &iter);
+	gtk_list_store_set (store, &iter,
+			    IMAGE_TYPE, 'I',
+			    IMAGE_NM, img->nm,
+			    BASE_IMG, base,
+			    TOOL_TIP, img->path,
+			    -1);
+	base = FALSE;
+    }
+
+    /* Iterate through the darks and add the store */
+    base = TRUE;
+
+    for(l = proj->darks_gl; l != NULL; l = l->next)
+    {
+    	img = (Image *) l->data;
+
+    	/* Acquire an iterator and load the data*/
+	gtk_list_store_append (store, &iter);
+	gtk_list_store_set (store, &iter,
+			    IMAGE_TYPE, 'D',
+			    IMAGE_NM, img->nm,
+			    BASE_IMG, base,
+			    TOOL_TIP, img->path,
+			    -1);
+	base = FALSE;
+    }
+
+    /* Tree (list) view */
+    m_ui->image_list_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
+    g_object_unref (G_OBJECT (store));
+    m_ui->model = gtk_tree_view_get_model (GTK_TREE_VIEW (m_ui->image_list_tree));
+    gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (m_ui->image_list_tree), TOOL_TIP);
+    gtk_tree_view_set_activate_on_single_click (GTK_TREE_VIEW (m_ui->image_list_tree), FALSE);
+
+    /* Selection */
+    m_ui->select_image = gtk_tree_view_get_selection (GTK_TREE_VIEW (m_ui->image_list_tree));
+    gtk_tree_selection_set_mode (m_ui->select_image, GTK_SELECTION_SINGLE);
+    m_ui->sel_handler_id = g_signal_connect (G_OBJECT (m_ui->select_image), "changed", G_CALLBACK (OnImageSelect), m_ui);
+
+    /* Column and headers for Name, Description & Date Modified */
+    new_image_col(TEXT_COL, "Type", IMAGE_TYPE, m_ui);
+    new_image_col(TEXT_COL, "Image", IMAGE_NM, m_ui);
+    new_image_col(TOGGLE_COL, "Base", BASE_IMG, m_ui);
+
+    /* Add to the window container */
+    gtk_container_add (GTK_CONTAINER (m_ui->lst_scroll_win), m_ui->image_list_tree);
+    gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (m_ui->image_list_tree), GTK_TREE_VIEW_GRID_LINES_NONE);
+
+    return;
+}
+
+
+/* Create a new column and header */
+
+void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainUi *m_ui)
+{  
+    GtkWidget *colhdr;
+    GtkTreeViewColumn *column;
+    GtkCellRenderer *renderer;
+
+    switch(col_type)
+    {
+    	case TEXT_COL:
+	    renderer = gtk_cell_renderer_text_new ();
+	    column = gtk_tree_view_column_new_with_attributes (col_title, renderer, 
+							       "text", image_col, NULL);
+
+	    gtk_tree_view_append_column (GTK_TREE_VIEW (m_ui->image_list_tree), column);
+	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
+	    g_object_set (G_OBJECT (renderer), "foreground-rgba", &DARK_BLUE,
+					       "font", "Sans 10", NULL);
+            break;
+
+    	case TOGGLE_COL:
+	    renderer = gtk_cell_renderer_toggle_new ();
+	    column = gtk_tree_view_column_new_with_attributes (col_title, renderer,
+							   "active", image_col, NULL);
+	    gtk_tree_view_append_column (GTK_TREE_VIEW (m_ui->image_list_tree), column);
+	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
+	    /*
+	    g_object_set (G_OBJECT (renderer), "foreground-rgba", &DARK_BLUE,
+					       "font", "Sans 10", NULL);
+					       */
+            break;
+
+    	default:
+            break;
+    }
+
+    colhdr = gtk_tree_view_column_get_button (column);
+    gtk_widget_set_name (colhdr, "list_col_1");
 
     return;
 }
