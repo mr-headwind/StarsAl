@@ -60,7 +60,7 @@ ProjectData * new_proj_data();
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
 int load_proj_from_file(ProjectData *, char *, GtkWidget *);
-int load_files(GList *, char *, const char *, const char *, GtkWidget *);
+int load_files(GList **, char *, const char *, const char *, GtkWidget *);
 char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
 void close_project(ProjectData *);
 void proj_close_check_save(ProjectData *, MainUi *);
@@ -237,8 +237,8 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     free(tmp_status);
 
     /* Images and Darks */
-    load_files(proj->images_gl, buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
-    load_files(proj->darks_gl, buf_ptr, proj_tags[dark_idx][0], proj_tags[dark_idx][1], window);
+    load_files(&(proj->images_gl), buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
+    load_files(&(proj->darks_gl), buf_ptr, proj_tags[dark_idx][0], proj_tags[dark_idx][1], window);
 
     return TRUE;
 }
@@ -246,7 +246,7 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 
 /* Extract the files from the buffer */
 
-int load_files(GList *gl, char *buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
+int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
 {
     char *ptr, *end_ptr, *fn;
 
@@ -272,11 +272,11 @@ int load_files(GList *gl, char *buf_ptr, const char *start_tag, const char *end_
 	if (fn == NULL)
 	    break;
 
-	gl = g_list_prepend(gl, g_strdup(fn));
+	*gl = g_list_prepend(*gl, g_strdup(fn));
 	free(fn);
     };
 
-    gl = g_list_reverse(gl);
+    *gl = g_list_reverse(*gl);
 
     return TRUE;
 }
@@ -486,7 +486,7 @@ void set_image_xml(char **buf, GList *gl, int idx)
     for(l = gl; l != NULL; l = l->next)
     {
 	img = (Image *) l->data;
-	sprintf(*buf, "%s%s%s/%s%s\n", *buf, proj_tags[i][0], img->nm, img->path, proj_tags[i][1]);
+	sprintf(*buf, "%s%s%s/%s%s\n", *buf, proj_tags[i][0], img->path, img->nm, proj_tags[i][1]);
     };
 
     sprintf(*buf, "%s%s\n", *buf, proj_tags[idx][1]);		// Images end tag

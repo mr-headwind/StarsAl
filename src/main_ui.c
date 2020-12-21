@@ -426,14 +426,16 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     /* Build a list view for images */
     store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING);
 
+printf("%s set_image_list 1  %s  %s  %d\n", debug_hdr, proj->project_desc, proj->project_path, proj->status); fflush(stdout);
     /* Iterate through the images and add the store */
     base = TRUE;
 
     for(l = proj->images_gl; l != NULL; l = l->next)
     {
+printf("%s set_image_list 2\n", debug_hdr); fflush(stdout);
     	img = (Image *) l->data;
 
-printf("%s set_image_list 1   %s\n", debug_hdr, img->nm); fflush(stdout);
+printf("%s set_image_list 2a   %s\n", debug_hdr, img->nm); fflush(stdout);
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
@@ -484,6 +486,7 @@ printf("%s set_image_list 1   %s\n", debug_hdr, img->nm); fflush(stdout);
     gtk_container_add (GTK_CONTAINER (m_ui->lst_scroll_win), m_ui->image_list_tree);
     gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (m_ui->image_list_tree), GTK_TREE_VIEW_GRID_LINES_NONE);
 
+printf("%s set_image_list 8\n", debug_hdr); fflush(stdout);
     return;
 }
 
