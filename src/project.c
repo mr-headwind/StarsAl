@@ -248,7 +248,7 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 
 int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
 {
-    char *ptr, *end_ptr, *fn;
+    char *ptr, *end_ptr, *fn, *p;
 
     /* Start pointer */
     if ((ptr = strstr(buf_ptr, start_tag)) == NULL)
@@ -272,7 +272,24 @@ int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end
 	if (fn == NULL)
 	    break;
 
-	*gl = g_list_prepend(*gl, g_strdup(fn));
+	/* Set up an image */
+	Image *img;
+	img = (Image *) malloc(sizeof(Image));
+
+	if ((p = strrchr(fn, '/')) == NULL)
+	    p = fn;
+	else
+	    p++;
+
+	img->nm = strdup(p);
+
+	if (p == fn)
+	    img->path = NULL;
+	else
+	    img->path = strndup(fn, p - fn - 1);
+
+	/* Add to list */
+	*gl = g_list_prepend(*gl, img);
 	free(fn);
     };
 

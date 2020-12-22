@@ -426,20 +426,17 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     /* Build a list view for images */
     store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING);
 
-printf("%s set_image_list 1  %s  %s  %d\n", debug_hdr, proj->project_desc, proj->project_path, proj->status); fflush(stdout);
     /* Iterate through the images and add the store */
     base = TRUE;
 
     for(l = proj->images_gl; l != NULL; l = l->next)
     {
-printf("%s set_image_list 2\n", debug_hdr); fflush(stdout);
     	img = (Image *) l->data;
 
-printf("%s set_image_list 2a   %s\n", debug_hdr, img->nm); fflush(stdout);
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
-			    IMAGE_TYPE, 'I',
+			    IMAGE_TYPE, "I",
 			    IMAGE_NM, img->nm,
 			    BASE_IMG, base,
 			    TOOL_TIP, img->path,
@@ -457,7 +454,7 @@ printf("%s set_image_list 2a   %s\n", debug_hdr, img->nm); fflush(stdout);
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
-			    IMAGE_TYPE, 'D',
+			    IMAGE_TYPE, "D",
 			    IMAGE_NM, img->nm,
 			    BASE_IMG, base,
 			    TOOL_TIP, img->path,
