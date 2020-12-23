@@ -51,6 +51,7 @@
 
 /* Types */
 
+/*
 enum ImageCol
     {
        IMAGE_TYPE,
@@ -59,6 +60,7 @@ enum ImageCol
        TOOL_TIP,
        N_COLUMNS
     };
+*/
 
 
 /* Prototypes */
@@ -80,7 +82,7 @@ extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
 extern void OnEditProj(GtkWidget*, gpointer);
-extern void OnImageSelect(GtkWidget*, gpointer);
+extern void OnImageSelect (GtkTreeSelection *, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
 extern void OnAbout(GtkWidget*, gpointer);
 extern void OnViewLog(GtkWidget*, gpointer);
@@ -417,6 +419,7 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
 
 void set_image_list(ProjectData *proj, MainUi *m_ui)
 {  
+    char *s;
     GList *l;
     Image *img;
     gboolean base;
@@ -432,16 +435,19 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     for(l = proj->images_gl; l != NULL; l = l->next)
     {
     	img = (Image *) l->data;
+    	s = (char *) malloc(strlen(img->nm) + strlen(img->path) + 2);
+    	sprintf(s, "%s/%s", img->path, img->nm);
 
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
 			    IMAGE_TYPE, "I",
-			    IMAGE_NM, img->nm,
+			    IMAGE_NM, s,
 			    BASE_IMG, base,
-			    TOOL_TIP, img->path,
+			    TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
+	free(s);
     }
 
     /* Iterate through the darks and add the store */
@@ -450,16 +456,19 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     for(l = proj->darks_gl; l != NULL; l = l->next)
     {
     	img = (Image *) l->data;
+    	s = (char *) malloc(strlen(img->nm) + strlen(img->path) + 2);
+    	sprintf(s, "%s/%s", img->path, img->nm);
 
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
 			    IMAGE_TYPE, "D",
-			    IMAGE_NM, img->nm,
+			    IMAGE_NM, s,
 			    BASE_IMG, base,
-			    TOOL_TIP, img->path,
+			    TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
+	free(s);
     }
 
     /* Tree (list) view */
@@ -483,7 +492,6 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     gtk_container_add (GTK_CONTAINER (m_ui->lst_scroll_win), m_ui->image_list_tree);
     gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (m_ui->image_list_tree), GTK_TREE_VIEW_GRID_LINES_NONE);
 
-printf("%s set_image_list 8\n", debug_hdr); fflush(stdout);
     return;
 }
 
@@ -507,6 +515,10 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
 	    g_object_set (G_OBJECT (renderer), "foreground-rgba", &DARK_BLUE,
 					       "font", "Sans 10", NULL);
+
+	    if (strcmp(col_title, "Type") == 0)
+		g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
+
             break;
 
     	case TOGGLE_COL:
@@ -515,10 +527,7 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 							   "active", image_col, NULL);
 	    gtk_tree_view_append_column (GTK_TREE_VIEW (m_ui->image_list_tree), column);
 	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
-	    /*
-	    g_object_set (G_OBJECT (renderer), "foreground-rgba", &DARK_BLUE,
-					       "font", "Sans 10", NULL);
-					       */
+	    g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
             break;
 
     	default:

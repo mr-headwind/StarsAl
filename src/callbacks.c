@@ -51,7 +51,7 @@ void OnNewProj(GtkWidget*, gpointer *user_data);
 void OnOpenProj(GtkWidget*, gpointer *user_data);
 void OnCloseProj(GtkWidget*, gpointer *user_data);
 void OnEditProj(GtkWidget*, gpointer *user_data);
-void OnImageSelect(GtkListBox*, GtkListBoxRow*, gpointer);
+void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
 void OnViewLog(GtkWidget*, gpointer *user_data);
 void OnAbout(GtkWidget*, gpointer *user_data);
@@ -160,19 +160,22 @@ void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Image selection */
 
-void OnImageSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
+void OnImageSelect(GtkTreeSelection *selection, gpointer data)
 {  
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    gchar *img_nm;
+
+    if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+	gtk_tree_model_get (model, &iter, IMAGE_NM, &img_nm, -1);
+	g_print ("You selected an image: %s\n", img_nm);
+    }
+
+    g_free(img_nm);
+
+    /*
     char *s;
-    SelectListUi *lst;
-    Image *img;
-
-    /* Get data */
-    lst = (SelectListUi *) user_data;
-    img = (Image *) g_object_get_data (G_OBJECT (row), "image");
-
-    gtk_label_set_text(GTK_LABEL (lst->dir_lbl), img->path);
-    gtk_widget_show(lst->dir_lbl);
-
     s = (char *) malloc(100);			// date, w x h, iso, exposure
     sprintf(s, "ISO: %s Exp: %s W x H: %s x %s", img->img_exif.iso,
 						 img->img_exif.exposure,
@@ -182,6 +185,8 @@ void OnImageSelect(GtkListBox *lstbox, GtkListBoxRow *row, gpointer user_data)
     gtk_widget_show(lst->meta_lbl);
 
     free(s);
+    */
+
     return;
 }  
 

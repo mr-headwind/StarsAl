@@ -40,7 +40,6 @@
 
 #ifndef MAIN_HDR
 #define MAIN_HDR
-#endif
 
 /* Structure to contain main interface items for easy access */
 
@@ -83,3 +82,15 @@ typedef struct _main_ui
     /* Other */
     ProjectData *proj;
 } MainUi;
+
+
+enum ImageCol
+    {
+       IMAGE_TYPE,
+       IMAGE_NM,
+       BASE_IMG,
+       TOOL_TIP,
+       N_COLUMNS
+    };
+
+#endif
