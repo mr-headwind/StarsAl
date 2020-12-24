@@ -89,8 +89,8 @@ enum ImageCol
        IMAGE_TYPE,
        IMAGE_NM,
        BASE_IMG,
-       TOOL_TIP,
-       N_COLUMNS
+       IMG_TOOL_TIP,
+       IMG_N_COLUMNS
     };
 
 #endif

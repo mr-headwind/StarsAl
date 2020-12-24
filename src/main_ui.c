@@ -57,8 +57,8 @@ enum ImageCol
        IMAGE_TYPE,
        IMAGE_NM,
        BASE_IMG,
-       TOOL_TIP,
-       N_COLUMNS
+       IMG_TOOL_TIP,
+       IMG_N_COLUMNS
     };
 */
 
@@ -407,7 +407,7 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     free(msg);
 
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 650);
-    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 450);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
 
     gtk_widget_show_all(m_ui->window);
 
@@ -427,7 +427,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     GtkTreeIter iter;
 
     /* Build a list view for images */
-    store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING);
+    store = gtk_list_store_new (IMG_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING);
 
     /* Iterate through the images and add the store */
     base = TRUE;
@@ -444,7 +444,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 			    IMAGE_TYPE, "I",
 			    IMAGE_NM, s,
 			    BASE_IMG, base,
-			    TOOL_TIP, img->nm,
+			    IMG_TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
 	free(s);
@@ -465,7 +465,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 			    IMAGE_TYPE, "D",
 			    IMAGE_NM, s,
 			    BASE_IMG, base,
-			    TOOL_TIP, img->nm,
+			    IMG_TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
 	free(s);
@@ -475,7 +475,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     m_ui->image_list_tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
     g_object_unref (G_OBJECT (store));
     m_ui->model = gtk_tree_view_get_model (GTK_TREE_VIEW (m_ui->image_list_tree));
-    gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (m_ui->image_list_tree), TOOL_TIP);
+    gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (m_ui->image_list_tree), IMG_TOOL_TIP);
     gtk_tree_view_set_activate_on_single_click (GTK_TREE_VIEW (m_ui->image_list_tree), FALSE);
 
     /* Selection */
