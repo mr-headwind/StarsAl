@@ -83,6 +83,7 @@ extern void OnOpenProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
 extern void OnEditProj(GtkWidget*, gpointer);
 extern void OnImageSelect (GtkTreeSelection *, gpointer);
+extern void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
 extern void OnAbout(GtkWidget*, gpointer);
 extern void OnViewLog(GtkWidget*, gpointer);
@@ -450,6 +451,8 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 	free(s);
     }
 
+    m_ui->curr_img_base = strdup("0");
+
     /* Iterate through the darks and add the store */
     base = TRUE;
 
@@ -528,6 +531,8 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 	    gtk_tree_view_append_column (GTK_TREE_VIEW (m_ui->image_list_tree), column);
 	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
 	    g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
+	    gtk_cell_renderer_toggle_set_activatable (GTK_CELL_RENDERER_TOGGLE (renderer), TRUE);
+	    g_signal_connect (G_OBJECT (renderer), "toggled", G_CALLBACK (OnBaseToggle), m_ui);
             break;
 
     	default:

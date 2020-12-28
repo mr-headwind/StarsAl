@@ -52,6 +52,7 @@ void OnOpenProj(GtkWidget*, gpointer *user_data);
 void OnCloseProj(GtkWidget*, gpointer *user_data);
 void OnEditProj(GtkWidget*, gpointer *user_data);
 void OnImageSelect(GtkTreeSelection *, gpointer);
+void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
 void OnViewLog(GtkWidget*, gpointer *user_data);
 void OnAbout(GtkWidget*, gpointer *user_data);
@@ -186,6 +187,42 @@ void OnImageSelect(GtkTreeSelection *selection, gpointer data)
 
     free(s);
     */
+
+    return;
+}  
+
+
+/* Callback - Base Image selection */
+
+void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer data)
+{  
+    MainUi *m_ui;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    gboolean state, set;
+
+
+    m_ui = (MainUi *) data;
+    model = gtk_tree_view_get_model (GTK_TREE_VIEW (m_ui->image_list_tree));
+    set = gtk_tree_model_get_iter_from_string(model, &iter, path);
+
+    if (set)
+    {
+    	gtk_tree_model_get(model, &iter, 2, &state, -1);
+    	gtk_list_store_set(GTK_LIST_STORE (model), &iter, 2, !state, -1);
+    }
+
+    set = gtk_tree_model_get_iter_from_string(model, &iter, m_ui->curr_img_base);
+
+    if (set)
+    {
+    	gtk_tree_model_get(model, &iter, 2, &state, -1);
+    	gtk_list_store_set(GTK_LIST_STORE (model), &iter, 2, !state, -1);
+    }
+
+    m_ui->curr_img_base = strdup((char *) path);
+
+    g_print ("You toggled a base at path: %s\n", path);
 
     return;
 }  

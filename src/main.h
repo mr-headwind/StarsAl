@@ -81,6 +81,7 @@ typedef struct _main_ui
 
     /* Other */
     ProjectData *proj;
+    char *curr_img_base, *curr_dark_base;
 } MainUi;
 
 
