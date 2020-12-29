@@ -74,10 +74,6 @@ void display_proj(ProjectData *, MainUi *);
 void set_image_list(ProjectData *, MainUi *);
 void new_image_col(int, char *, enum ImageCol, MainUi *);
 
-extern void log_msg(char*, char*, char*, GtkWidget*);
-extern void app_msg(char*, char *, GtkWidget *);
-extern int get_user_pref(char *, char **);
-
 extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
@@ -96,8 +92,15 @@ extern void create_label3(GtkWidget **, char *, char *);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
+extern char * itostr(int);
 extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
+/*
+extern void log_msg(char*, char*, char*, GtkWidget*);
+extern void app_msg(char*, char *, GtkWidget *);
+extern int get_user_pref(char *, char **);
+*/
+
 
 
 /* Globals */
@@ -310,8 +313,6 @@ void create_main_view(MainUi *m_ui)
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, FALSE, FALSE, 0);
 
-    //create_label(&(m_ui->dummy), "Dummy", "Application main items go here", m_ui->app_vbox);
-
     return;
 }
 
@@ -335,7 +336,6 @@ void image_area(MainUi *m_ui)
     gtk_widget_set_halign(GTK_WIDGET (m_ui->img_scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 550);
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
 
     return;
@@ -354,7 +354,6 @@ void image_list(MainUi *m_ui)
     gtk_widget_set_halign(GTK_WIDGET (m_ui->lst_scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 550);
 
 
     //GtkWidget *heading_lbl, *row;
@@ -420,6 +419,7 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
 
 void set_image_list(ProjectData *proj, MainUi *m_ui)
 {  
+    int i;
     char *s;
     GList *l;
     Image *img;
@@ -432,6 +432,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 
     /* Iterate through the images and add the store */
     base = TRUE;
+    i = 0;
 
     for(l = proj->images_gl; l != NULL; l = l->next)
     {
@@ -448,10 +449,14 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 			    IMG_TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
+	i++;
 	free(s);
     }
 
     m_ui->curr_img_base = strdup("0");
+
+    if (proj->darks_gl)
+    	m_ui->curr_dark_base = itostr(i);
 
     /* Iterate through the darks and add the store */
     base = TRUE;

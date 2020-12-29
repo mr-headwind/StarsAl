@@ -294,6 +294,22 @@ void OnViewLog(GtkWidget *view_log, gpointer *user_data)
 
 void OnQuit(GtkWidget *window, gpointer *user_data)
 {  
+    MainUi *m_ui;
+
+    /* Get data */
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Check Project close */
+    if (m_ui->proj)
+    	proj_close_check_save(m_ui->proj, m_ui);
+
+    /* Tidy up */
+    if (m_ui->curr_img_base)
+	free(m_ui->curr_img_base);
+
+    if (m_ui->curr_dark_base)
+	free(m_ui->curr_dark_base);
+
     /* Close any open windows */
     close_open_ui();
     free_window_reg();

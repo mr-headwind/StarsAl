@@ -83,6 +83,7 @@ int get_file_stat(char *, struct stat *);
 FILE * open_file(char *, char *);
 int read_file(FILE *, char *, int);
 int val_str2numb(char *, int *, char *, GtkWidget *);
+char * itostr(int);
 void basename_dirname(char *, char **, char **);
 int check_errno();
 void print_bits(size_t const, void const * const);
@@ -703,6 +704,28 @@ int val_str2numb(char *s, int *numb, char *subst, GtkWidget *window)
     *numb = i;
 
     return TRUE;
+}
+
+
+/* Rough function to convert an integer to string */
+
+char * itostr(int n)
+{
+    char *s, *s_init;
+    const int max = 20;
+    int len;
+
+    /* Place into a large (hopefully) space and realloc down */
+    s_init = (char *) malloc(max + 1);
+    len = snprintf(s_init, max, "%d", n);
+
+    /* Cannot handle a number 20 digits or more */
+    if (len == max)
+    	return NULL;
+
+    s = (char *) realloc(s_init, len + 1);
+
+    return s;
 }
 
 

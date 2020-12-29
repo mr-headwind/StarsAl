@@ -50,7 +50,7 @@
 /* Prototypes */
 
 void initialise(MainUi *);
-void final();
+void final(MainUi *);
 
 extern void main_ui(MainUi *);
 extern int check_app_dir();
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
     gtk_main();  
 
-    final();
+    final(&m_ui);
 
     exit(0);
 }  
@@ -119,7 +119,7 @@ void initialise(MainUi *m_ui)
 
 /* Final work */
 
-void final()
+void final(MainUi *m_ui)
 {
     /* Close log file */
     log_msg("SYS9002", NULL, NULL, NULL);
