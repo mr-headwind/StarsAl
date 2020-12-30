@@ -200,7 +200,7 @@ void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer da
     GtkTreeModel *model;
     GtkTreeIter iter;
     gboolean state, set;
-
+    gchar *img_type;
 
     m_ui = (MainUi *) data;
     model = gtk_tree_view_get_model (GTK_TREE_VIEW (m_ui->image_list_tree));
@@ -208,21 +208,27 @@ void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer da
 
     if (set)
     {
-    	gtk_tree_model_get(model, &iter, 2, &state, -1);
-    	gtk_list_store_set(GTK_LIST_STORE (model), &iter, 2, !state, -1);
+    	gtk_tree_model_get(model, &iter, BASE_IMG, &state, IMAGE_TYPE, &img_type, -1);
+    	gtk_list_store_set(GTK_LIST_STORE (model), &iter, BASE_IMG, !state, -1);
     }
 
-    set = gtk_tree_model_get_iter_from_string(model, &iter, m_ui->curr_img_base);
+    if (strcmp(img_type, "I") == 0)
+	set = gtk_tree_model_get_iter_from_string(model, &iter, m_ui->curr_img_base);
+    else
+	set = gtk_tree_model_get_iter_from_string(model, &iter, m_ui->curr_dark_base);
 
     if (set)
     {
-    	gtk_tree_model_get(model, &iter, 2, &state, -1);
+    	gtk_tree_model_get(model, &iter, BASE_IMG, &state, -1);
     	gtk_list_store_set(GTK_LIST_STORE (model), &iter, 2, !state, -1);
     }
 
-    m_ui->curr_img_base = strdup((char *) path);
+    if (strcmp(img_type, "I") == 0)
+	m_ui->curr_img_base = strdup((char *) path);
+    else
+	m_ui->curr_dark_base = strdup((char *) path);
 
-    g_print ("You toggled a base at path: %s\n", path);
+    g_free(img_type);
 
     return;
 }  
