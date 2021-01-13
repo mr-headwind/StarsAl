@@ -50,52 +50,13 @@
 /* Prototypes */
 
 void set_css();
-char * check_screen_res(int *);
-void get_screen_res(GdkRectangle *);
-void css_adjust_font_sz(char **);
 
 
 /* Globals */
 
 static const char *debug_hdr = "DEBUG-css.c ";
 
-/*  Yuk! Pain!  !@#$%^  At 18.04 the selectors became proper selector names, not the Gtk name */
 
-/*  16.04
-static char *css_data_fhd = 
-	"@define-color DARK_BLUE rgba(0%,0%,50%,1.0); "
-	"@define-color METAL_GREY rgba(55,83,103,1.0); "
-	"GtkButton, GtkEntry, GtkLabel { font-family: Sans; font-size: 12px; }"
-	"GtkLabel#data_1 { color: @DARK_BLUE; }"
-	"GtkLabel#data_2 { color: #800000; font-family: Sans; font-size: 11px; }"
-	"GtkLabel#data_3 { color: #400080; font-family: Sans; font-size: 10px; }"
-	"GtkLabel#data_4 { font-family: Sans; font-size: 11px; }"
-	"GtkLabel#head_1 { color: #8a87c4; font-family: Sans; font-size: 11px; }"
-	"GtkLabel#title_1 { font-family: Sans; font-size: 18px; font-weight: bold; }"
-	"GtkLabel#title_2 { font-family: Serif; font-size: 18px; font-style: italic; color: #fa8072; }"
-	"GtkLabel#title_3 { font-family: Sans; font-size: 12px; color: @DARK_BLUE;}"
-	"GtkLabel#title_4 { font-family: Sans; font-size: 12px; font-weight: bold; }"
-	"GtkLabel#title_5 { font-family: Sans; font-size: 12px; color: #e00b40;}"
-	"GtkLabel#status { font-family: Sans; font-size: 12px; color: #b8860b; font-style: italic; }"
-	"GtkEntry#ent_1 { color: @DARK_BLUE; }"
-	"GtkRadioButton#rad_1 { color: @DARK_BLUE; font-family: Sans; font-size: 12px; }"
-	"GtkRadioButton > GtkLabel { color: @DARK_BLUE; font-family: Sans; font-size: 12px; }"
-	"GtkFrame { background-color: #e6e6fa; border-radius: 8px}"
-	"GtkFrame#clr1 { background-color: #ebe7f8; border-radius: 8px}"
-	"GtkFrame > GtkLabel { color: #800000; font-weight: 500; }"
-	"GtkComboboxText * { color: @METAL_GREY; font-family: Sans; font-size: 12px; }"
-	"GtkProgressBar#pbar_1 { color: @DARK_BLUE; font-family: Sans; font-size: 10px; }"
-	"#button_1 * { color: #708090; font-weight: bold; }"
-	"#list_col_1 { font-family: Sans; font-size: 10px; font-weight: bold; }"
-	"GtkListBox { background-color: #fbf6fe; }"
-	"GtkNotebook * { font-family: Sans; font-size: 11px; }"
-	"GtkTextView { font-family: Sans; font-size: 12px; }"
-	"GtkTextView#txtview_1 { font-family: Sans; font-size: 11px; }"
-	"GtkLinkButton { font-family: Sans; font-size: 12px; color: @DARK_BLUE; }";
-*/
-
-/*  18.04  
-*/
 static char *css_data_fhd = 
 	"@define-color DARK_BLUE rgba(0%,0%,50%,1.0); "
 	"@define-color METAL_GREY rgba(55,83,103,1.0); "
@@ -141,9 +102,6 @@ void set_css()
 {
     int sd_flg;
     GError *err = NULL;
-    char *css_data;
-
-    css_data = check_screen_res(&sd_flg);
 
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
@@ -154,7 +112,7 @@ void set_css()
     					      GTK_STYLE_PROVIDER_PRIORITY_USER);
 
     gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider),
-				    (const gchar *) css_data,
+				    (const gchar *) css_data_fhd,
 				    -1,
 				    &err);
 
@@ -164,131 +122,7 @@ void set_css()
     	g_clear_error (&err);
     }
 
-    if (sd_flg == TRUE)
-    	free(css_data);
-
     g_object_unref(provider);
-
-    return;
-}
-
-
-/* Check the screen resolution and whether to adjust the font size */
-
-char * check_screen_res(int *sd_flg)
-{
-    GdkRectangle workarea = {0};
-    char *css_data_sd;
-
-    get_screen_res(&workarea); 
-    //printf ("%s get_screen_res W: %u x H:%u\n", debug_hdr, workarea.width, workarea.height);
-	
-    // Default font size suits Full HD resolution, but lesser res needs needs lesser font size to stop
-    // StarsAl looking too large. If approaching FHD, keep the default.
-    // SD_W and SD_H are not really standard def, but serve as a good cut-off point.
-    if (workarea.width > SD_W || workarea.height > SD_H)
-    {
-    	*sd_flg = FALSE;
-    	return css_data_fhd;
-    }
-    else
-    {
-	*sd_flg = TRUE;
-	css_adjust_font_sz(&css_data_sd);
-    	return css_data_sd;
-    }
-}
-
-
-/* Get the screen resolution and apply the appropriate font */
-
-void get_screen_res(GdkRectangle *workarea)
-{
-    gdouble res;
-    GdkScreen *scr;
-
-    /* 16.04
-    if ((scr = gdk_screen_get_default ()) == NULL)
-    	return;
-    
-    gdk_screen_get_monitor_workarea (scr, 0, workarea);
-    */
-
-    /* 18.04
-    */
-    gdk_monitor_get_workarea (gdk_display_get_primary_monitor (gdk_display_get_default()),
-			      workarea);
-
-    return;
-}
-
-
-/* Adjust the font size down */
-
-void css_adjust_font_sz(char **css)
-{
-    int i, j, fn_len, new_fn_len;
-    char *p, *p_new, *p_fhd;
-    char num[4];
-
-    /* Copy to a new css string and extract and adjust the font size */
-    *css = (char *) malloc(strlen(css_data_fhd) + 1);
-    p_new = *css;
-    p_fhd = css_data_fhd;
-
-    while ((p = strstr(p_fhd, "px")) != NULL)
-    {
-    	/* Determine the number of font bytes */
-    	for(fn_len = 1; *(p - fn_len) != ' '; fn_len++);
-    	
-    	fn_len--;
-
-    	/* Determine the font value */
-    	i = 0;
-
-	while(i < fn_len)
-	{
-	    num[i] = *(p - fn_len + i);
-	    i++;
-	}
-
-	num[i] = '\0';
-	//printf("%s fn_len is: %d  font sz: %s\n", debug_hdr, fn_len, num); fflush(stdout);
-
-    	/* Copy up to font */
-    	memcpy(p_new, p_fhd, p - p_fhd - fn_len);
-    	p_new = p_new + (p - p_fhd - fn_len);
-
-	/* Adjust to new font size and convert back to string */
-	i = atoi(num) - SD_SZ;
-	sprintf(num, "%d", i);
-	//printf("%s new num is: %s\n", debug_hdr, num); fflush(stdout);
-
-	/* Add to new string */
-	for(i = 0; num[i] != '\0'; i++)
-	{
-	    *p_new = num[i];
-	    p_new++;
-	}
-
-	*p_new = 'p';
-	*(p_new + 1) = 'x';
-	p_new += 2;
-
-	/* Advance to next */
-	p_fhd = p + 2;
-    }
-
-    /* Copy any residual bytes */
-    while(*p_fhd != '\0')
-    {
-    	*p_new = *p_fhd;
-    	p_new++;
-    	p_fhd++;
-    }
-
-    *p_new = '\0';
-    //printf("%s new css is: %s\n", debug_hdr, *css); fflush(stdout);
 
     return;
 }
