@@ -73,6 +73,7 @@ void image_list(MainUi *);
 void display_proj(ProjectData *, MainUi *);
 void set_image_list(ProjectData *, MainUi *);
 void new_image_col(int, char *, enum ImageCol, MainUi *);
+void col_set_attrs (GtkTreeViewColumn *, GtkCellRenderer *, GtkTreeModel *, GtkTreeIter *, gpointer);
 
 extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
@@ -523,6 +524,7 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
 	    g_object_set (G_OBJECT (renderer), "foreground-rgba", &DARK_BLUE,
 					       "font", "Sans 10", NULL);
+	    gtk_tree_view_column_set_cell_data_func(column, renderer, col_set_attrs, NULL, NULL);
 
 	    if (strcmp(col_title, "Type") == 0)
 		g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
@@ -548,4 +550,29 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
     gtk_widget_set_name (colhdr, "list_col_1");
 
     return;
+}
+
+
+/* Function to format list column */
+
+void col_set_attrs (GtkTreeViewColumn *tree_column,
+		    GtkCellRenderer *cell,
+		    GtkTreeModel *model,
+		    GtkTreeIter *iter,
+		    gpointer data)
+{
+    gchar *img_type;
+
+    gtk_tree_model_get (model, iter, IMAGE_TYPE, &img_type, -1);
+    g_print ("Image type is: %s\n", img_type);
+
+    /* Set Darks to a darker background */
+    if (strcmp(img_type, "D") == 0)
+    {
+	g_object_set (G_OBJECT (cell), "background-rgba", &LIGHT_GRAY, NULL);
+    }
+
+    g_free(img_type);
+
+    return; 
 }

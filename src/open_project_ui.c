@@ -109,7 +109,7 @@ gboolean OnOpenDelete(GtkWidget *, GdkEvent *, gpointer);
 
 extern ProjectData * open_project(char *, GtkWidget *);
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
-extern char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
+extern char * get_xmltag_val(char **, const char *, const char *, int, GtkWidget *);
 extern FILE * open_proj_file(char *, char *, GtkWidget *);
 extern ProjectData * open_project(char *, GtkWidget *);
 extern void display_proj(ProjectData *, MainUi *);
@@ -401,7 +401,7 @@ ProjListEnt * new_list_entry(char *xml, char *proj_nm, struct stat *fileStat, Se
     	return NULL;
 
     buf_ptr = buf;
-    list_ent->desc = get_tag_val(&buf_ptr, desc_start_tag, desc_end_tag, TRUE, s_ui->window);
+    list_ent->desc = get_xmltag_val(&buf_ptr, desc_start_tag, desc_end_tag, TRUE, s_ui->window);
     free(buf);
     fclose(fd);
 

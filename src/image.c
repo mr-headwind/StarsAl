@@ -42,13 +42,21 @@
 #include <stdlib.h>  
 #include <string.h>  
 #include <gtk/gtk.h>  
+#include <libexif/exif-data.h>
+#include <libexif/exif-tag.h>
+#include <libexif/exif-loader.h>
+#include <project.h>
 
 
 /* Prototypes */
 
 char * image_type(char *, GtkWidget *); 
+Image * setup_image(char *, char *, char *, ProjectUi *);
+int load_exif_data(Image *, char *, GtkWidget *);
+static char * get_exif_tag(ExifData *, ExifIfd, ExifTag);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
+extern void trim_spaces(char *);
 
 
 /* Globals */
@@ -151,3 +159,103 @@ char * image_type(char *path, GtkWidget *window)
 
     return s;
 }  
+
+
+/* Set up all Image data */
+
+Image * setup_image(char *nm, char *dir, char *image_full_path, ProjectUi *p_ui)
+{  
+    Image *img;
+
+    img = (Image *) malloc(sizeof(Image));
+    img->nm = (char *) malloc(strlen(nm) + 1);
+    img->path = (char *) malloc(strlen(dir) + 1);
+    strcpy(img->nm, nm);
+    strcpy(img->path, dir);
+
+    load_exif_data(img, image_full_path, p_ui->window);
+
+    return img;
+}
+
+
+/* Extract the image Exif data (if any) */
+
+int load_exif_data(Image *img, char *full_path, GtkWidget *window)
+{  
+    ExifData *ed;
+    ExifEntry *entry;
+
+    /* Load an ExifData object from an EXIF file */
+    ed = exif_data_new_from_file(full_path);
+
+    if (!ed)
+    {
+	log_msg("APP0010", full_path, "APP0010", window);
+        free(full_path);
+        return FALSE;
+    }
+
+    img->img_exif.make = get_exif_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
+    img->img_exif.model = get_exif_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
+    img->img_exif.date = get_exif_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img->img_exif.width = get_exif_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
+    img->img_exif.height = get_exif_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
+    img->img_exif.iso = get_exif_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
+    img->img_exif.exposure = get_exif_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
+    img->img_exif.f_stop = get_exif_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
+    /*
+    img->img_exif.make = get_exif_tag(ed, EXIF_IFD_0, EXIF_TAG_MAKE);
+    img->img_exif.model = get_exif_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
+    img->img_exif.type = get_exif_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_RECORD_MODE);
+    img->img_exif.date = get_exif_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    img->img_exif.width = get_exif_tag(ed, EXIF_IFD_0, STARSAL_EXIF_IMAGE_WIDTH);
+    img->img_exif.height = get_exif_tag(ed, EXIF_IFD_0, STARSAL_EXIF_IMAGE_HEIGHT);
+    img->img_exif.iso = get_exif_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_ISO);
+    img->img_exif.exposure = get_exif_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_EXP);
+    img->img_exif.f_stop = get_exif_tag(ed, EXIF_IFD_0, STARSAL_EXIF_TAG_FSTOP);
+    */
+    
+    /* Free the EXIF */
+    exif_data_unref(ed);
+    
+    /* Not really exif data, but as far as possible, get the image type here */
+    img->img_exif.type = image_type(full_path, window);
+    printf("%s - Type: %s\n", debug_hdr, img->img_exif.type); fflush(stdout);
+
+    return TRUE;
+}
+
+
+/* Extract tag and contents if exists */
+
+static char * get_exif_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
+{
+    char buf[1024];
+    char *s;
+
+    /* See if this tag exists */
+    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], tag);
+
+    if (entry) 
+    {
+        /* Get the contents of the tag in human-readable form */
+        exif_entry_get_value(entry, buf, sizeof(buf));
+
+        /* Don't bother printing it if it's entirely blank */
+        trim_spaces(buf);
+
+        if (*buf)
+        {
+            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf); fflush(stdout);
+	    s = (char *) malloc(strlen(buf) + 1);
+	    strcpy(s, buf);
+	    return s;
+        }
+    }
+
+    s = (char *) malloc(4);
+    sprintf(s, "N/A");
+
+    return s;
+}

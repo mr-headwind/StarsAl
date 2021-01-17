@@ -61,7 +61,7 @@ int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
 int load_proj_from_file(ProjectData *, char *, GtkWidget *);
 int load_files(GList **, char *, const char *, const char *, GtkWidget *);
-char * get_tag_val(char **, const char *, const char *, int, GtkWidget *);
+char * get_xmltag_val(char **, const char *, const char *, int, GtkWidget *);
 void close_project(ProjectData *);
 void proj_close_check_save(ProjectData *, MainUi *);
 int save_proj_init(ProjectData *, GtkWidget *);
@@ -73,6 +73,7 @@ int get_hdr_sz();
 int get_image_sz(int, GList *);
 void set_image_xml(char **, GList *, int);
 
+extern int load_exif_data(Image *, char *, GtkWidget *);
 extern int get_user_pref(char *, char **);
 extern int val_str2numb(char *, int *, char *, GtkWidget *);
 extern int check_dir(char *);
@@ -229,10 +230,10 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     }
 
     /* Title, Description, Path and Status */
-    proj->project_name = get_tag_val(&buf_ptr, proj_tags[name_idx][0], proj_tags[name_idx][1], TRUE, window);
-    proj->project_desc = get_tag_val(&buf_ptr, proj_tags[desc_idx][0], proj_tags[desc_idx][1], TRUE, window);
-    proj->project_path = get_tag_val(&buf_ptr, proj_tags[path_idx][0], proj_tags[path_idx][1], TRUE, window);
-    tmp_status = get_tag_val(&buf_ptr, proj_tags[status_idx][0], proj_tags[status_idx][1], TRUE, window);
+    proj->project_name = get_xmltag_val(&buf_ptr, proj_tags[name_idx][0], proj_tags[name_idx][1], TRUE, window);
+    proj->project_desc = get_xmltag_val(&buf_ptr, proj_tags[desc_idx][0], proj_tags[desc_idx][1], TRUE, window);
+    proj->project_path = get_xmltag_val(&buf_ptr, proj_tags[path_idx][0], proj_tags[path_idx][1], TRUE, window);
+    tmp_status = get_xmltag_val(&buf_ptr, proj_tags[status_idx][0], proj_tags[status_idx][1], TRUE, window);
     proj->status = atoi(tmp_status);
     free(tmp_status);
 
@@ -267,7 +268,7 @@ int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end
     /* Iterate all the File tags in the range */
     while(end_ptr >= ptr)
     {
-	fn = get_tag_val(&ptr, proj_tags[file1_idx][0], proj_tags[file1_idx][1], FALSE, NULL);
+	fn = get_xmltag_val(&ptr, proj_tags[file1_idx][0], proj_tags[file1_idx][1], FALSE, NULL);
 	
 	if (fn == NULL)
 	    break;
@@ -284,9 +285,14 @@ int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end
 	img->nm = strdup(p);
 
 	if (p == fn)
+	{
 	    img->path = NULL;
+	}
 	else
+	{
 	    img->path = strndup(fn, p - fn - 1);
+	    load_exif_data(img, fn, window);
+	}
 
 	/* Add to list */
 	*gl = g_list_prepend(*gl, img);
@@ -299,9 +305,9 @@ int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end
 }
 
 
-/* Extract the value of a tag from the buffer */
+/* Extract the value of a xml tag from the buffer */
 
-char * get_tag_val(char **buf_ptr, const char *start_tag, const char *end_tag, int err, GtkWidget *window)
+char * get_xmltag_val(char **buf_ptr, const char *start_tag, const char *end_tag, int err, GtkWidget *window)
 {
     int len, sz;
     char *tag_val, *ptr, *end_ptr;
