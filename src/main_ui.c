@@ -539,6 +539,7 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
 	    g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
 	    gtk_cell_renderer_toggle_set_activatable (GTK_CELL_RENDERER_TOGGLE (renderer), TRUE);
+	    gtk_tree_view_column_set_cell_data_func(column, renderer, col_set_attrs, NULL, NULL);
 	    g_signal_connect (G_OBJECT (renderer), "toggled", G_CALLBACK (OnBaseToggle), m_ui);
             break;
 
@@ -553,7 +554,7 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 }
 
 
-/* Function to format list column */
+/* Format list cells as required */
 
 void col_set_attrs (GtkTreeViewColumn *tree_column,
 		    GtkCellRenderer *cell,
@@ -564,13 +565,10 @@ void col_set_attrs (GtkTreeViewColumn *tree_column,
     gchar *img_type;
 
     gtk_tree_model_get (model, iter, IMAGE_TYPE, &img_type, -1);
-    g_print ("Image type is: %s\n", img_type);
 
-    /* Set Darks to a darker background */
+    /* Highlight Darks with a darker background */
     if (strcmp(img_type, "D") == 0)
-    {
-	g_object_set (G_OBJECT (cell), "background-rgba", &LIGHT_GRAY, NULL);
-    }
+	g_object_set (G_OBJECT (cell), "cell-background-rgba", &LIGHT_GRAY, NULL);
 
     g_free(img_type);
 
