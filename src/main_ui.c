@@ -118,7 +118,7 @@ void main_ui(MainUi *m_ui)
     g_object_set_data (G_OBJECT (m_ui->window), "ui", m_ui);
     gtk_window_set_title(GTK_WINDOW(m_ui->window), TITLE);
     gtk_window_set_position(GTK_WINDOW(m_ui->window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(m_ui->window), 900, 600);
+    gtk_window_set_default_size(GTK_WINDOW(m_ui->window), 1000, 600);
     gtk_container_set_border_width(GTK_CONTAINER(m_ui->window), 10);
 
     /* Overall view container */
@@ -145,7 +145,7 @@ void main_ui(MainUi *m_ui)
     gtk_container_add(GTK_CONTAINER(m_ui->window), m_ui->cntl_box);  
 
     /* Exit when window closed */
-    g_signal_connect(m_ui->window, "destroy", G_CALLBACK(OnQuit), m_ui->window);  
+    m_ui->close_hndlr_id = g_signal_connect(m_ui->window, "destroy", G_CALLBACK(OnQuit), m_ui->window);  
 
     /* Show window */
     set_css();
@@ -402,12 +402,12 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     /* Open 1st image */
 
     /* Info status */
-    msg = (char *) malloc(strlen(proj->project_name) + 25);
+    msg = (char *) malloc(strlen(proj->project_name) + 27);
     sprintf(msg, "Currently viewing project: %s", proj->project_name);
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), msg);
     free(msg);
 
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 650);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 800);
     gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
 
     gtk_widget_show_all(m_ui->window);
@@ -567,7 +567,9 @@ void col_set_attrs (GtkTreeViewColumn *tree_column,
     gtk_tree_model_get (model, iter, IMAGE_TYPE, &img_type, -1);
 
     /* Highlight Darks with a darker background */
-    if (strcmp(img_type, "D") == 0)
+    if (strcmp(img_type, "I") == 0)
+	g_object_set (G_OBJECT (cell), "cell-background-rgba", &WHITE1, NULL);
+    else
 	g_object_set (G_OBJECT (cell), "cell-background-rgba", &LIGHT_GRAY, NULL);
 
     g_free(img_type);

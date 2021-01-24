@@ -63,7 +63,7 @@ GtkWidget * create_lstbox_row(char *, char *);
 void remove_image_list_row(SelectListUi *, GtkWidget *, GtkListBoxRow *);
 void clear_image_list(SelectListUi *, GtkWidget *);
 int proj_save_reqd(ProjectData *, ProjectUi *);
-int proj_validate(ProjectData *, ProjectUi *);
+int proj_validate(ProjectUi *);
 int validate_images(GList *, ImgExif *, ProjectUi *);
 void validate_darks(GList **, ImgExif *, ProjectUi *);
 void check_arr_int(int, int *, int *);
@@ -460,7 +460,7 @@ void remove_image_list_row(SelectListUi *lst, GtkWidget *list_box, GtkListBoxRow
 	if (strcmp(tmp->nm, img->nm) == 0 && strcmp(tmp->path, img->path) == 0)
 	{
 	    free_img(img);
-	    lst->img_files = g_list_delete_link(l, l);
+	    lst->img_files = g_list_delete_link(lst->img_files, l);
 	    break;
 	}
     };
@@ -561,13 +561,9 @@ int proj_save_reqd(ProjectData *proj, ProjectUi *p_ui)
 
 /* Validate screen contents */
 
-int proj_validate(ProjectData *proj, ProjectUi *p_ui)
+int proj_validate(ProjectUi *p_ui)
 {
     const gchar *nm;
-    SelectListUi images;
-    SelectListUi darks;
-    GList *images_gl;
-    GList *darks_gl;
     ImgExif exif;
 
     /* Project name must be present */
@@ -813,15 +809,11 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     len = strlen(desc);
 
     if (proj->project_desc == NULL)			// New description
-    {
     	proj->project_desc = (char *) malloc(len + 1);
-	proj->project_desc[0] = '\0';
-    }
     else 						// Edit
-    {
 	proj->project_desc = (char *) realloc(proj->project_desc, len + 1);
-	strcpy(proj->project_desc, desc);
-    }
+
+    strcpy(proj->project_desc, desc);
 
     /* Project status */
     proj->status = 0;
@@ -999,7 +991,7 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
     	return;
 
     /* Error check */
-    if (proj_validate(proj, ui) == FALSE)
+    if (proj_validate(ui) == FALSE)
     	return;
 
     /* Set up and save */
