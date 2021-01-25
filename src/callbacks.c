@@ -138,13 +138,9 @@ void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
     /* Check if a project is already open */
     if (m_ui->proj != NULL)
     {
-printf("%s OnCloseProj 1\n", debug_hdr); fflush(stdout);
 	g_signal_handler_block (m_ui->select_image, m_ui->sel_handler_id);
-printf("%s OnCloseProj 1a\n", debug_hdr); fflush(stdout);
     	gtk_widget_destroy(m_ui->image_list_tree);
-printf("%s OnCloseProj 2\n", debug_hdr); fflush(stdout);
     	proj_close_check_save(m_ui->proj, m_ui);
-printf("%s OnCloseProj 3\n", debug_hdr); fflush(stdout);
     	m_ui->sel_handler_id = 0;
     }
 
@@ -311,7 +307,6 @@ void OnQuit(GtkWidget *window, gpointer *user_data)
 {  
     MainUi *m_ui;
 
-printf("%s OnQuit 1\n", debug_hdr); fflush(stdout);
     /* Get data */
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
@@ -321,7 +316,6 @@ printf("%s OnQuit 1\n", debug_hdr); fflush(stdout);
 
     g_signal_handler_block (m_ui->window, m_ui->close_hndlr_id);
 
-printf("%s OnQuit 2\n", debug_hdr); fflush(stdout);
     /* Check Project close */
     if (m_ui->proj)
     {
@@ -329,20 +323,16 @@ printf("%s OnQuit 2\n", debug_hdr); fflush(stdout);
     	proj_close_check_save(m_ui->proj, m_ui);
     }
 
-printf("%s OnQuit 3\n", debug_hdr); fflush(stdout);
     /* Tidy up */
     if (m_ui->curr_img_base)
 	free(m_ui->curr_img_base);
-printf("%s OnQuit 4\n", debug_hdr); fflush(stdout);
 
     if (m_ui->curr_dark_base)
 	free(m_ui->curr_dark_base);
 
-printf("%s OnQuit 5\n", debug_hdr); fflush(stdout);
     /* Close any open windows */
     close_open_ui();
     free_window_reg();
-printf("%s OnQuit 7\n", debug_hdr); fflush(stdout);
 
     /* Main quit */
     gtk_main_quit();

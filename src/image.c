@@ -221,7 +221,7 @@ int load_exif_data(Image *img, char *full_path, GtkWidget *window)
     
     /* Not really exif data, but as far as possible, get the image type here */
     img->img_exif.type = image_type(full_path, window);
-    printf("%s - Type: %s\n", debug_hdr, img->img_exif.type); fflush(stdout);
+    //printf("%s - Type: %s\n", debug_hdr, img->img_exif.type); fflush(stdout);
 
     return TRUE;
 }
@@ -247,7 +247,7 @@ static char * get_exif_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 
         if (*buf)
         {
-            printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf); fflush(stdout);
+            //printf("%s - %s: %s\n", debug_hdr, exif_tag_get_name_in_ifd(tag,ifd), buf); fflush(stdout);
 	    s = (char *) malloc(strlen(buf) + 1);
 	    strcpy(s, buf);
 	    return s;

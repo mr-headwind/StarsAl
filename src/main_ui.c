@@ -402,7 +402,7 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     /* Open 1st image */
 
     /* Info status */
-    msg = (char *) malloc(strlen(proj->project_name) + 27);
+    msg = (char *) malloc(strlen(proj->project_name) + 28);
     sprintf(msg, "Currently viewing project: %s", proj->project_name);
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), msg);
     free(msg);
