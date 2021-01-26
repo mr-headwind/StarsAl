@@ -58,6 +58,8 @@ ProjectUi * new_proj_ui();
 void project_ui(ProjectData *, ProjectUi *);
 void proj_data(ProjectData *, ProjectUi *);
 void select_images(SelectListUi *, ProjectUi *, char *);
+void set_proj_ui(ProjectData *, ProjectUi *);
+void set_listbox_ui(SelectListUi *, GList *);
 void show_list(SelectListUi *, GSList *, ProjectUi *p_ui);
 GtkWidget * create_lstbox_row(char *, char *);
 void remove_image_list_row(SelectListUi *, GtkWidget *, GtkListBoxRow *);
@@ -91,6 +93,7 @@ extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern int get_user_pref(char *, char **);
 extern void basename_dirname(char *, char **, char **);
+extern int check_dir(char *);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
@@ -278,6 +281,10 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     /* Darks */
     select_images(&(p_ui->darks), p_ui, "Select Darks");
 
+    /* Apply values if required */
+    if (proj)
+    	set_proj_ui(proj, p_ui);
+
     return;
 }
 
@@ -356,6 +363,44 @@ void select_images(SelectListUi *lst, ProjectUi *p_ui, char *desc)
     gtk_box_pack_start (GTK_BOX (lst->sel_vbox), lst->meta_lbl, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER (lst->sel_fr), lst->sel_vbox);
     gtk_box_pack_start (GTK_BOX (p_ui->proj_cntr), lst->sel_fr, FALSE, FALSE, 0);
+
+    return;
+}
+
+
+/* Populate project screen entries to enable edit */
+
+void set_proj_ui(ProjectData *proj, ProjectUi *p_ui)
+{  
+    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_nm), (const gchar *) proj->project_name);
+    gtk_entry_set_text (GTK_ENTRY (p_ui->proj_desc), (const gchar *) proj->project_desc);
+
+    set_listbox_ui(&(p_ui->images), proj->images_gl);
+    set_listbox_ui(&(p_ui->darks), proj->darks_gl);
+
+    return;
+}
+
+
+/* Populate project screen list entries to enable edit */
+
+void set_listbox_ui(SelectListUi *lst, GList *gl)
+{  
+    GtkWidget *row;
+    GList *l;
+    Image *image;
+
+    for(l = gl; l != NULL; l = l->next)
+    {
+	image = (Image *) l->data;
+	row = create_lstbox_row(image->nm, image->path);
+	gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
+	lst->img_files = g_list_prepend(lst->img_files, image);
+	g_object_set_data (G_OBJECT (row), "image", image);
+    }
+
+    gtk_widget_show_all(lst->list_box);
+    lst->img_files = g_list_reverse(lst->img_files);
 
     return;
 }
@@ -783,6 +828,15 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     {
 	s = (char*) malloc(strlen(proj->project_path) + 5);
 	sprintf(s, "%s.bak", proj->project_path);
+
+	/* Overwrite any previous backup */
+	if (check_dir(s) == TRUE)
+	    if (remove(s) != 0)
+	    {
+		sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+		log_msg("SYS9009", proj->project_name, "SYS9009", p_ui->window);
+		return;
+	    }
 
 	if (rename(proj->project_path, s) < 0)
 	{
