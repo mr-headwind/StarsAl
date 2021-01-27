@@ -98,6 +98,7 @@ extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char*, GtkWidget*);
 extern void register_window(GtkWidget *);
 extern void deregister_window(GtkWidget *);
+extern int remove_dir(const char *);
 extern void string_trim(char *);
 extern char * image_type(char *, GtkWidget *);
 
@@ -831,7 +832,7 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 
 	/* Overwrite any previous backup */
 	if (check_dir(s) == TRUE)
-	    if (remove(s) != 0)
+	    if (remove_dir(s) != 0)
 	    {
 		sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
 		log_msg("SYS9009", proj->project_name, "SYS9009", p_ui->window);

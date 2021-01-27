@@ -299,7 +299,7 @@ int project_list(SelectProjUi *s_ui)
     while (ep = readdir(dp))
     {
 	/* Each project name must be a directory */
-	if (strcmp(ep->d_name, ".") == 0 ||strcmp(ep->d_name, "..") == 0 )
+	if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0 )
 	    continue;
 
     	path = (char *) malloc(strlen(ep->d_name) + proj_dir_len + 2);

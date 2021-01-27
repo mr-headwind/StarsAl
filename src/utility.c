@@ -48,6 +48,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include <errno.h>
 #include <time.h>
 #include <gtk/gtk.h>
@@ -79,6 +80,7 @@ void strlower(char *, char *);
 void dttm_stamp(char *, size_t);
 int check_dir(char *);
 int make_dir(char *);
+int remove_dir(const char *);
 int get_file_stat(char *, struct stat *);
 FILE * open_file(char *, char *);
 int read_file(FILE *, char *, int);
@@ -608,6 +610,60 @@ int make_dir(char *s)
     }
 
     return TRUE;
+}
+
+
+/* Remove a directory and any contents */
+
+int remove_dir(const char *path)
+{
+    struct stat statbuf;
+    int r, r2;
+    char *buf;
+    size_t path_len, len;
+
+    DIR *d = opendir(path);
+    path_len = strlen(path);
+    r = -1;
+
+    if (d)
+    {
+	struct dirent *p;
+	r = 0;
+
+	while (!r && (p = readdir(d)))
+	{
+	    r2 = -1;
+
+	    /* Ignore "." and ".." */
+	    if ((strcmp(p->d_name, ".") == 0) || (strcmp(p->d_name, "..") == 0))
+		continue;
+
+	    len = path_len + strlen(p->d_name) + 2; 
+	    buf = malloc(len);
+
+	    if (buf)
+	    {
+		snprintf(buf, len, "%s/%s", path, p->d_name);
+
+		if (!stat(buf, &statbuf))
+		{
+		    if (S_ISDIR(statbuf.st_mode))
+			r2 = remove_dir(buf);
+		    else
+			r2 = unlink(buf);
+		}
+		free(buf);
+	    }
+	    r = r2;
+	}
+	closedir(d);
+    }
+
+    if (!r)
+	r = rmdir(path);
+
+    return r;
 }
 
 
