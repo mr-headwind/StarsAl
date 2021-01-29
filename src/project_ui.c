@@ -874,6 +874,13 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     proj->status = 0;
 
     /* Images and Darks */
+    if (proj->images_gl != NULL)
+	g_list_free (proj->images_gl);
+
+    if (proj->darks_gl != NULL)
+	g_list_free (proj->darks_gl);
+
+printf("%s OnProjSave counts  img %u    drk %u\n", debug_hdr, g_list_length(proj->images_gl), g_list_length(proj->darks_gl));
     proj->images_gl = g_list_copy(p_ui->images.img_files);
     proj->darks_gl = g_list_copy(p_ui->darks.img_files);
 

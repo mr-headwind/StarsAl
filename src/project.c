@@ -60,7 +60,7 @@ ProjectData * new_proj_data();
 int convert_exif(ImgExif *, int *, int *, int *, GtkWidget *);
 void free_img(gpointer);
 int load_proj_from_file(ProjectData *, char *, GtkWidget *);
-int load_files(GList **, char *, const char *, const char *, GtkWidget *);
+int load_files(GList **, char **, const char *, const char *, GtkWidget *);
 char * get_xmltag_val(char **, const char *, const char *, int, GtkWidget *);
 void close_project(ProjectData *);
 void proj_close_check_save(ProjectData *, MainUi *);
@@ -238,8 +238,8 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     free(tmp_status);
 
     /* Images and Darks */
-    load_files(&(proj->images_gl), buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
-    load_files(&(proj->darks_gl), buf_ptr, proj_tags[dark_idx][0], proj_tags[dark_idx][1], window);
+    load_files(&(proj->images_gl), &buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
+    load_files(&(proj->darks_gl), &buf_ptr, proj_tags[dark_idx][0], proj_tags[dark_idx][1], window);
 
     return TRUE;
 }
@@ -247,12 +247,12 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 
 /* Extract the files from the buffer */
 
-int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
+int load_files(GList **gl, char **buf_ptr, const char *start_tag, const char *end_tag, GtkWidget *window)
 {
     char *ptr, *end_ptr, *fn, *p;
 
     /* Start pointer */
-    if ((ptr = strstr(buf_ptr, start_tag)) == NULL)
+    if ((ptr = strstr(*buf_ptr, start_tag)) == NULL)
     {
 	log_msg("SYS9014", (char *) start_tag, "SYS9014", window);
     	return FALSE;
@@ -266,10 +266,15 @@ int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end
     }
 
     /* Iterate all the File tags in the range */
-    while(end_ptr >= ptr)
+    end_ptr--;
+printf("%s end_ptr  %p\n", debug_hdr, end_ptr);
+
+    while(end_ptr > ptr)
     {
 	fn = get_xmltag_val(&ptr, proj_tags[file1_idx][0], proj_tags[file1_idx][1], FALSE, NULL);
+printf("%s fn: %s  ptr: %p\n", debug_hdr, fn, ptr);
 	
+	//if (fn == NULL || ptr > end_ptr)
 	if (fn == NULL)
 	    break;
 
@@ -300,6 +305,7 @@ int load_files(GList **gl, char *buf_ptr, const char *start_tag, const char *end
     };
 
     *gl = g_list_reverse(*gl);
+    *buf_ptr = ptr;
 
     return TRUE;
 }
@@ -340,6 +346,9 @@ char * get_xmltag_val(char **buf_ptr, const char *start_tag, const char *end_tag
     tag_val[sz] = '\0';
     end_ptr += (len + 1);
     *buf_ptr = end_ptr;
+
+    if (*(buf_ptr)[0] == '\n')
+	(*buf_ptr)++;
 
     return tag_val;
 }
