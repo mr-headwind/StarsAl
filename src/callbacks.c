@@ -59,9 +59,9 @@ void OnAbout(GtkWidget*, gpointer *user_data);
 void OnQuit(GtkWidget*, gpointer *user_data);
 
 
-extern void edit_project_main(ProjectData *, GtkWidget *);
+extern void edit_project_main(ProjectData *, MainUi *);
 extern void open_project_main(MainUi *);
-extern void proj_close_check_save(ProjectData *, MainUi *);
+extern int proj_close_check_save(ProjectData *, MainUi *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -90,11 +90,59 @@ static const char *debug_hdr = "DEBUG-callbacks.c ";
 void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 {  
     GtkWidget *window;
-    ProjectData *proj;
+    MainUi *m_ui;
 
+    /* Data */
     window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
-    edit_project_main(NULL, window);
+    /* Check if a project is open */
+    if (m_ui->proj != NULL)
+    {
+    	if (proj_close_check_save(m_ui->proj, m_ui) == FALSE)
+    	    return;
+    }
+
+    edit_project_main(NULL, m_ui);
+
+    return;
+}  
+
+
+/* Callback - Edit project settings */
+
+void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
+{  
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    edit_project_main(m_ui->proj, m_ui);
+
+    return;
+}  
+
+
+/* Callback - Close a project */
+
+void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
+{  
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Check if a project is open */
+    if (m_ui->proj != NULL)
+    {
+    	if (proj_close_check_save(m_ui->proj, m_ui) == FALSE)
+    	    return;
+    }
 
     return;
 }  
@@ -119,46 +167,6 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 
     /* Open selection window */
     open_project_main(m_ui);
-
-    return;
-}  
-
-
-/* Callback - Close a project */
-
-void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
-{  
-    GtkWidget *window;
-    MainUi *m_ui;
-
-    /* Data */
-    window = (GtkWidget *) user_data;
-    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
-
-    /* Check if a project is already open */
-    if (m_ui->proj != NULL)
-    {
-	g_signal_handler_block (m_ui->select_image, m_ui->sel_handler_id);
-    	gtk_widget_destroy(m_ui->image_list_tree);
-    	proj_close_check_save(m_ui->proj, m_ui);
-    	m_ui->sel_handler_id = 0;
-    }
-
-    return;
-}  
-
-
-/* Callback - Edit project settings */
-
-void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
-{  
-    GtkWidget *window;
-    MainUi *m_ui;
-
-    window = (GtkWidget *) user_data;
-    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
-
-    edit_project_main(m_ui->proj, window);
 
     return;
 }  

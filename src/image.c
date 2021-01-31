@@ -45,7 +45,7 @@
 #include <libexif/exif-data.h>
 #include <libexif/exif-tag.h>
 #include <libexif/exif-loader.h>
-#include <project.h>
+#include <project_ui.h>
 
 
 /* Prototypes */

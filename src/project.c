@@ -62,8 +62,9 @@ void free_img(gpointer);
 int load_proj_from_file(ProjectData *, char *, GtkWidget *);
 int load_files(GList **, char **, const char *, const char *, GtkWidget *);
 char * get_xmltag_val(char **, const char *, const char *, int, GtkWidget *);
+int proj_close_check_save(ProjectData *, MainUi *);
+void close_main_display(MainUi *);
 void close_project(ProjectData *);
-void proj_close_check_save(ProjectData *, MainUi *);
 int save_proj_init(ProjectData *, GtkWidget *);
 ProjectData * open_project(char *, GtkWidget *);
 FILE * open_proj_file(char *, char *, GtkWidget *);
@@ -267,12 +268,10 @@ int load_files(GList **gl, char **buf_ptr, const char *start_tag, const char *en
 
     /* Iterate all the File tags in the range */
     end_ptr--;
-printf("%s end_ptr  %p\n", debug_hdr, end_ptr);
 
     while(end_ptr > ptr)
     {
 	fn = get_xmltag_val(&ptr, proj_tags[file1_idx][0], proj_tags[file1_idx][1], FALSE, NULL);
-printf("%s fn: %s  ptr: %p\n", debug_hdr, fn, ptr);
 	
 	//if (fn == NULL || ptr > end_ptr)
 	if (fn == NULL)
@@ -356,10 +355,41 @@ char * get_xmltag_val(char **buf_ptr, const char *start_tag, const char *end_tag
 
 /* Check for save and close */
 
-void proj_close_check_save(ProjectData *proj, MainUi *m_ui)
+int proj_close_check_save(ProjectData *proj, MainUi *m_ui)
 {
-    close_project(proj);
-    m_ui->proj = NULL;
+    int action = FALSE;     // To be coded later with dialog
+
+    if (action == FALSE)
+    {
+	close_project(proj);
+	close_main_display(m_ui);
+	m_ui->proj = NULL;
+    }
+    else if (action == TRUE)
+    {
+	// SAVE
+	close_project(proj);
+	m_ui->proj = NULL;
+    }
+    else if (action == -1)
+    {
+	return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+/* Close the project on main screen */
+
+void close_main_display(MainUi *m_ui)
+{
+    g_signal_handler_block (m_ui->select_image, m_ui->sel_handler_id);
+    gtk_widget_destroy(m_ui->image_list_tree);
+    m_ui->sel_handler_id = 0;
+    gtk_label_set_text(GTK_LABEL (m_ui->status_info), "");
+    gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
+    gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
 
     return;
 }

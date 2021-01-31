@@ -41,30 +41,6 @@
 #define PROJECT_H
 
 
-typedef struct _SelectListUi
-{
-    GtkWidget *sel_fr, *sel_hbox, *sel_vbox;
-    GtkWidget *btn_vbox, *sel_btn, *clear_btn, *remove_btn;
-    GtkWidget *list_box, *scroll_win;
-    GtkWidget *meta_lbl, *dir_lbl;
-    GList *img_files;
-    int sel_handler_id;
-} SelectListUi;
-
-
-typedef struct _ProjectUi
-{
-    GtkWidget *window;
-    GtkWidget *title_fr;
-    GtkWidget *main_vbox, *nm_grid, *btn_hbox, *proj_cntr;
-    GtkWidget *proj_nm_lbl, *proj_nm, *proj_desc_lbl, *proj_desc, *proj_path_lbl;
-    SelectListUi images;
-    SelectListUi darks;
-    GtkWidget *save_btn, *cancel_btn;
-    int close_handler_id;
-} ProjectUi;
-
-
 typedef struct _ProjectData
 {
     char *project_name;

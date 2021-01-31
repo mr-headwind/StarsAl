@@ -177,9 +177,10 @@ void create_menu(MainUi *m_ui)
     /* File menu items */
     m_ui->new_proj = gtk_menu_item_new_with_mnemonic ("New Project...");
     m_ui->open_proj = gtk_menu_item_new_with_mnemonic ("Open Project...");
-    m_ui->close_proj = gtk_menu_item_new_with_mnemonic ("Close Project...");
+    m_ui->close_proj = gtk_menu_item_new_with_mnemonic ("Close Project");
     m_ui->sep = gtk_separator_menu_item_new();
     m_ui->file_exit = gtk_menu_item_new_with_mnemonic ("E_xit");
+    gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
 
     /* Add to menu */
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->new_proj);
@@ -206,6 +207,7 @@ void create_menu(MainUi *m_ui)
 
     /* Option menu items */
     m_ui->edit_proj = gtk_menu_item_new_with_mnemonic ("_Project...");
+    gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
 
     /* Add to menu */
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_proj);
@@ -410,6 +412,8 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 800);
     gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
 
+    gtk_widget_set_sensitive(m_ui->edit_proj, TRUE);
+    gtk_widget_set_sensitive(m_ui->close_proj, TRUE);
     gtk_widget_show_all(m_ui->window);
 
     return;

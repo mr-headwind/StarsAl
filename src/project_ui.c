@@ -40,6 +40,8 @@
 #include <string.h>
 #include <errno.h>
 #include <defs.h>
+#include <main.h>
+#include <project_ui.h>
 #include <project.h>
 #include <preferences.h>
 
@@ -52,7 +54,7 @@
 
 /* Prototypes */
 
-int edit_project_main(ProjectData *, GtkWidget *);
+int edit_project_main(ProjectData *, MainUi *);
 int project_init(GtkWidget *);
 ProjectUi * new_proj_ui();
 void project_ui(ProjectData *, ProjectUi *);
@@ -83,6 +85,7 @@ static void OnListRemove(GtkWidget*, gpointer);
 static void OnRowSelect(GtkListBox*, GtkListBoxRow*, gpointer);
 
 extern ProjectData * new_proj_data();
+extern void display_proj(ProjectData *, MainUi *);
 extern int save_proj_init(ProjectData *, GtkWidget *);
 extern Image * setup_image(char *, char *, char *, ProjectUi *);
 extern void free_img(gpointer);
@@ -109,17 +112,18 @@ static const char *debug_hdr = "DEBUG-project_ui.c ";
 static int save_indi;
 static char *proj_dir;
 static int proj_dir_len;
+//static MainUi *m_ui;
 
 
 /* Display and maintenance of project details */
 
-int edit_project_main(ProjectData *proj_in, GtkWidget *window)
+int edit_project_main(ProjectData *proj_in, MainUi *m_ui)
 {
     ProjectData *proj;
     ProjectUi *ui;
 
     /* Initial */
-    if (! project_init(window))
+    if (! project_init(m_ui->window))
     	return FALSE;
 
     /* Load and/or initialise project */
@@ -129,6 +133,7 @@ int edit_project_main(ProjectData *proj_in, GtkWidget *window)
     	proj = proj_in;
 
     ui = new_proj_ui();
+    ui->m_ui = m_ui;
 
     /* Create the interface */
     project_ui(proj, ui);
@@ -283,7 +288,7 @@ void proj_data(ProjectData *proj, ProjectUi *p_ui)
     select_images(&(p_ui->darks), p_ui, "Select Darks");
 
     /* Apply values if required */
-    if (proj)
+    if (proj->project_name)
     	set_proj_ui(proj, p_ui);
 
     return;
@@ -880,7 +885,6 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     if (proj->darks_gl != NULL)
 	g_list_free (proj->darks_gl);
 
-printf("%s OnProjSave counts  img %u    drk %u\n", debug_hdr, g_list_length(proj->images_gl), g_list_length(proj->darks_gl));
     proj->images_gl = g_list_copy(p_ui->images.img_files);
     proj->darks_gl = g_list_copy(p_ui->darks.img_files);
 
@@ -1043,10 +1047,12 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
 {
     ProjectUi *ui;
     ProjectData *proj;
+    MainUi *m_ui;
 
     /* Get data */
     ui = (ProjectUi *) user_data;
     proj = (ProjectData *) g_object_get_data (G_OBJECT (ui->window), "proj");
+    m_ui = ui->m_ui;;
 
     /* Ignore if save is not required */
     if ((save_indi = proj_save_reqd(proj, ui)) == FALSE)
@@ -1064,6 +1070,10 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
 
     /* Close the window, free the screen data and block any secondary close signal */
     window_cleanup(ui->window, ui);
+
+    /* Set up main screen display */
+    m_ui->proj = proj;
+    display_proj(proj, m_ui);
 
     return;
 }
