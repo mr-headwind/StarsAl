@@ -327,8 +327,8 @@ void OnQuit(GtkWidget *window, gpointer *user_data)
     /* Check Project close */
     if (m_ui->proj)
     {
-    	gtk_widget_destroy(m_ui->image_list_tree);
-    	proj_close_check_save(m_ui->proj, m_ui);
+    	if (proj_close_check_save(m_ui->proj, m_ui) == FALSE)
+    	    return;
     }
 
     /* Tidy up */

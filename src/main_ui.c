@@ -327,7 +327,7 @@ void image_area(MainUi *m_ui)
     /* Create drawing area for graphs */
     m_ui->image_area = gtk_drawing_area_new();
     gtk_widget_set_margin_top (m_ui->image_area, 10);
-    gtk_widget_set_size_request (m_ui->image_area, 600, 400);
+    gtk_widget_set_size_request (m_ui->image_area, 800, 400);
     gtk_widget_set_halign (m_ui->image_area, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (m_ui->image_area, GTK_ALIGN_CENTER);
 
@@ -340,6 +340,8 @@ void image_area(MainUi *m_ui)
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 800);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 400);
 
     return;
 }
