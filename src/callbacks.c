@@ -328,7 +328,11 @@ void OnQuit(GtkWidget *window, gpointer *user_data)
     if (m_ui->proj)
     {
     	if (proj_close_check_save(m_ui->proj, m_ui) == FALSE)
+    	{
+	    g_signal_handler_unblock (m_ui->select_image, m_ui->sel_handler_id);
+	    g_signal_handler_unblock (m_ui->window, m_ui->close_hndlr_id);
     	    return;
+	}
     }
 
     /* Tidy up */
