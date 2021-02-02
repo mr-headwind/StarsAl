@@ -54,6 +54,7 @@ char * image_type(char *, GtkWidget *);
 Image * setup_image(char *, char *, char *, ProjectUi *);
 int load_exif_data(Image *, char *, GtkWidget *);
 static char * get_exif_tag(ExifData *, ExifIfd, ExifTag);
+int show_image(char *, MainUi *);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
@@ -258,4 +259,17 @@ static char * get_exif_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
     sprintf(s, "N/A");
 
     return s;
+}
+
+
+/* Show an image */
+
+int show_image(char *img_fn, MainUi *m_ui)
+{
+    GdkPixbuf *pixbuf;
+
+    gtk_image_set_from_file (GTK_IMAGE (m_ui->image_area), img_fn);
+    pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (m_ui->image_area));
+
+    return TRUE;
 }

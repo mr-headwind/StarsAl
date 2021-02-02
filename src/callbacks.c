@@ -75,6 +75,7 @@ extern void delete_menu_items(GtkWidget *, char *);
 extern int close_ui(char *);
 extern gint query_dialog(GtkWidget *, char *, char *);
 extern int get_user_pref(char *, char **);
+extern int show_image(char *, MainUi *);
 
 
 /* Globals */
@@ -174,18 +175,25 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Image selection */
 
-void OnImageSelect(GtkTreeSelection *selection, gpointer data)
+void OnImageSelect(GtkTreeSelection *selection, gpointer user_data)
 {  
     GtkTreeIter iter;
     GtkTreeModel *model;
     gchar *img_nm;
+    MainUi *m_ui;
 
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    /* Get selected image */
     if (gtk_tree_selection_get_selected (selection, &model, &iter))
     {
 	gtk_tree_model_get (model, &iter, IMAGE_NM, &img_nm, -1);
 	g_print ("You selected an image: %s\n", img_nm);
     }
 
+    /* Display the image */
+    show_image(img_nm, m_ui);
     g_free(img_nm);
 
     /*
