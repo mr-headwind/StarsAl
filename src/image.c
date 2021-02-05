@@ -55,6 +55,7 @@ Image * setup_image(char *, char *, char *, ProjectUi *);
 int load_exif_data(Image *, char *, GtkWidget *);
 static char * get_exif_tag(ExifData *, ExifIfd, ExifTag);
 int show_image(char *, MainUi *);
+void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
@@ -266,10 +267,34 @@ static char * get_exif_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 
 int show_image(char *img_fn, MainUi *m_ui)
 {
+    int sw_h, sw_w;
+    GtkWidget *image;
     GdkPixbuf *pixbuf;
 
-    gtk_image_set_from_file (GTK_IMAGE (m_ui->image_area), img_fn);
-    pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (m_ui->image_area));
+    image = gtk_image_new_from_file (img_fn);
+    pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (image));
+    sw_h = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
+    sw_w = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
+
+    img_fit_win(pixbuf, sw_w, sw_h, m_ui);
 
     return TRUE;
+}
+
+
+/* Fit an image to the window, but keep aspect */
+
+void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
+{
+    int px_h, px_w;
+    GdkPixbuf *pxbscaled;
+
+    px_h = win_h;
+    px_w = (gdk_pixbuf_get_width(pixbuf) * win_h) / gdk_pixbuf_get_height(pixbuf);
+    pxbscaled = gdk_pixbuf_scale_simple (pixbuf, px_w, px_h, GDK_INTERP_BILINEAR);
+    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
+
+    g_object_unref (pxbscaled);
+
+    return;
 }

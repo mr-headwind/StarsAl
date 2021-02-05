@@ -369,6 +369,7 @@ int proj_close_check_save(ProjectData *proj, MainUi *m_ui)
     {
 	// SAVE
 	close_project(proj);
+	close_main_display(m_ui);
 	m_ui->proj = NULL;
     }
     else if (action == -1)
@@ -390,6 +391,7 @@ void close_main_display(MainUi *m_ui)
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), "");
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
     gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
+    gtk_image_clear(GTK_IMAGE (m_ui->image_area));
 
     return;
 }
