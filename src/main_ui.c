@@ -33,8 +33,8 @@
 
 /* Defines */
 #define MAIN_UI
-#define TEXT_COL 1
-#define TOGGLE_COL 2
+#define TOGGLE_COL 1
+#define TEXT_COL 2
 
 
 /* Includes */
@@ -54,9 +54,9 @@
 /*
 enum ImageCol
     {
+       BASE_IMG,
        IMAGE_TYPE,
        IMAGE_NM,
-       BASE_IMG,
        IMG_TOOL_TIP,
        IMG_N_COLUMNS
     };
@@ -79,6 +79,8 @@ extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
 extern void OnEditProj(GtkWidget*, gpointer);
+extern void OnViewFit(GtkWidget*, gpointer);
+extern void OnViewActual(GtkWidget*, gpointer);
 extern void OnImageSelect (GtkTreeSelection *, gpointer);
 extern void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
@@ -158,9 +160,9 @@ void main_ui(MainUi *m_ui)
 /*
 ** Menu function for StarsAl application.
 **
-**  File	        Edit		        Help
-**   - New Project    	 - Project 		 - View log
-**   - Open Project      - User settings         - About
+**  File	        Edit			View		        Help
+**   - New Project    	 - Project		 - Fit to Window 	 - View log
+**   - Open Project      - User settings	 - Actual	         - About
 **   - Close Project   
 **   - Exit    	      
 */
@@ -205,7 +207,7 @@ void create_menu(MainUi *m_ui)
     /* EDIT MENU */
     m_ui->edit_menu = gtk_menu_new();
 
-    /* Option menu items */
+    /* Edit menu items */
     m_ui->edit_proj = gtk_menu_item_new_with_mnemonic ("_Project...");
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
 
@@ -217,6 +219,28 @@ void create_menu(MainUi *m_ui)
 
     /* Show menu items */
     gtk_widget_show (m_ui->edit_proj);
+
+
+    /* VIEW MENU */
+    m_ui->view_menu = gtk_menu_new();
+
+    /* View menu items */
+    m_ui->view_fit = gtk_menu_item_new_with_mnemonic ("_Fit to Window...");
+    gtk_widget_set_sensitive(m_ui->view_fit, FALSE);
+    m_ui->view_actual = gtk_menu_item_new_with_mnemonic ("_Actual...");
+    gtk_widget_set_sensitive(m_ui->view_actual, FALSE);
+
+    /* Add to menu */
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->view_menu), m_ui->view_fit);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->view_menu), m_ui->view_actual);
+
+    /* Callbacks */
+    g_signal_connect (m_ui->view_fit, "activate", G_CALLBACK (OnViewFit), m_ui->window);
+    g_signal_connect (m_ui->view_actual, "activate", G_CALLBACK (OnViewActual), m_ui->window);
+
+    /* Show menu items */
+    gtk_widget_show (m_ui->view_fit);
+    gtk_widget_show (m_ui->view_actual);
 
 
     /* OPTIONS MENU */
@@ -268,6 +292,12 @@ void create_menu(MainUi *m_ui)
     gtk_widget_show (m_ui->edit_hdr);
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (m_ui->edit_hdr), m_ui->edit_menu);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->menu_bar), m_ui->edit_hdr);
+
+    /* View header menu */
+    m_ui->view_hdr = gtk_menu_item_new_with_mnemonic ("_View");
+    gtk_widget_show (m_ui->view_hdr);
+    gtk_menu_item_set_submenu (GTK_MENU_ITEM (m_ui->view_hdr), m_ui->view_menu);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->menu_bar), m_ui->view_hdr);
 
     /* Option header menu */
     m_ui->opt_hdr = gtk_menu_item_new_with_mnemonic ("_Options");
@@ -327,7 +357,8 @@ void image_area(MainUi *m_ui)
     /* Create drawing area for graphs */
     m_ui->image_area = gtk_image_new();
     gtk_widget_set_margin_top (m_ui->image_area, 10);
-    gtk_widget_set_size_request (m_ui->image_area, 800, 400);
+    gtk_widget_set_size_request (m_ui->image_area, 900, 600);
+    //gtk_widget_set_size_request (m_ui->image_area, 750, 500);
     gtk_widget_set_halign (m_ui->image_area, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (m_ui->image_area, GTK_ALIGN_CENTER);
 
@@ -340,8 +371,10 @@ void image_area(MainUi *m_ui)
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 800);
-    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 400);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 900);
+    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 750);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 600);
+    //gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 500);
 
     return;
 }
@@ -353,12 +386,15 @@ void image_list(MainUi *m_ui)
 {  
     /* Image list will be in a scrolled window */
     m_ui->lst_scroll_win = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_size_request (m_ui->lst_scroll_win, 900, 200);
     gtk_widget_set_margin_start (GTK_WIDGET (m_ui->lst_scroll_win), 5);
     gtk_widget_set_margin_top (GTK_WIDGET (m_ui->lst_scroll_win), 5);
     gtk_widget_set_margin_bottom (GTK_WIDGET (m_ui->lst_scroll_win), 5);
     gtk_widget_set_halign(GTK_WIDGET (m_ui->lst_scroll_win), GTK_ALIGN_START);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 900);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 200);
 
 
     //GtkWidget *heading_lbl, *row;
@@ -411,8 +447,8 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), msg);
     free(msg);
 
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 800);
-    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
+    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 800);
+    //gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
 
     gtk_widget_set_sensitive(m_ui->edit_proj, TRUE);
     gtk_widget_set_sensitive(m_ui->close_proj, TRUE);
@@ -435,7 +471,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     GtkTreeIter iter;
 
     /* Build a list view for images */
-    store = gtk_list_store_new (IMG_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING);
+    store = gtk_list_store_new (IMG_N_COLUMNS, G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 
     /* Iterate through the images and add the store */
     base = TRUE;
@@ -450,9 +486,9 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
+			    BASE_IMG, base,
 			    IMAGE_TYPE, "I",
 			    IMAGE_NM, s,
-			    BASE_IMG, base,
 			    IMG_TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
@@ -477,9 +513,9 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (store, &iter,
+			    BASE_IMG, base,
 			    IMAGE_TYPE, "D",
 			    IMAGE_NM, s,
-			    BASE_IMG, base,
 			    IMG_TOOL_TIP, img->nm,
 			    -1);
 	base = FALSE;
@@ -499,9 +535,9 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     m_ui->sel_handler_id = g_signal_connect (G_OBJECT (m_ui->select_image), "changed", G_CALLBACK (OnImageSelect), m_ui);
 
     /* Column and headers for Name, Description & Date Modified */
+    new_image_col(TOGGLE_COL, "Base", BASE_IMG, m_ui);
     new_image_col(TEXT_COL, "Type", IMAGE_TYPE, m_ui);
     new_image_col(TEXT_COL, "Image", IMAGE_NM, m_ui);
-    new_image_col(TOGGLE_COL, "Base", BASE_IMG, m_ui);
 
     /* Add to the window container */
     gtk_container_add (GTK_CONTAINER (m_ui->lst_scroll_win), m_ui->image_list_tree);
@@ -521,6 +557,19 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 
     switch(col_type)
     {
+    	case TOGGLE_COL:
+	    renderer = gtk_cell_renderer_toggle_new ();
+	    column = gtk_tree_view_column_new_with_attributes (col_title, renderer,
+							   "active", image_col, NULL);
+
+	    gtk_tree_view_append_column (GTK_TREE_VIEW (m_ui->image_list_tree), column);
+	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
+	    g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
+	    gtk_cell_renderer_toggle_set_activatable (GTK_CELL_RENDERER_TOGGLE (renderer), TRUE);
+	    gtk_tree_view_column_set_cell_data_func(column, renderer, col_set_attrs, NULL, NULL);
+	    g_signal_connect (G_OBJECT (renderer), "toggled", G_CALLBACK (OnBaseToggle), m_ui);
+            break;
+
     	case TEXT_COL:
 	    renderer = gtk_cell_renderer_text_new ();
 	    column = gtk_tree_view_column_new_with_attributes (col_title, renderer, 
@@ -535,18 +584,6 @@ void new_image_col(int col_type, char *col_title, enum ImageCol image_col, MainU
 	    if (strcmp(col_title, "Type") == 0)
 		g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
 
-            break;
-
-    	case TOGGLE_COL:
-	    renderer = gtk_cell_renderer_toggle_new ();
-	    column = gtk_tree_view_column_new_with_attributes (col_title, renderer,
-							   "active", image_col, NULL);
-	    gtk_tree_view_append_column (GTK_TREE_VIEW (m_ui->image_list_tree), column);
-	    gtk_cell_renderer_set_sensitive (GTK_CELL_RENDERER (renderer), TRUE);
-	    g_object_set (G_OBJECT (renderer), "xpad", 10, NULL);
-	    gtk_cell_renderer_toggle_set_activatable (GTK_CELL_RENDERER_TOGGLE (renderer), TRUE);
-	    gtk_tree_view_column_set_cell_data_func(column, renderer, col_set_attrs, NULL, NULL);
-	    g_signal_connect (G_OBJECT (renderer), "toggled", G_CALLBACK (OnBaseToggle), m_ui);
             break;
 
     	default:

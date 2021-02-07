@@ -52,10 +52,11 @@ typedef struct _main_ui
 
     /* Menu items */
     GtkWidget *menu_bar;  
-    GtkWidget *file_menu, *edit_menu, *opt_menu, *help_menu;
-    GtkWidget *file_hdr, *edit_hdr, *opt_hdr, *help_hdr;
+    GtkWidget *file_menu, *edit_menu, *view_menu, *opt_menu, *help_menu;
+    GtkWidget *file_hdr, *edit_hdr, *view_hdr, *opt_hdr, *help_hdr;
     GtkWidget *new_proj, *open_proj, *close_proj, *file_exit;
     GtkWidget *edit_proj, *opt_prefs;
+    GtkWidget *view_fit, *view_actual;
     GtkWidget *view_log, *help_about;
     GtkWidget *sep, *sep2;
     GtkAccelGroup *accel_group;
@@ -87,9 +88,9 @@ typedef struct _main_ui
 
 enum ImageCol
     {
+       BASE_IMG,
        IMAGE_TYPE,
        IMAGE_NM,
-       BASE_IMG,
        IMG_TOOL_TIP,
        IMG_N_COLUMNS
     };

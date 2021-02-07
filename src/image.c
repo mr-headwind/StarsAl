@@ -273,8 +273,8 @@ int show_image(char *img_fn, MainUi *m_ui)
 
     image = gtk_image_new_from_file (img_fn);
     pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (image));
-    sw_h = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
-    sw_w = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
+    sw_w = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
+    sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
 
     img_fit_win(pixbuf, sw_w, sw_h, m_ui);
 
@@ -295,6 +295,7 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
 
     g_object_unref (pxbscaled);
+    gtk_widget_show_all(m_ui->window);
 
     return;
 }

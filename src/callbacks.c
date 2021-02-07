@@ -51,6 +51,8 @@ void OnNewProj(GtkWidget*, gpointer *user_data);
 void OnOpenProj(GtkWidget*, gpointer *user_data);
 void OnCloseProj(GtkWidget*, gpointer *user_data);
 void OnEditProj(GtkWidget*, gpointer *user_data);
+void OnViewFit(GtkWidget*, gpointer *user_data);
+void OnViewActual(GtkWidget*, gpointer *user_data);
 void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
@@ -168,6 +170,36 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 
     /* Open selection window */
     open_project_main(m_ui);
+
+    return;
+}  
+
+
+/* Callback - Fit image to window */
+
+void OnViewFit(GtkWidget *menu_item, gpointer *user_data)
+{  
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    return;
+}  
+
+
+/* Callback - View full size image */
+
+void OnViewActual(GtkWidget *menu_item, gpointer *user_data)
+{  
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     return;
 }  
