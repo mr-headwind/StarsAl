@@ -269,14 +269,15 @@ int show_image(char *img_fn, MainUi *m_ui)
 {
     int sw_h, sw_w;
     GtkWidget *image;
-    GdkPixbuf *pixbuf;
 
     image = gtk_image_new_from_file (img_fn);
-    pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (image));
+    m_ui->base_pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (image));
     sw_w = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
     sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
 
-    img_fit_win(pixbuf, sw_w, sw_h, m_ui);
+    img_fit_win(m_ui->base_pixbuf, sw_w, sw_h, m_ui);
+    gtk_widget_set_sensitive(m_ui->view_fit, TRUE);
+    gtk_widget_set_sensitive(m_ui->view_actual, TRUE);
 
     return TRUE;
 }

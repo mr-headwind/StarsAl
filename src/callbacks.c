@@ -53,6 +53,7 @@ void OnCloseProj(GtkWidget*, gpointer *user_data);
 void OnEditProj(GtkWidget*, gpointer *user_data);
 void OnViewFit(GtkWidget*, gpointer *user_data);
 void OnViewActual(GtkWidget*, gpointer *user_data);
+void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
 void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
@@ -78,6 +79,7 @@ extern int close_ui(char *);
 extern gint query_dialog(GtkWidget *, char *, char *);
 extern int get_user_pref(char *, char **);
 extern int show_image(char *, MainUi *);
+extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 
 
 /* Globals */
@@ -179,12 +181,18 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 
 void OnViewFit(GtkWidget *menu_item, gpointer *user_data)
 {  
+    int sw_h, sw_w;
     GtkWidget *window;
     MainUi *m_ui;
 
     /* Data */
     window = (GtkWidget *) user_data;
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Rest image */
+    sw_w = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
+    sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
+    img_fit_win(m_ui->base_pixbuf, sw_w, sw_h, m_ui);
 
     return;
 }  
@@ -200,6 +208,55 @@ void OnViewActual(GtkWidget *menu_item, gpointer *user_data)
     /* Data */
     window = (GtkWidget *) user_data;
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Rest image */
+    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
+
+    return;
+}  
+
+
+/* Callback - Mouse wheel scrolling to zoom in or out */
+
+void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data)
+{  
+    gdouble delta_x, delta_y;
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    /* Zoom in or out */
+    if (ev->direction == GDK_SCROLL_UP)	
+	g_print("scroll up\n");
+	//zoom_img(1.05, m_ui->image_area);				
+
+    else if (ev->direction == GDK_SCROLL_DOWN)	
+	g_print("scroll down\n");
+	//zoom_img(0.95, m_ui->image_area);
+
+    else if (ev->direction == GDK_SCROLL_SMOOTH)
+    {
+	gdk_event_get_scroll_deltas ((const GdkEvent *) ev, &delta_x, &delta_y);
+ 
+	if (delta_y > 0)
+	{
+	    g_print("delta scroll up\n");
+	    //zoom_img(0.95, user_data);
+	} 
+	else if (delta_y < 0)
+	{
+	    g_print("delta scroll down\n");
+	    //zoom_img(1.05, user_data);
+	}
+	else
+	{
+	    g_print("ERROR: scroll event no zoom\n");
+	}
+    }
+    else
+	g_print("ERROR: unknown scroll event\n");
 
     return;
 }  
@@ -273,7 +330,7 @@ void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer da
     if (set)
     {
     	gtk_tree_model_get(model, &iter, BASE_IMG, &state, -1);
-    	gtk_list_store_set(GTK_LIST_STORE (model), &iter, 2, !state, -1);
+    	gtk_list_store_set(GTK_LIST_STORE (model), &iter, 0, !state, -1);
     }
 
     if (strcmp(img_type, "I") == 0)

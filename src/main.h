@@ -71,6 +71,7 @@ typedef struct _main_ui
     GtkTreeSelection *select_image;
     GtkWidget *heading_lbl;  
     GtkWidget *dummy;  
+    GdkPixbuf *base_pixbuf;
 
     /* Control widgets and items */
     GtkWidget *save_btn;

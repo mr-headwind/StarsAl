@@ -81,6 +81,7 @@ extern void OnCloseProj(GtkWidget*, gpointer);
 extern void OnEditProj(GtkWidget*, gpointer);
 extern void OnViewFit(GtkWidget*, gpointer);
 extern void OnViewActual(GtkWidget*, gpointer);
+extern void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
 extern void OnImageSelect (GtkTreeSelection *, gpointer);
 extern void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
@@ -225,9 +226,9 @@ void create_menu(MainUi *m_ui)
     m_ui->view_menu = gtk_menu_new();
 
     /* View menu items */
-    m_ui->view_fit = gtk_menu_item_new_with_mnemonic ("_Fit to Window...");
+    m_ui->view_fit = gtk_menu_item_new_with_mnemonic ("_Fit to Window");
     gtk_widget_set_sensitive(m_ui->view_fit, FALSE);
-    m_ui->view_actual = gtk_menu_item_new_with_mnemonic ("_Actual...");
+    m_ui->view_actual = gtk_menu_item_new_with_mnemonic ("_Actual");
     gtk_widget_set_sensitive(m_ui->view_actual, FALSE);
 
     /* Add to menu */
@@ -357,8 +358,7 @@ void image_area(MainUi *m_ui)
     /* Create drawing area for graphs */
     m_ui->image_area = gtk_image_new();
     gtk_widget_set_margin_top (m_ui->image_area, 10);
-    gtk_widget_set_size_request (m_ui->image_area, 900, 600);
-    //gtk_widget_set_size_request (m_ui->image_area, 750, 500);
+    gtk_widget_set_size_request (m_ui->image_area, 750, 500);
     gtk_widget_set_halign (m_ui->image_area, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (m_ui->image_area, GTK_ALIGN_CENTER);
 
@@ -371,10 +371,11 @@ void image_area(MainUi *m_ui)
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 
 				    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
-    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 900);
-    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 750);
-    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 600);
-    //gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 500);
+    gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 750);
+    gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 500);
+    gtk_widget_set_tooltip_text(m_ui->image_area, "Scroll mouse wheel to zoom in / out");
+    g_signal_connect(m_ui->img_scroll_win, "scroll_event", G_CALLBACK(OnMouseScroll), m_ui);
+    gtk_widget_add_events(GTK_WIDGET(m_ui->img_scroll_win), GDK_SCROLL_MASK);
 
     return;
 }
