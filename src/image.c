@@ -56,6 +56,8 @@ int load_exif_data(Image *, char *, GtkWidget *);
 static char * get_exif_tag(ExifData *, ExifIfd, ExifTag);
 int show_image(char *, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
+void img_actual_sz(MainUi *);
+void zoom_image(double, MainUi *);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
@@ -64,6 +66,7 @@ extern void trim_spaces(char *);
 /* Globals */
 
 static const char *debug_hdr = "DEBUG-image.c ";
+static int px_scale = 0;
 
 
 /* Determine image type */
@@ -287,13 +290,54 @@ int show_image(char *img_fn, MainUi *m_ui)
 
 void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
 {
-    int px_h, px_w;
+    int px_h, px_w, in_px_h;
     GdkPixbuf *pxbscaled;
 
+    in_px_h = gdk_pixbuf_get_height(pixbuf);
+
     px_h = win_h;
-    px_w = (gdk_pixbuf_get_width(pixbuf) * win_h) / gdk_pixbuf_get_height(pixbuf);
+    px_w = (gdk_pixbuf_get_width(pixbuf) * win_h) / in_px_h;
     pxbscaled = gdk_pixbuf_scale_simple (pixbuf, px_w, px_h, GDK_INTERP_BILINEAR);
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
+
+    px_scale = ((px_h * 100) / in_px_h);
+
+    g_object_unref (pxbscaled);
+    gtk_widget_show_all(m_ui->window);
+
+    return;
+}
+
+
+/* View the full sized iamge */
+
+void img_actual_sz(MainUi *m_ui)
+{
+    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
+    px_scale = 100; 
+    gtk_widget_show_all(m_ui->window);
+
+    return;
+}
+
+
+/* Zoom image in or out by the step passed */
+
+void zoom_image(double step, MainUi *m_ui)
+{
+    int px_h, px_w, in_px_h;
+    double d_scale;
+    GdkPixbuf *pxbscaled;
+
+    d_scale = (double) px_scale * step;
+    
+    px_h = gdk_pixbuf_get_height(m_ui->base_pixbuf) * d_scale;
+    px_w = gdk_pixbuf_get_width(m_ui->base_pixbuf) * d_scale;
+    pxbscaled = gdk_pixbuf_scale_simple (m_ui->base_pixbuf, px_w, px_h, GDK_INTERP_BILINEAR);
+    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
+
+    px_scale = (int) d_scale;
+printf("%s  px_w %d, px_h %d, px_scale %d\n", debug_hdr, px_w, px_h, px_scale); fflush(stdout);
 
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);

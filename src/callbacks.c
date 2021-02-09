@@ -80,6 +80,8 @@ extern gint query_dialog(GtkWidget *, char *, char *);
 extern int get_user_pref(char *, char **);
 extern int show_image(char *, MainUi *);
 extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
+extern void img_actual_sz(MainUi *);
+extern void zoom_image(double, MainUi *);
 
 
 /* Globals */
@@ -210,7 +212,7 @@ void OnViewActual(GtkWidget *menu_item, gpointer *user_data)
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Rest image */
-    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
+    img_actual_sz(m_ui);
 
     return;
 }  
@@ -223,19 +225,23 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
     gdouble delta_x, delta_y;
     GtkWidget *window;
     MainUi *m_ui;
+    const double step_up = 1.05;
+    const double step_down = 0.95;
 
     /* Data */
     m_ui = (MainUi *) user_data;
 
     /* Zoom in or out */
     if (ev->direction == GDK_SCROLL_UP)	
+    {
 	g_print("scroll up\n");
-	//zoom_img(1.05, m_ui->image_area);				
-
+	zoom_image(step_up, m_ui);
+    }
     else if (ev->direction == GDK_SCROLL_DOWN)	
+    {
 	g_print("scroll down\n");
-	//zoom_img(0.95, m_ui->image_area);
-
+	zoom_image(step_down, m_ui);
+    }
     else if (ev->direction == GDK_SCROLL_SMOOTH)
     {
 	gdk_event_get_scroll_deltas ((const GdkEvent *) ev, &delta_x, &delta_y);
@@ -243,12 +249,12 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
 	if (delta_y > 0)
 	{
 	    g_print("delta scroll up\n");
-	    //zoom_img(0.95, user_data);
+	    zoom_image(step_down, m_ui);
 	} 
 	else if (delta_y < 0)
 	{
 	    g_print("delta scroll down\n");
-	    //zoom_img(1.05, user_data);
+	    zoom_image(step_up, m_ui);
 	}
 	else
 	{
