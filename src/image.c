@@ -331,10 +331,21 @@ void zoom_image(double step, MainUi *m_ui)
 
     d_scale = (double) px_scale * step;
     
-    px_h = gdk_pixbuf_get_height(m_ui->base_pixbuf) * d_scale;
-    px_w = gdk_pixbuf_get_width(m_ui->base_pixbuf) * d_scale;
+printf("%s  zoom_image 1a scaled %0.2f \n", debug_hdr, d_scale); fflush(stdout);
+if (m_ui->base_pixbuf == NULL)
+{printf("%s  zoom_image 1 base null\n", debug_hdr); fflush(stdout);}
+else
+{printf("%s  zoom_image 2 base not null\n", debug_hdr); fflush(stdout);}
+    px_h = gdk_pixbuf_get_height(m_ui->base_pixbuf) * (d_scale / 100.0);
+    px_w = gdk_pixbuf_get_width(m_ui->base_pixbuf) * (d_scale / 100.0);
+printf("%s  zoom_image 3 \n", debug_hdr); fflush(stdout);
     pxbscaled = gdk_pixbuf_scale_simple (m_ui->base_pixbuf, px_w, px_h, GDK_INTERP_BILINEAR);
+if (pxbscaled == NULL)
+{printf("%s  zoom_image 4 scaled null\n", debug_hdr); fflush(stdout);}
+else
+{printf("%s  zoom_image 5 saceld not null\n", debug_hdr); fflush(stdout);}
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
+    px_h = gdk_pixbuf_get_height(m_ui->base_pixbuf) * d_scale;
 
     px_scale = (int) d_scale;
 printf("%s  px_w %d, px_h %d, px_scale %d\n", debug_hdr, px_w, px_h, px_scale); fflush(stdout);
