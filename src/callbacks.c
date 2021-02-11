@@ -234,12 +234,12 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
     /* Zoom in or out */
     if (ev->direction == GDK_SCROLL_UP)	
     {
-	g_print("scroll up\n");
+	//g_print("scroll up\n");
 	zoom_image(step_up, m_ui);
     }
     else if (ev->direction == GDK_SCROLL_DOWN)	
     {
-	g_print("scroll down\n");
+	//g_print("scroll down\n");
 	zoom_image(step_down, m_ui);
     }
     else if (ev->direction == GDK_SCROLL_SMOOTH)
@@ -248,17 +248,17 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
  
 	if (delta_y > 0)
 	{
-	    g_print("delta scroll up\n");
-	    zoom_image(step_down, m_ui);
+	    //g_print("delta scroll up\n");
+	    zoom_image(step_up, m_ui);
 	} 
 	else if (delta_y < 0)
 	{
-	    g_print("delta scroll down\n");
-	    zoom_image(step_up, m_ui);
+	    //g_print("delta scroll down\n");
+	    zoom_image(step_down, m_ui);
 	}
 	else
 	{
-	    g_print("ERROR: scroll event no zoom\n");
+	    //g_print("ERROR: scroll event no zoom\n");
 	}
     }
     else

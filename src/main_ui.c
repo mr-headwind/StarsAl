@@ -68,6 +68,7 @@ enum ImageCol
 void main_ui(MainUi *);
 void create_menu(MainUi *);
 void create_main_view(MainUi *);
+void project_title(MainUi *);
 void image_area(MainUi *);
 void image_list(MainUi *);
 void display_proj(ProjectData *, MainUi *);
@@ -331,9 +332,13 @@ void create_menu(MainUi *m_ui)
 void create_main_view(MainUi *m_ui)
 {  
     /* Control containers */
+    m_ui->proj_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->app_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->proc_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+
+    /* Set project name and description widgets */
+    project_title(m_ui);
 
     /* Create drawing area for graphs */
     image_area(m_ui);
@@ -342,10 +347,20 @@ void create_main_view(MainUi *m_ui)
     image_list(m_ui);
 
     /* Combine together */
+    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->proj_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->lst_scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, FALSE, FALSE, 0);
+
+    return;
+}
+
+
+/* Create the project title widgets */
+
+void project_title(MainUi *m_ui)
+{  
 
     return;
 }
@@ -373,7 +388,7 @@ void image_area(MainUi *m_ui)
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 750);
     gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 500);
-    gtk_widget_set_tooltip_text(m_ui->image_area, "Scroll mouse wheel to zoom in / out");
+    gtk_widget_set_tooltip_text(m_ui->image_area, "Scroll mouse wheel to zoom in (down) / out (up)");
     g_signal_connect(m_ui->img_scroll_win, "scroll_event", G_CALLBACK(OnMouseScroll), m_ui);
     gtk_widget_add_events(GTK_WIDGET(m_ui->img_scroll_win), GDK_SCROLL_MASK);
 

@@ -66,7 +66,7 @@ extern void trim_spaces(char *);
 /* Globals */
 
 static const char *debug_hdr = "DEBUG-image.c ";
-static int px_scale = 0;
+static double px_scale = 0;
 
 
 /* Determine image type */
@@ -300,7 +300,7 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
     pxbscaled = gdk_pixbuf_scale_simple (pixbuf, px_w, px_h, GDK_INTERP_BILINEAR);
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
 
-    px_scale = ((px_h * 100) / in_px_h);
+    px_scale = (double) ((px_h * 100) / in_px_h);
 
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
@@ -325,33 +325,32 @@ void img_actual_sz(MainUi *m_ui)
 
 void zoom_image(double step, MainUi *m_ui)
 {
-    int px_h, px_w, in_px_h;
-    double d_scale;
+    double px_h, px_w, d_scale;
     GdkPixbuf *pxbscaled;
+
+    /* Set a lower limit for zoom in */
+    if (px_scale < 1)
+    	if (step < 1)
+    	    return;
 
     d_scale = (double) px_scale * step;
     
-printf("%s  zoom_image 1a scaled %0.2f \n", debug_hdr, d_scale); fflush(stdout);
-if (m_ui->base_pixbuf == NULL)
-{printf("%s  zoom_image 1 base null\n", debug_hdr); fflush(stdout);}
-else
-{printf("%s  zoom_image 2 base not null\n", debug_hdr); fflush(stdout);}
-    px_h = gdk_pixbuf_get_height(m_ui->base_pixbuf) * (d_scale / 100.0);
-    px_w = gdk_pixbuf_get_width(m_ui->base_pixbuf) * (d_scale / 100.0);
-printf("%s  zoom_image 3 \n", debug_hdr); fflush(stdout);
-    pxbscaled = gdk_pixbuf_scale_simple (m_ui->base_pixbuf, px_w, px_h, GDK_INTERP_BILINEAR);
-if (pxbscaled == NULL)
-{printf("%s  zoom_image 4 scaled null\n", debug_hdr); fflush(stdout);}
-else
-{printf("%s  zoom_image 5 saceld not null\n", debug_hdr); fflush(stdout);}
+    px_h = ((double) gdk_pixbuf_get_height(m_ui->base_pixbuf)) * (d_scale / 100.0);
+    px_w = ((double) gdk_pixbuf_get_width(m_ui->base_pixbuf)) * (d_scale / 100.0);
+    pxbscaled = gdk_pixbuf_scale_simple (m_ui->base_pixbuf, (int) px_w, (int) px_h, GDK_INTERP_BILINEAR);
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
-    px_h = gdk_pixbuf_get_height(m_ui->base_pixbuf) * d_scale;
 
-    px_scale = (int) d_scale;
-printf("%s  px_w %d, px_h %d, px_scale %d\n", debug_hdr, px_w, px_h, px_scale); fflush(stdout);
-
+    px_scale = d_scale;
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 
     return;
+/*
+printf("%s  zoom_image 1a d_scale %0.2f px_scale %0.2f\n", debug_hdr, d_scale, px_scale); fflush(stdout);
+printf("%s  zoom_image 3 dpx_h %0.2f  dpx_w %0.2f\n", debug_hdr, dpx_h, dpx_w); fflush(stdout);
+printf("%s  px_w %0.2f, px_h %0.2f, px_scale %0.2f\n", debug_hdr, px_w, px_h, px_scale); fflush(stdout);
+printf("%s  px_w %d, px_h %d, px_scale %0.2f\n", debug_hdr, px_w, px_h, px_scale); fflush(stdout);
+printf("%s  base px_w %d, base px_h %d\n", debug_hdr, 
+		    gdk_pixbuf_get_width(m_ui->base_pixbuf), gdk_pixbuf_get_height(m_ui->base_pixbuf)); fflush(stdout);
+*/
 }
