@@ -361,6 +361,8 @@ void create_main_view(MainUi *m_ui)
 
 void project_title(MainUi *m_ui)
 {  
+    create_label(&(m_ui->proj_name_lbl), "title_3b", "", m_ui->proj_hbox);
+    create_label(&(m_ui->proj_desc_lbl), "data_2a", "", m_ui->proj_hbox);
 
     return;
 }
@@ -463,8 +465,8 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), msg);
     free(msg);
 
-    //gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 800);
-    //gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->lst_scroll_win), 250);
+    gtk_label_set_text(GTK_LABEL (m_ui->proj_name_lbl), proj->project_name);
+    gtk_label_set_text(GTK_LABEL (m_ui->proj_desc_lbl), proj->project_desc);
 
     gtk_widget_set_sensitive(m_ui->edit_proj, TRUE);
     gtk_widget_set_sensitive(m_ui->close_proj, TRUE);

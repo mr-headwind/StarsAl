@@ -56,6 +56,19 @@ void set_css();
 
 static const char *debug_hdr = "DEBUG-css.c ";
 
+/*
+** Colour guide
+**		#800000 : Deep red or maroon
+**		#400080 : Purple with shade of blue
+**		#8a87c4 : Medium mauve blue
+**		#fa8072 : Medium salmon
+**		#e00b40 : Crimson
+**		#b8860b : Dark golden yellow
+**		#e6e6fa : Light bluey grey
+**		#ebe7f8 : Light purple grey
+**		#708090 : Gunmetal grey
+**		#fbf6fe : Light mauve
+*/
 
 static char *css_data_fhd = 
 	"@define-color DARK_BLUE rgba(0%,0%,50%,1.0); "
@@ -63,6 +76,7 @@ static char *css_data_fhd =
 	"button, entry, label { font-family: Sans; font-size: 12px; }"
 	"label#data_1 { color: @DARK_BLUE; }"
 	"label#data_2 { color: #800000; font-family: Sans; font-size: 11px; }"
+	"label#data_2a { color: #800000; font-family: Sans; font-size: 15px; }"
 	"label#data_3 { color: #400080; font-family: Sans; font-size: 10px; }"
 	"label#data_4 { font-family: Sans; font-size: 11px; }"
 	"label#head_1 { color: #8a87c4; font-family: Sans; font-size: 11px; }"
@@ -70,6 +84,7 @@ static char *css_data_fhd =
 	"label#title_2 { font-family: Serif; font-size: 18px; font-style: italic; color: #fa8072; }"
 	"label#title_3 { font-family: Sans; font-size: 12px; color: @DARK_BLUE;}"
 	"label#title_3a { font-family: Sans; font-size: 9px; color: @DARK_BLUE;}"
+	"label#title_3b { font-family: Sans; font-size: 15px; color: @DARK_BLUE;}"
 	"label#title_4 { font-family: Sans; font-size: 12px; font-weight: bold; }"
 	"label#title_4a { font-family: Sans; font-size: 9px; font-weight: bold; }"
 	"label#title_5 { font-family: Sans; font-size: 12px; color: #e00b40;}"

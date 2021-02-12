@@ -394,6 +394,8 @@ void close_main_display(MainUi *m_ui)
     gtk_image_clear(GTK_IMAGE (m_ui->image_area));
     gtk_widget_set_sensitive(m_ui->view_actual, FALSE);
     gtk_widget_set_sensitive(m_ui->view_fit, FALSE);
+    gtk_label_set_text(GTK_LABEL (m_ui->proj_name_lbl), "");
+    gtk_label_set_text(GTK_LABEL (m_ui->proj_desc_lbl), "");
 
     return;
 }
