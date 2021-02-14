@@ -58,6 +58,7 @@ int show_image(char *, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
 void zoom_image(double, MainUi *);
+void set_sw_adj(MainUi *);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
@@ -67,6 +68,8 @@ extern void trim_spaces(char *);
 
 static const char *debug_hdr = "DEBUG-image.c ";
 static double px_scale = 0;
+static GtkAdjustment *v_adj;
+static GtkAdjustment *h_adj;
 
 
 /* Determine image type */
@@ -302,6 +305,9 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
 
     px_scale = (double) ((px_h * 100) / in_px_h);
 
+    v_adj = NULL;
+    h_adj = NULL;
+
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 
@@ -316,6 +322,7 @@ void img_actual_sz(MainUi *m_ui)
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
     px_scale = 100; 
     gtk_widget_show_all(m_ui->window);
+    set_sw_adj(m_ui);
 
     return;
 }
@@ -344,6 +351,8 @@ void zoom_image(double step, MainUi *m_ui)
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 
+    set_sw_adj(m_ui);
+
     return;
 /*
 printf("%s  zoom_image 1a d_scale %0.2f px_scale %0.2f\n", debug_hdr, d_scale, px_scale); fflush(stdout);
@@ -352,5 +361,47 @@ printf("%s  px_w %0.2f, px_h %0.2f, px_scale %0.2f\n", debug_hdr, px_w, px_h, px
 printf("%s  px_w %d, px_h %d, px_scale %0.2f\n", debug_hdr, px_w, px_h, px_scale); fflush(stdout);
 printf("%s  base px_w %d, base px_h %d\n", debug_hdr, 
 		    gdk_pixbuf_get_width(m_ui->base_pixbuf), gdk_pixbuf_get_height(m_ui->base_pixbuf)); fflush(stdout);
+*/
+}
+
+
+/* Set up the horizonatal and vertical adjustments and enable mouse drag */
+
+void set_sw_adj(MainUi *m_ui)
+{
+
+    if ((gtk_widget_get_allocated_width(m_ui->image_area) > gtk_widget_get_allocated_width(m_ui->img_scroll_win)) ||
+        (gtk_widget_get_allocated_height(m_ui->image_area) > gtk_widget_get_allocated_height(m_ui->img_scroll_win)))
+    {
+	v_adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
+	h_adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
+	g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->press_handler_id);
+	g_print("sw adjust on\n");
+    }
+    else
+    {
+    	v_adj = NULL;
+    	h_adj = NULL;
+	g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
+	g_print("sw adjust off\n");
+    }
+
+    return;
+/*
+printf("%s  sw w %d, sw h %d\n", debug_hdr, 
+		    gtk_widget_get_allocated_width(m_ui->img_scroll_win),
+		    gtk_widget_get_allocated_height(m_ui->img_scroll_win)); fflush(stdout);
+printf("%s  img w %d, img h %d\n", debug_hdr, 
+		    gtk_widget_get_allocated_width(m_ui->image_area),
+		    gtk_widget_get_allocated_height(m_ui->image_area)); fflush(stdout);
+GtkAdjustment *vadj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
+GtkAdjustment *hadj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
+gdouble new_val;
+new_val = ((gtk_adjustment_get_lower (hadj) + gtk_adjustment_get_upper (hadj)) / 2.0);
+gtk_adjustment_set_value (hadj, new_val);
+new_val = ((gtk_adjustment_get_lower (vadj) + gtk_adjustment_get_upper (vadj)) / 2.0);
+gtk_adjustment_set_value (vadj, new_val);
+gtk_scrolled_window_set_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), hadj);
+gtk_scrolled_window_set_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), vadj);
 */
 }

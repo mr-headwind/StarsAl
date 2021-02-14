@@ -83,6 +83,9 @@ extern void OnEditProj(GtkWidget*, gpointer);
 extern void OnViewFit(GtkWidget*, gpointer);
 extern void OnViewActual(GtkWidget*, gpointer);
 extern void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
+extern gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
+extern gboolean OnSWBtnRelease(GtkScrolledWindow *, GdkEvent *, gpointer);
+extern gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
 extern void OnImageSelect (GtkTreeSelection *, gpointer);
 extern void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
@@ -391,8 +394,16 @@ void image_area(MainUi *m_ui)
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 750);
     gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 500);
     gtk_widget_set_tooltip_text(m_ui->image_area, "Scroll mouse wheel to zoom in (down) / out (up)");
-    g_signal_connect(m_ui->img_scroll_win, "scroll_event", G_CALLBACK(OnMouseScroll), m_ui);
+
+    g_signal_connect(m_ui->img_scroll_win, "scroll-event", G_CALLBACK(OnMouseScroll), m_ui);
     gtk_widget_add_events(GTK_WIDGET(m_ui->img_scroll_win), GDK_SCROLL_MASK);
+    m_ui->press_handler_id = g_signal_connect(m_ui->img_scroll_win, "button-press-event", G_CALLBACK(OnSWBtnPress), m_ui);
+    m_ui->release_handler_id = g_signal_connect(m_ui->img_scroll_win, "button-release-event", G_CALLBACK(OnSWBtnRelease), m_ui);
+    m_ui->motion_handler_id = g_signal_connect(m_ui->img_scroll_win, "motion-notify-event", G_CALLBACK(OnMouseDrag), m_ui);
+
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
 
     return;
 }

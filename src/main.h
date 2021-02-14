@@ -78,8 +78,9 @@ typedef struct _main_ui
     GtkWidget *close_btn;
 
     /* Callback Handlers */
-    int close_hndlr_id;
-    int sel_handler_id;
+    gulong close_hndlr_id;
+    gulong sel_handler_id;
+    gulong press_handler_id, release_handler_id, motion_handler_id;
 
     /* Other */
     ProjectData *proj;

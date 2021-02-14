@@ -54,6 +54,9 @@ void OnEditProj(GtkWidget*, gpointer *user_data);
 void OnViewFit(GtkWidget*, gpointer *user_data);
 void OnViewActual(GtkWidget*, gpointer *user_data);
 void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
+gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
+gboolean OnSWBtnRelease(GtkScrolledWindow *, GdkEvent *, gpointer);
+gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
 void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
@@ -265,6 +268,55 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
 	g_print("ERROR: unknown scroll event\n");
 
     return;
+}  
+
+
+/* Callback - Enable mouse dragging for OnMouseDrag function when enabled */
+
+gboolean OnSWBtnPress(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
+{  
+    MainUi *m_ui;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    g_print("mouse button press on\n");
+    g_signal_handler_unblock (sw, m_ui->release_handler_id);
+    g_signal_handler_unblock (sw, m_ui->motion_handler_id);
+
+    return FALSE;
+}  
+
+
+/* Callback - Disable mouse dragging for OnMouseDrag function */
+
+gboolean OnSWBtnRelease(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
+{  
+    MainUi *m_ui;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    g_print("mouse button release\n");
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
+
+    return FALSE;
+}  
+
+
+/* Callback - Mouse dragging to move image around within scroll window */
+
+gboolean OnMouseDrag(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
+{  
+    MainUi *m_ui;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    g_print("mouse drag motion\n");
+
+    return TRUE;
 }  
 
 
