@@ -85,6 +85,8 @@ extern int show_image(char *, MainUi *);
 extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 extern void img_actual_sz(MainUi *);
 extern void zoom_image(double, MainUi *);
+extern void set_pressed(int);
+extern int btn_pressed_on();
 
 
 /* Globals */
@@ -281,8 +283,7 @@ gboolean OnSWBtnPress(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
     m_ui = (MainUi *) user_data;
 
     g_print("mouse button press on\n");
-    g_signal_handler_unblock (sw, m_ui->release_handler_id);
-    g_signal_handler_unblock (sw, m_ui->motion_handler_id);
+    set_pressed(TRUE);
 
     return FALSE;
 }  
@@ -298,8 +299,7 @@ gboolean OnSWBtnRelease(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
     m_ui = (MainUi *) user_data;
 
     g_print("mouse button release\n");
-    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
-    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
+    set_pressed(FALSE);
 
     return FALSE;
 }  
@@ -315,6 +315,8 @@ gboolean OnMouseDrag(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
     m_ui = (MainUi *) user_data;
 
     g_print("mouse drag motion\n");
+    if (! btn_pressed_on())
+    	return FALSE;
 
     return TRUE;
 }  

@@ -58,8 +58,12 @@ int show_image(char *, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
 void zoom_image(double, MainUi *);
-void set_sw_adj(MainUi *);
+void mouse_drag_enable(MainUi *);
+gboolean g_signal_handler_blocked(gpointer, GFunc, guint, gpointer);
+void set_pressed(int);
+int btn_pressed_on();
 	
+extern gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
 
@@ -70,6 +74,7 @@ static const char *debug_hdr = "DEBUG-image.c ";
 static double px_scale = 0;
 static GtkAdjustment *v_adj;
 static GtkAdjustment *h_adj;
+static int btn_pressed;
 
 
 /* Determine image type */
@@ -322,7 +327,7 @@ void img_actual_sz(MainUi *m_ui)
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
     px_scale = 100; 
     gtk_widget_show_all(m_ui->window);
-    set_sw_adj(m_ui);
+    mouse_drag_enable(m_ui);
 
     return;
 }
@@ -351,7 +356,7 @@ void zoom_image(double step, MainUi *m_ui)
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 
-    set_sw_adj(m_ui);
+    mouse_drag_enable(m_ui);
 
     return;
 /*
@@ -365,28 +370,41 @@ printf("%s  base px_w %d, base px_h %d\n", debug_hdr,
 }
 
 
-/* Set up the horizonatal and vertical adjustments and enable mouse drag */
+/* Set up mouse drag on or off for the image as required */
 
-void set_sw_adj(MainUi *m_ui)
+void mouse_drag_enable(MainUi *m_ui)
 {
+    gboolean blocked;
+    GFunc func = (GFunc) OnSWBtnPress;
+
+    blocked = g_signal_handler_blocked(m_ui->img_scroll_win, func, (guint) m_ui->press_handler_id, NULL);
 
     if ((gtk_widget_get_allocated_width(m_ui->image_area) > gtk_widget_get_allocated_width(m_ui->img_scroll_win)) ||
         (gtk_widget_get_allocated_height(m_ui->image_area) > gtk_widget_get_allocated_height(m_ui->img_scroll_win)))
     {
-	v_adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
-	h_adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
-	g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->press_handler_id);
-	g_print("sw adjust on\n");
+	/* If one is blocked they all will be */
+	if (blocked)
+	{
+	    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->press_handler_id);
+	    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->release_handler_id);
+	    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->motion_handler_id);
+	    btn_pressed = FALSE;
+	    g_print("sw adjust on\n");
+	} 
     }
     else
     {
-    	v_adj = NULL;
-    	h_adj = NULL;
-	g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
-	g_print("sw adjust off\n");
+	if (! blocked)
+	{
+	    g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
+	    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
+	    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
+	    g_print("sw adjust off\n");
+	}
     }
 
     return;
+}
 /*
 printf("%s  sw w %d, sw h %d\n", debug_hdr, 
 		    gtk_widget_get_allocated_width(m_ui->img_scroll_win),
@@ -397,6 +415,10 @@ printf("%s  img w %d, img h %d\n", debug_hdr,
 GtkAdjustment *vadj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
 GtkAdjustment *hadj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
 gdouble new_val;
+	v_adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
+	h_adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
+    	v_adj = NULL;
+    	h_adj = NULL;
 new_val = ((gtk_adjustment_get_lower (hadj) + gtk_adjustment_get_upper (hadj)) / 2.0);
 gtk_adjustment_set_value (hadj, new_val);
 new_val = ((gtk_adjustment_get_lower (vadj) + gtk_adjustment_get_upper (vadj)) / 2.0);
@@ -404,4 +426,29 @@ gtk_adjustment_set_value (vadj, new_val);
 gtk_scrolled_window_set_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), hadj);
 gtk_scrolled_window_set_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), vadj);
 */
+
+
+/* Check if a signal handler is blocked */
+
+gboolean g_signal_handler_blocked(gpointer instance, GFunc func, guint id, gpointer data)
+{
+    return g_signal_handler_find(instance,
+                                 G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED,
+                                  id, 0, NULL, func, data) == 0;
+}
+
+
+/* Set button press mode on or off */
+
+void set_pressed(int val)
+{
+    btn_pressed = val;
+}
+
+
+/* Return button status */
+
+int btn_pressed_on()
+{
+    return btn_pressed;
 }
