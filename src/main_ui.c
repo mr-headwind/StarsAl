@@ -103,6 +103,7 @@ extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidge
 extern char * itostr(int);
 extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
+extern void mouse_drag_off(MainUi *);
 /*
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
@@ -401,9 +402,7 @@ void image_area(MainUi *m_ui)
     m_ui->release_handler_id = g_signal_connect(m_ui->img_scroll_win, "button-release-event", G_CALLBACK(OnSWBtnRelease), m_ui);
     m_ui->motion_handler_id = g_signal_connect(m_ui->img_scroll_win, "motion-notify-event", G_CALLBACK(OnMouseDrag), m_ui);
 
-    g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
-    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
-    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
+    mouse_drag_off(m_ui);
 
     return;
 }

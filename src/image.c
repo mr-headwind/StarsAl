@@ -58,12 +58,10 @@ int show_image(char *, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
 void zoom_image(double, MainUi *);
-void mouse_drag_enable(MainUi *);
-gboolean g_signal_handler_blocked(gpointer, GFunc, guint, gpointer);
-void set_pressed(int);
-int btn_pressed_on();
+void mouse_drag_check(MainUi *);
+void mouse_drag_on(MainUi *);
+void mouse_drag_off(MainUi *);
 	
-extern gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
 
@@ -74,7 +72,6 @@ static const char *debug_hdr = "DEBUG-image.c ";
 static double px_scale = 0;
 static GtkAdjustment *v_adj;
 static GtkAdjustment *h_adj;
-static int btn_pressed;
 
 
 /* Determine image type */
@@ -310,11 +307,12 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
 
     px_scale = (double) ((px_h * 100) / in_px_h);
 
-    v_adj = NULL;
-    h_adj = NULL;
-
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
+
+    v_adj = NULL;
+    h_adj = NULL;
+    mouse_drag_off(m_ui);
 
     return;
 }
@@ -327,7 +325,7 @@ void img_actual_sz(MainUi *m_ui)
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
     px_scale = 100; 
     gtk_widget_show_all(m_ui->window);
-    mouse_drag_enable(m_ui);
+    mouse_drag_check(m_ui);
 
     return;
 }
@@ -356,8 +354,7 @@ void zoom_image(double step, MainUi *m_ui)
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 
-    mouse_drag_enable(m_ui);
-
+    mouse_drag_check(m_ui);
     return;
 /*
 printf("%s  zoom_image 1a d_scale %0.2f px_scale %0.2f\n", debug_hdr, d_scale, px_scale); fflush(stdout);
@@ -372,33 +369,27 @@ printf("%s  base px_w %d, base px_h %d\n", debug_hdr,
 
 /* Set up mouse drag on or off for the image as required */
 
-void mouse_drag_enable(MainUi *m_ui)
+void mouse_drag_check(MainUi *m_ui)
 {
-    gboolean blocked;
-    GFunc func = (GFunc) OnSWBtnPress;
-
-    blocked = g_signal_handler_blocked(m_ui->img_scroll_win, func, (guint) m_ui->press_handler_id, NULL);
-
     if ((gtk_widget_get_allocated_width(m_ui->image_area) > gtk_widget_get_allocated_width(m_ui->img_scroll_win)) ||
         (gtk_widget_get_allocated_height(m_ui->image_area) > gtk_widget_get_allocated_height(m_ui->img_scroll_win)))
     {
 	/* If one is blocked they all will be */
-	if (blocked)
+	if (m_ui->img_drag_blocked)
 	{
-	    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->press_handler_id);
-	    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->release_handler_id);
-	    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->motion_handler_id);
-	    btn_pressed = FALSE;
+	    mouse_drag_on(m_ui);
 	    g_print("sw adjust on\n");
 	} 
     }
     else
     {
-	if (! blocked)
+	if (! m_ui->img_drag_blocked)
 	{
+	    mouse_drag_off(m_ui);
 	    g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
 	    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
 	    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
+	    m_ui->img_drag_blocked = TRUE;
 	    g_print("sw adjust off\n");
 	}
     }
@@ -428,27 +419,27 @@ gtk_scrolled_window_set_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win),
 */
 
 
-/* Check if a signal handler is blocked */
+/* Set mouse drag off */
 
-gboolean g_signal_handler_blocked(gpointer instance, GFunc func, guint id, gpointer data)
+void mouse_drag_on(MainUi *m_ui)
 {
-    return g_signal_handler_find(instance,
-                                 G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED,
-                                  id, 0, NULL, func, data) == 0;
+    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->press_handler_id);
+    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->release_handler_id);
+    g_signal_handler_unblock (m_ui->img_scroll_win, m_ui->motion_handler_id);
+    m_ui->img_drag_blocked = FALSE;
+
+    return;
 }
 
 
-/* Set button press mode on or off */
+/* Set mouse drag off */
 
-void set_pressed(int val)
+void mouse_drag_off(MainUi *m_ui)
 {
-    btn_pressed = val;
-}
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->press_handler_id);
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->release_handler_id);
+    g_signal_handler_block (m_ui->img_scroll_win, m_ui->motion_handler_id);
+    m_ui->img_drag_blocked = TRUE;
 
-
-/* Return button status */
-
-int btn_pressed_on()
-{
-    return btn_pressed;
+    return;
 }
