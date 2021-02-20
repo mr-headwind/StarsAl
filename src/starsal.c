@@ -98,6 +98,7 @@ void initialise(MainUi *m_ui)
     app_msg_extra[0] = '\0';
     memset(m_ui, 0, sizeof (MainUi));
     m_ui->proj = NULL;
+    m_ui->mouse_drag_mode = FALSE;
 
     /* Set application directory */
     if (! check_app_dir())

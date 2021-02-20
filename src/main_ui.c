@@ -86,6 +86,7 @@ extern void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
 extern gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
 extern gboolean OnSWBtnRelease(GtkScrolledWindow *, GdkEvent *, gpointer);
 extern gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
+extern void OnImageSize(GtkWidget *, GdkRectangle *, gpointer);
 extern void OnImageSelect (GtkTreeSelection *, gpointer);
 extern void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
@@ -399,8 +400,11 @@ void image_area(MainUi *m_ui)
     g_signal_connect(m_ui->img_scroll_win, "scroll-event", G_CALLBACK(OnMouseScroll), m_ui);
     gtk_widget_add_events(GTK_WIDGET(m_ui->img_scroll_win), GDK_SCROLL_MASK);
     m_ui->press_handler_id = g_signal_connect(m_ui->img_scroll_win, "button-press-event", G_CALLBACK(OnSWBtnPress), m_ui);
+    gtk_widget_add_events (m_ui->img_scroll_win, GDK_BUTTON_PRESS_MASK);
     m_ui->release_handler_id = g_signal_connect(m_ui->img_scroll_win, "button-release-event", G_CALLBACK(OnSWBtnRelease), m_ui);
+    gtk_widget_add_events (m_ui->img_scroll_win, GDK_BUTTON_RELEASE_MASK);
     m_ui->motion_handler_id = g_signal_connect(m_ui->img_scroll_win, "motion-notify-event", G_CALLBACK(OnMouseDrag), m_ui);
+    g_signal_connect(m_ui->image_area, "size-allocate", G_CALLBACK(OnImageSize), m_ui);
 
     mouse_drag_off(m_ui);
 

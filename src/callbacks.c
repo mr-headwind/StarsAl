@@ -57,6 +57,7 @@ void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
 gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
 gboolean OnSWBtnRelease(GtkScrolledWindow *, GdkEvent *, gpointer);
 gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
+void OnImageSize(GtkWidget *, GdkRectangle *, gpointer);
 void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
 void OnPrefs(GtkWidget*, gpointer *user_data);
@@ -85,12 +86,14 @@ extern int show_image(char *, MainUi *);
 extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 extern void img_actual_sz(MainUi *);
 extern void zoom_image(double, MainUi *);
+extern void mouse_drag_check(MainUi *);
+extern void drag_move_sw(gdouble, gdouble, gdouble, gdouble, MainUi *);
 
 
 /* Globals */
 
 static const char *debug_hdr = "DEBUG-callbacks.c ";
-static int btn_pressed = FALSE;
+static gdouble last_x, last_y;
 
 
 /* Main UI Callbacks */
@@ -274,15 +277,19 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
 
 /* Callback - Enable mouse dragging for OnMouseDrag function when enabled */
 
-gboolean OnSWBtnPress(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
+gboolean OnSWBtnPress(GtkScrolledWindow *sw, GdkEvent *event, gpointer user_data)
 {  
     MainUi *m_ui;
+    gdouble x;
+    gdouble y;
 
     /* Data */
     m_ui = (MainUi *) user_data;
+    last_x = event->button.x;
+    last_y = event->button.y;
 
-    g_print("mouse button press on\n");
-    btn_pressed = TRUE;
+    m_ui->mouse_drag_mode = TRUE;
+    printf("%s OnSWBtnPress  x %0.2f  y %0.2f\n", debug_hdr, last_x, last_y); fflush(stdout);
 
     return TRUE;
 }  
@@ -290,15 +297,19 @@ gboolean OnSWBtnPress(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
 
 /* Callback - Disable mouse dragging for OnMouseDrag function */
 
-gboolean OnSWBtnRelease(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
+gboolean OnSWBtnRelease(GtkScrolledWindow *sw, GdkEvent *event, gpointer user_data)
 {  
     MainUi *m_ui;
+    gdouble x;
+    gdouble y;
 
     /* Data */
     m_ui = (MainUi *) user_data;
+    x = event->button.x;
+    y = event->button.y;
 
-    g_print("mouse button release\n");
-    btn_pressed = FALSE;
+    m_ui->mouse_drag_mode = FALSE;
+    printf("%s OnSWBtnRelease  x %0.2f  y %0.2f\n", debug_hdr, x, y); fflush(stdout);
 
     return TRUE;
 }  
@@ -306,19 +317,44 @@ gboolean OnSWBtnRelease(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
 
 /* Callback - Mouse dragging to move image around within scroll window */
 
-gboolean OnMouseDrag(GtkScrolledWindow *sw, GdkEvent *ev, gpointer user_data)
+gboolean OnMouseDrag(GtkScrolledWindow *sw, GdkEvent *event, gpointer user_data)
+{  
+    MainUi *m_ui;
+    gdouble x;
+    gdouble y;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+    x = event->button.x;
+    y = event->button.y;
+
+    //g_print("mouse drag mode\n");
+    if (m_ui->mouse_drag_mode == FALSE)
+    	return FALSE;
+    printf("%s OnMouseDrag (on) x %0.2f  y %0.2f\n", debug_hdr, x, y); fflush(stdout);
+
+    drag_move_sw(x, y, last_x, last_y, m_ui);
+
+    last_x = x;
+    last_y = y;
+
+    return TRUE;
+}  
+
+
+/* Callback - Image has had a size allocation */
+
+void OnImageSize(GtkWidget *img, GdkRectangle *alloc, gpointer user_data)
 {  
     MainUi *m_ui;
 
     /* Data */
     m_ui = (MainUi *) user_data;
 
-    g_print("mouse drag motion\n");
-    if (btn_pressed == FALSE)
-    	return FALSE;
-    g_print("mouse drag motion on\n");
+    g_print("image size alloc\n");
+    mouse_drag_check(m_ui);
 
-    return TRUE;
+    return;
 }  
 
 
