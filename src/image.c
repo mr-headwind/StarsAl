@@ -71,8 +71,6 @@ extern void trim_spaces(char *);
 
 static const char *debug_hdr = "DEBUG-image.c ";
 static double px_scale = 0;
-static GtkAdjustment *v_adj;
-static GtkAdjustment *h_adj;
 
 
 /* Determine image type */
@@ -311,9 +309,6 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 
-    v_adj = NULL;
-    h_adj = NULL;
-
     return;
 }
 
@@ -369,23 +364,17 @@ printf("%s  base px_w %d, base px_h %d\n", debug_hdr,
 
 void mouse_drag_check(MainUi *m_ui)
 {
+    /* If one is blocked they all will be */
     if ((gtk_widget_get_allocated_width(m_ui->image_area) > gtk_widget_get_allocated_width(m_ui->img_scroll_win)) ||
         (gtk_widget_get_allocated_height(m_ui->image_area) > gtk_widget_get_allocated_height(m_ui->img_scroll_win)))
     {
-	/* If one is blocked they all will be */
 	if (m_ui->img_drag_blocked)
-	{
 	    mouse_drag_on(m_ui);
-	    g_print("sw adjust on\n");
-	} 
     }
     else
     {
 	if (! m_ui->img_drag_blocked)
-	{
 	    mouse_drag_off(m_ui);
-	    g_print("sw adjust off\n");
-	}
     }
 
     return;
@@ -403,12 +392,12 @@ void drag_move_sw(gdouble x, gdouble y, gdouble last_x, gdouble last_y, MainUi *
     h_adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
     h_value = gtk_adjustment_get_value (h_adj);
     v_value = gtk_adjustment_get_value (v_adj);
-    printf("%s drag_move_sw 1  h_value %0.2f  v_value %0.2f\n", debug_hdr, h_value, v_value); fflush(stdout);
+    //printf("%s drag_move_sw 1  h_value %0.2f  v_value %0.2f\n", debug_hdr, h_value, v_value); fflush(stdout);
 
     h_value = h_value + last_x - x;
     v_value = v_value + last_y - y;
 
-    printf("%s drag_move_sw 2  h_value %0.2f  v_value %0.2f\n", debug_hdr, h_value, v_value); fflush(stdout);
+    //printf("%s drag_move_sw 2  h_value %0.2f  v_value %0.2f\n", debug_hdr, h_value, v_value); fflush(stdout);
     gtk_adjustment_set_value (h_adj, h_value);
     gtk_adjustment_set_value (v_adj, v_value);
     gtk_scrolled_window_set_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), h_adj);
@@ -418,27 +407,6 @@ void drag_move_sw(gdouble x, gdouble y, gdouble last_x, gdouble last_y, MainUi *
 
     return;
 }
-/*
-printf("%s  sw w %d, sw h %d\n", debug_hdr, 
-		    gtk_widget_get_allocated_width(m_ui->img_scroll_win),
-		    gtk_widget_get_allocated_height(m_ui->img_scroll_win)); fflush(stdout);
-printf("%s  img w %d, img h %d\n", debug_hdr, 
-		    gtk_widget_get_allocated_width(m_ui->image_area),
-		    gtk_widget_get_allocated_height(m_ui->image_area)); fflush(stdout);
-GtkAdjustment *vadj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
-GtkAdjustment *hadj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
-gdouble new_val;
-	v_adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
-	h_adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win));
-    	v_adj = NULL;
-    	h_adj = NULL;
-new_val = ((gtk_adjustment_get_lower (hadj) + gtk_adjustment_get_upper (hadj)) / 2.0);
-gtk_adjustment_set_value (hadj, new_val);
-new_val = ((gtk_adjustment_get_lower (vadj) + gtk_adjustment_get_upper (vadj)) / 2.0);
-gtk_adjustment_set_value (vadj, new_val);
-gtk_scrolled_window_set_hadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), hadj);
-gtk_scrolled_window_set_vadjustment (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), vadj);
-*/
 
 
 /* Set mouse drag off */

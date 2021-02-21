@@ -241,12 +241,10 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
     /* Zoom in or out */
     if (ev->direction == GDK_SCROLL_UP)	
     {
-	//g_print("scroll up\n");
 	zoom_image(step_up, m_ui);
     }
     else if (ev->direction == GDK_SCROLL_DOWN)	
     {
-	//g_print("scroll down\n");
 	zoom_image(step_down, m_ui);
     }
     else if (ev->direction == GDK_SCROLL_SMOOTH)
@@ -255,12 +253,10 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
  
 	if (delta_y > 0)
 	{
-	    //g_print("delta scroll up\n");
 	    zoom_image(step_up, m_ui);
 	} 
 	else if (delta_y < 0)
 	{
-	    //g_print("delta scroll down\n");
 	    zoom_image(step_down, m_ui);
 	}
 	else
@@ -289,7 +285,7 @@ gboolean OnSWBtnPress(GtkScrolledWindow *sw, GdkEvent *event, gpointer user_data
     last_y = event->button.y;
 
     m_ui->mouse_drag_mode = TRUE;
-    printf("%s OnSWBtnPress  x %0.2f  y %0.2f\n", debug_hdr, last_x, last_y); fflush(stdout);
+    //printf("%s OnSWBtnPress  x %0.2f  y %0.2f\n", debug_hdr, last_x, last_y); fflush(stdout);
 
     return TRUE;
 }  
@@ -309,7 +305,7 @@ gboolean OnSWBtnRelease(GtkScrolledWindow *sw, GdkEvent *event, gpointer user_da
     y = event->button.y;
 
     m_ui->mouse_drag_mode = FALSE;
-    printf("%s OnSWBtnRelease  x %0.2f  y %0.2f\n", debug_hdr, x, y); fflush(stdout);
+    //printf("%s OnSWBtnRelease  x %0.2f  y %0.2f\n", debug_hdr, x, y); fflush(stdout);
 
     return TRUE;
 }  
@@ -328,10 +324,9 @@ gboolean OnMouseDrag(GtkScrolledWindow *sw, GdkEvent *event, gpointer user_data)
     x = event->button.x;
     y = event->button.y;
 
-    //g_print("mouse drag mode\n");
     if (m_ui->mouse_drag_mode == FALSE)
     	return FALSE;
-    printf("%s OnMouseDrag (on) x %0.2f  y %0.2f\n", debug_hdr, x, y); fflush(stdout);
+    //printf("%s OnMouseDrag (on) x %0.2f  y %0.2f\n", debug_hdr, x, y); fflush(stdout);
 
     drag_move_sw(x, y, last_x, last_y, m_ui);
 
@@ -351,7 +346,6 @@ void OnImageSize(GtkWidget *img, GdkRectangle *alloc, gpointer user_data)
     /* Data */
     m_ui = (MainUi *) user_data;
 
-    g_print("image size alloc\n");
     mouse_drag_check(m_ui);
 
     return;
@@ -374,7 +368,7 @@ void OnImageSelect(GtkTreeSelection *selection, gpointer user_data)
     if (gtk_tree_selection_get_selected (selection, &model, &iter))
     {
 	gtk_tree_model_get (model, &iter, IMAGE_NM, &img_nm, -1);
-	g_print ("You selected an image: %s\n", img_nm);
+	//g_print ("You selected an image: %s\n", img_nm);
     }
 
     /* Display the image */

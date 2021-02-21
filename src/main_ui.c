@@ -105,6 +105,7 @@ extern char * itostr(int);
 extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
 extern void mouse_drag_off(MainUi *);
+extern int show_image(char *, MainUi *);
 /*
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
@@ -464,6 +465,9 @@ void image_list(MainUi *m_ui)
 void display_proj(ProjectData *proj, MainUi *m_ui)
 {  
     char *msg;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    gboolean set;
 
     if (proj == NULL)
     	return;
@@ -472,6 +476,11 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     set_image_list(proj, m_ui);
 
     /* Open 1st image */
+    model = gtk_tree_view_get_model (GTK_TREE_VIEW (m_ui->image_list_tree));
+    set = gtk_tree_model_get_iter_first (model, &iter);
+
+    if (set)
+    	gtk_tree_selection_select_iter (m_ui->select_image, &iter);
 
     /* Info status */
     msg = (char *) malloc(strlen(proj->project_name) + 28);
