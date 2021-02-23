@@ -70,6 +70,7 @@ void create_menu(MainUi *);
 void create_main_view(MainUi *);
 void project_title(MainUi *);
 void image_area(MainUi *);
+void image_info(MainUi *);
 void image_list(MainUi *);
 void display_proj(ProjectData *, MainUi *);
 void set_image_list(ProjectData *, MainUi *);
@@ -105,7 +106,6 @@ extern char * itostr(int);
 extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
 extern void mouse_drag_off(MainUi *);
-extern int show_image(char *, MainUi *);
 /*
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void app_msg(char*, char *, GtkWidget *);
@@ -341,20 +341,27 @@ void create_main_view(MainUi *m_ui)
     m_ui->proj_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->app_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    m_ui->img_cntl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+    m_ui->img_info_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->proc_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
 
     /* Set project name and description widgets */
     project_title(m_ui);
 
-    /* Create drawing area for graphs */
+    /* Create drawing area for images */
     image_area(m_ui);
 
-    /* Listbox for project images and darks */
+    /* Container for image details */
+    image_info(m_ui);
+
+    /* Listbox for project image and dark files */
     image_list(m_ui);
 
     /* Combine together */
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->proj_hbox, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_scroll_win, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_scroll_win, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_info_vbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_cntl_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->lst_scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, FALSE, FALSE, 0);
@@ -408,6 +415,21 @@ void image_area(MainUi *m_ui)
     g_signal_connect(m_ui->image_area, "size-allocate", G_CALLBACK(OnImageSize), m_ui);
 
     mouse_drag_off(m_ui);
+
+    return;
+}
+
+
+/* Image information - meta data, current viewing scale */
+
+void image_info(MainUi *m_ui)
+{  
+    m_ui->txt_view = gtk_text_view_new();
+    gtk_container_add(GTK_CONTAINER(m_ui->img_info_vbox), m_ui->txt_view);
+    gtk_widget_set_margin_start (m_ui->img_info_vbox, 10);
+    gtk_widget_set_valign (m_ui->img_info_vbox, GTK_ALIGN_END);
+
+    create_label(&(m_ui->img_scale_lbl), "title_3b", "", m_ui->img_info_vbox);
 
     return;
 }

@@ -55,6 +55,7 @@ Image * setup_image(char *, char *, char *, ProjectUi *);
 int load_exif_data(Image *, char *, GtkWidget *);
 static char * get_exif_tag(ExifData *, ExifIfd, ExifTag);
 int show_image(char *, MainUi *);
+void show_meta(char *, int, gchar *, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
 void zoom_image(double, MainUi *);
@@ -275,10 +276,9 @@ static char * get_exif_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 int show_image(char *img_fn, MainUi *m_ui)
 {
     int sw_h, sw_w;
-    GtkWidget *image;
+    GError *err = NULL;
 
-    image = gtk_image_new_from_file (img_fn);
-    m_ui->base_pixbuf = gtk_image_get_pixbuf(GTK_IMAGE (image));
+    m_ui->base_pixbuf = gdk_pixbuf_new_from_file(img_fn, &err);
     sw_w = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
     sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
 
@@ -287,6 +287,51 @@ int show_image(char *img_fn, MainUi *m_ui)
     gtk_widget_set_sensitive(m_ui->view_actual, TRUE);
 
     return TRUE;
+}
+
+
+/* Show image meta data */
+
+void show_meta(char *img_fn, int idx, gchar *img_type, MainUi *m_ui)
+{
+    GtkTextBuffer *txt_buffer;
+    GtkTextIter iter;
+    char buf[200];
+    GList *l;
+    Image *img;
+
+    if (idx < 0)
+    	return;
+
+    /* Find the image in the project image glist */
+    if (strcmp(img_type, "I") == 0)
+    	l = g_list_nth (m_ui->proj->images_gl, idx);
+    else
+    	l = g_list_nth (m_ui->proj->darks_gl, idx);
+
+    img = (Image *) l->data;
+
+    /* Format the text from the meta data */
+    txt_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (m_ui->txt_view));
+    gtk_text_buffer_set_text (txt_buffer, "", -1);
+    gtk_text_view_set_editable (GTK_TEXT_VIEW (m_ui->txt_view), FALSE);
+    gtk_text_buffer_get_end_iter (txt_buffer, &iter);
+    
+    sprintf(buf, "Make:  %s\n"
+    		 "Model:  %s\n"
+    		 "Type:  %s\n"
+    		 "Date:  %s\n"
+    		 "Width:  %s\n"
+    		 "Height:  %s\n"
+    		 "ISO:  %s\n"
+    		 "Exposure:  %s\n"
+    		 "F-Stop:  %s\n", 
+	     img->img_exif.make, img->img_exif.model, img->img_exif.type, img->img_exif.date, img->img_exif.width,
+	     img->img_exif.height, img->img_exif.iso, img->img_exif.exposure, img->img_exif.f_stop);
+
+    gtk_text_buffer_insert (txt_buffer, &iter, buf, -1);
+
+    return;
 }
 
 

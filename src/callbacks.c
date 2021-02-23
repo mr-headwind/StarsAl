@@ -83,6 +83,7 @@ extern int close_ui(char *);
 extern gint query_dialog(GtkWidget *, char *, char *);
 extern int get_user_pref(char *, char **);
 extern int show_image(char *, MainUi *);
+extern int show_meta(char *, int, gchar *, MainUi *);
 extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 extern void img_actual_sz(MainUi *);
 extern void zoom_image(double, MainUi *);
@@ -358,22 +359,32 @@ void OnImageSelect(GtkTreeSelection *selection, gpointer user_data)
 {  
     GtkTreeIter iter;
     GtkTreeModel *model;
-    gchar *img_nm;
+    GtkTreePath *path;
+    gchar *img_nm, *img_type, *s_path;
+    int idx;
     MainUi *m_ui;
 
     /* Data */
     m_ui = (MainUi *) user_data;
+    idx = -1;
 
     /* Get selected image */
     if (gtk_tree_selection_get_selected (selection, &model, &iter))
     {
-	gtk_tree_model_get (model, &iter, IMAGE_NM, &img_nm, -1);
+	gtk_tree_model_get (model, &iter, IMAGE_TYPE, &img_type, IMAGE_NM, &img_nm, -1);
 	//g_print ("You selected an image: %s\n", img_nm);
+	path = gtk_tree_model_get_path (model, &iter);
+	s_path = gtk_tree_path_to_string (path);
+	idx = atoi(s_path);
+	gtk_tree_path_free (path);
+	g_free(s_path);
     }
 
     /* Display the image */
     show_image(img_nm, m_ui);
+    show_meta(img_nm, idx, img_type, m_ui);
     g_free(img_nm);
+    g_free(img_type);
 
     /*
     char *s;

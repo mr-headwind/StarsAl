@@ -64,14 +64,15 @@ typedef struct _main_ui
     /* Tool bars */
 
     /* Application widgets */
-    GtkWidget *algn_vbox, *proc_hbox, *proj_hbox;  
+    GtkWidget *algn_vbox, *proc_hbox, *proj_hbox, *img_cntl_hbox, *img_info_vbox;  
     GtkWidget *image_area, *img_scroll_win;  
     GtkWidget *image_list_tree, *lst_scroll_win; 
     GtkTreeModel *model;
     GtkTreeSelection *select_image;
-    GtkWidget *heading_lbl, *proj_name_lbl, *proj_desc_lbl;  
+    GtkWidget *heading_lbl, *proj_name_lbl, *proj_desc_lbl, *img_scale_lbl;  
     GtkWidget *dummy;  
     GdkPixbuf *base_pixbuf;
+    GtkWidget *txt_view;
 
     /* Control widgets and items */
     GtkWidget *save_btn;
