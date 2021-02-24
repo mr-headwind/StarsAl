@@ -56,6 +56,7 @@ int load_exif_data(Image *, char *, GtkWidget *);
 static char * get_exif_tag(ExifData *, ExifIfd, ExifTag);
 int show_image(char *, MainUi *);
 void show_meta(char *, int, gchar *, MainUi *);
+void show_scale(double, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
 void zoom_image(double, MainUi *);
@@ -331,6 +332,22 @@ void show_meta(char *img_fn, int idx, gchar *img_type, MainUi *m_ui)
 
     gtk_text_buffer_insert (txt_buffer, &iter, buf, -1);
 
+    if (! gtk_widget_get_visible (m_ui->img_info_vbox))
+    	gtk_widget_set_visible (m_ui->img_info_vbox, TRUE);
+
+    return;
+}
+
+
+/* Show image current scale */
+
+void show_scale(double img_scale, MainUi *m_ui)
+{
+    char s[30];
+
+    sprintf(s, "Image scale: %0.2f%%", img_scale);
+    gtk_label_set_text( GTK_LABEL(m_ui->img_scale_lbl), s);
+
     return;
 }
 
@@ -350,6 +367,7 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
 
     px_scale = (double) ((px_h * 100) / in_px_h);
+    show_scale(px_scale, m_ui);
 
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
@@ -364,6 +382,7 @@ void img_actual_sz(MainUi *m_ui)
 {
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
     px_scale = 100; 
+    show_scale(px_scale, m_ui);
     gtk_widget_show_all(m_ui->window);
 
     return;
@@ -390,6 +409,7 @@ void zoom_image(double step, MainUi *m_ui)
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
 
     px_scale = d_scale;
+    show_scale(px_scale, m_ui);
     g_object_unref (pxbscaled);
     gtk_widget_show_all(m_ui->window);
 

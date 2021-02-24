@@ -99,6 +99,7 @@ extern void set_css();
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern void create_label2(GtkWidget **, char *, char *, GtkWidget *, int, int, int, int);
 extern void create_label3(GtkWidget **, char *, char *);
+extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
@@ -425,11 +426,14 @@ void image_area(MainUi *m_ui)
 void image_info(MainUi *m_ui)
 {  
     m_ui->txt_view = gtk_text_view_new();
+    gtk_widget_set_name (m_ui->txt_view, "txtview_1");
     gtk_container_add(GTK_CONTAINER(m_ui->img_info_vbox), m_ui->txt_view);
     gtk_widget_set_margin_start (m_ui->img_info_vbox, 10);
     gtk_widget_set_valign (m_ui->img_info_vbox, GTK_ALIGN_END);
 
-    create_label(&(m_ui->img_scale_lbl), "title_3b", "", m_ui->img_info_vbox);
+    create_label4(&(m_ui->img_scale_lbl), "data_5", "", 1, 5, GTK_ALIGN_CENTER);
+    gtk_box_pack_start (GTK_BOX (m_ui->img_info_vbox), m_ui->img_scale_lbl, FALSE, FALSE, 0);
+    gtk_widget_set_name (m_ui->img_info_vbox, "box_1");
 
     return;
 }

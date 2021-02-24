@@ -73,12 +73,14 @@ static const char *debug_hdr = "DEBUG-css.c ";
 static char *css_data_fhd = 
 	"@define-color DARK_BLUE rgba(0%,0%,50%,1.0); "
 	"@define-color METAL_GREY rgba(55,83,103,1.0); "
+	"@define-color WHITE1 rgba(255,255,255,1.0); "
 	"button, entry, label { font-family: Sans; font-size: 12px; }"
 	"label#data_1 { color: @DARK_BLUE; }"
 	"label#data_2 { color: #800000; font-family: Sans; font-size: 11px; }"
 	"label#data_2a { color: #800000; font-family: Sans; font-size: 15px; }"
 	"label#data_3 { color: #400080; font-family: Sans; font-size: 10px; }"
 	"label#data_4 { font-family: Sans; font-size: 11px; }"
+	"label#data_5 { font-family: Sans; font-size: 14px; background-color: #708090; color: @WHITE1;}"
 	"label#head_1 { color: #8a87c4; font-family: Sans; font-size: 11px; }"
 	"label#title_1 { font-family: Sans; font-size: 18px; font-weight: bold; }"
 	"label#title_2 { font-family: Serif; font-size: 18px; font-style: italic; color: #fa8072; }"
@@ -102,7 +104,8 @@ static char *css_data_fhd =
 	"GtkListBox { background-color: #fbf6fe; }"
 	"notebook * { font-family: Sans; font-size: 11px; }"
 	"textview { font-family: Sans; font-size: 12px; }"
-	"textview#txtview_1 { font-family: Sans; font-size: 11px; }"
+	"textview#txtview_1 { font-family: Sans; font-size: 11px; background-color: #708090; color: @WHITE1; }"
+	"box#box_1 { background-color: #708090; }"
 	"button.link { font-family: Sans; font-size: 12px; color: @DARK_BLUE; }";
 
 
