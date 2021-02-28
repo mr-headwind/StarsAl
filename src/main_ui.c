@@ -161,6 +161,7 @@ void main_ui(MainUi *m_ui)
     /* Show window */
     set_css();
     gtk_widget_show_all(m_ui->window);
+    gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
 
     return;
 }

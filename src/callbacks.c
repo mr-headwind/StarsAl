@@ -243,14 +243,17 @@ void OnMouseScroll(GtkScrolledWindow *sw, GdkEventScroll *ev, gpointer user_data
     if (ev->direction == GDK_SCROLL_UP)	
     {
 	zoom_image(step_up, m_ui);
+	g_print("OnMouseScroll: scroll up\n");
     }
     else if (ev->direction == GDK_SCROLL_DOWN)	
     {
 	zoom_image(step_down, m_ui);
+	g_print("OnMouseScroll: scroll down\n");
     }
     else if (ev->direction == GDK_SCROLL_SMOOTH)
     {
 	gdk_event_get_scroll_deltas ((const GdkEvent *) ev, &delta_x, &delta_y);
+	g_print("OnMouseScroll: scroll smooth  d_x %0.2f   d_y %0.2f\n", delta_x, delta_y);
  
 	if (delta_y > 0)
 	{

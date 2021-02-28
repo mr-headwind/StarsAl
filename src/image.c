@@ -347,6 +347,7 @@ void show_scale(double img_scale, MainUi *m_ui)
 
     sprintf(s, "Image scale: %0.2f%%", img_scale);
     gtk_label_set_text( GTK_LABEL(m_ui->img_scale_lbl), s);
+    gtk_widget_show(m_ui->img_scale_lbl);
 
     return;
 }
@@ -411,7 +412,6 @@ void zoom_image(double step, MainUi *m_ui)
     px_scale = d_scale;
     show_scale(px_scale, m_ui);
     g_object_unref (pxbscaled);
-    gtk_widget_show_all(m_ui->window);
 
     return;
 /*

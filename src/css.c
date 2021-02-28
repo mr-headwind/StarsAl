@@ -104,7 +104,7 @@ static char *css_data_fhd =
 	"GtkListBox { background-color: #fbf6fe; }"
 	"notebook * { font-family: Sans; font-size: 11px; }"
 	"textview { font-family: Sans; font-size: 12px; }"
-	"textview#txtview_1 { font-family: Sans; font-size: 11px; background-color: #708090; color: @WHITE1; }"
+	"textview#txtview_1 * { font-family: Sans; font-size: 12px; background-color: #708090; color: @WHITE1; }"
 	"box#box_1 { background-color: #708090; }"
 	"button.link { font-family: Sans; font-size: 12px; color: @DARK_BLUE; }";
 
