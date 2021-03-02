@@ -60,6 +60,9 @@ void show_scale(double, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
 void zoom_image(double, MainUi *);
+void scale_pixmap(double, MainUi *);
+void setup_scale_timer(double, MainUi *);
+gboolean zoom_main_loop_fn(gpointer);
 void mouse_drag_check(MainUi *);
 void drag_move_sw(gdouble, gdouble, gdouble, gdouble, MainUi *);
 void mouse_drag_on(MainUi *);
@@ -394,14 +397,29 @@ void img_actual_sz(MainUi *m_ui)
 
 void zoom_image(double step, MainUi *m_ui)
 {
-    double px_h, px_w, d_scale;
-    GdkPixbuf *pxbscaled;
-
-    /* Set a lower limit for zoom in */
+    /* Set a lower limit for shrinkage */
     if (px_scale < 1)
     	if (step < 1)
     	    return;
 
+g_print("zoom_image: step:  %0.2f\n", step);
+    if (step < 1)
+    	scale_pixmap(step, m_ui);
+    else
+    	setup_scale_timer(step, m_ui);
+
+    return;
+}
+
+
+/* Scale image in or out by the step passed */
+
+void scale_pixmap(double step, MainUi *m_ui)
+{
+    double px_h, px_w, d_scale;
+    GdkPixbuf *pxbscaled;
+
+g_print("scale_pixmap: step:  %0.2f\n", step);
     d_scale = (double) px_scale * step;
     
     px_h = ((double) gdk_pixbuf_get_height(m_ui->base_pixbuf)) * (d_scale / 100.0);
@@ -414,6 +432,7 @@ void zoom_image(double step, MainUi *m_ui)
     g_object_unref (pxbscaled);
 
     return;
+}
 /*
 printf("%s  zoom_image 1a d_scale %0.2f px_scale %0.2f\n", debug_hdr, d_scale, px_scale); fflush(stdout);
 printf("%s  zoom_image 3 dpx_h %0.2f  dpx_w %0.2f\n", debug_hdr, dpx_h, dpx_w); fflush(stdout);
@@ -422,6 +441,57 @@ printf("%s  px_w %d, px_h %d, px_scale %0.2f\n", debug_hdr, px_w, px_h, px_scale
 printf("%s  base px_w %d, base px_h %d\n", debug_hdr, 
 		    gdk_pixbuf_get_width(m_ui->base_pixbuf), gdk_pixbuf_get_height(m_ui->base_pixbuf)); fflush(stdout);
 */
+
+
+/* 
+** Fast, excessive mouse wheel scrolling can cause the appearance of a program freeze
+** while the program tries to catch up with the constant image resizing. It's only
+** evident on scale up, so we use a main loop timer function to attempt group some scrolls
+** together and save the amount of resizing.
+*/
+
+void setup_scale_timer(double step, MainUi *m_ui)
+{
+    /* Initiate a timer function on the main loop for zooming images */
+    if (m_ui->scale_timer != NULL)
+    	if (! g_source_is_destroyed(m_ui->scale_timer))
+    	{
+	    m_ui->stepx+= step;
+g_print("setup_scale_timer: 1: stepx:  %0.2f\n", m_ui->stepx);
+	    return;
+	}
+
+    m_ui->timer_id = g_timeout_add (100, zoom_main_loop_fn, m_ui);
+    m_ui->scale_timer = g_main_context_find_source_by_id(NULL, m_ui->timer_id);
+    m_ui->stepx = step;
+g_print("setup_scale_timer: 2: stepx:  %0.2f\n", m_ui->stepx);
+
+    return;
+}
+
+
+/* Timeout function on main loop update the display */
+
+gboolean zoom_main_loop_fn(gpointer user_data)
+{
+    MainUi *m_ui;
+
+    /* Get data */
+    m_ui = (MainUi *) user_data;
+
+    if (m_ui->stepx == 0)
+    	return FALSE;
+
+    g_print("zoom_main_loop_fn: stepx:  %0.2f\n", m_ui->stepx);
+    scale_pixmap(m_ui->stepx, m_ui);
+    m_ui->stepx = 0;
+
+    /*
+    if (m_ui->stepx == 0)
+	return FALSE;
+    else
+    */
+	return TRUE;
 }
 
 
