@@ -402,11 +402,18 @@ void zoom_image(double step, MainUi *m_ui)
     	if (step < 1)
     	    return;
 
+    if (px_scale > 400)
+	return;
+
+
 g_print("zoom_image: step:  %0.2f\n", step);
+    setup_scale_timer(step, m_ui);
+    /*
     if (step < 1)
     	scale_pixmap(step, m_ui);
     else
     	setup_scale_timer(step, m_ui);
+    */
 
     return;
 }
@@ -461,7 +468,7 @@ g_print("setup_scale_timer: 1: stepx:  %0.2f\n", m_ui->stepx);
 	    return;
 	}
 
-    m_ui->timer_id = g_timeout_add (100, zoom_main_loop_fn, m_ui);
+    m_ui->timer_id = g_timeout_add (250, zoom_main_loop_fn, m_ui);
     m_ui->scale_timer = g_main_context_find_source_by_id(NULL, m_ui->timer_id);
     m_ui->stepx = step;
 g_print("setup_scale_timer: 2: stepx:  %0.2f\n", m_ui->stepx);
@@ -480,7 +487,7 @@ gboolean zoom_main_loop_fn(gpointer user_data)
     m_ui = (MainUi *) user_data;
 
     if (m_ui->stepx == 0)
-    	return FALSE;
+    	return TRUE;
 
     g_print("zoom_main_loop_fn: stepx:  %0.2f\n", m_ui->stepx);
     scale_pixmap(m_ui->stepx, m_ui);
