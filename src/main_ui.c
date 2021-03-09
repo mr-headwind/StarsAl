@@ -405,7 +405,7 @@ void image_area(MainUi *m_ui)
     gtk_container_add(GTK_CONTAINER (m_ui->img_scroll_win), m_ui->image_area);
     gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 750);
     gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (m_ui->img_scroll_win), 500);
-    gtk_widget_set_tooltip_text(m_ui->image_area, "Scroll mouse wheel to zoom in (down) / out (up)");
+    gtk_widget_set_tooltip_text(m_ui->image_area, "Scroll mouse wheel (slowly) to zoom in (down) / out (up)");
 
     g_signal_connect(m_ui->img_scroll_win, "scroll-event", G_CALLBACK(OnMouseScroll), m_ui);
     gtk_widget_add_events(GTK_WIDGET(m_ui->img_scroll_win), GDK_SCROLL_MASK);
