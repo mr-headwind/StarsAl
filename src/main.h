@@ -56,7 +56,7 @@ typedef struct _main_ui
     GtkWidget *file_hdr, *edit_hdr, *view_hdr, *opt_hdr, *help_hdr;
     GtkWidget *new_proj, *open_proj, *close_proj, *file_exit;
     GtkWidget *edit_proj, *opt_prefs;
-    GtkWidget *view_fit, *view_actual;
+    GtkWidget *view_fit, *view_actual, *view_x2, *view_x3, *view_x4;
     GtkWidget *view_log, *help_about;
     GtkWidget *sep, *sep2;
     GtkAccelGroup *accel_group;
@@ -70,7 +70,6 @@ typedef struct _main_ui
     GtkTreeModel *model;
     GtkTreeSelection *select_image;
     GtkWidget *heading_lbl, *proj_name_lbl, *proj_desc_lbl, *img_scale_lbl;  
-    GtkWidget *dummy;  
     GdkPixbuf *base_pixbuf;
     GtkWidget *txt_view;
 
@@ -87,9 +86,6 @@ typedef struct _main_ui
     ProjectData *proj;
     char *curr_img_base, *curr_dark_base;
     int img_drag_blocked, mouse_drag_mode;
-    GSource *scale_timer;
-    guint timer_id;
-    double stepx;
 } MainUi;
 
 

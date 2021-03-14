@@ -47,12 +47,13 @@
 
 /* Prototypes */
 
-void OnNewProj(GtkWidget*, gpointer *user_data);
-void OnOpenProj(GtkWidget*, gpointer *user_data);
-void OnCloseProj(GtkWidget*, gpointer *user_data);
-void OnEditProj(GtkWidget*, gpointer *user_data);
-void OnViewFit(GtkWidget*, gpointer *user_data);
-void OnViewActual(GtkWidget*, gpointer *user_data);
+void OnNewProj(GtkWidget *, gpointer);
+void OnOpenProj(GtkWidget *, gpointer);
+void OnCloseProj(GtkWidget *, gpointer);
+void OnEditProj(GtkWidget *, gpointer);
+void OnViewFit(GtkWidget *, gpointer);
+void OnViewActual(GtkWidget *, gpointer);
+void OnViewX(GtkWidget *, gpointer);
 void OnMouseScroll(GtkScrolledWindow *, GdkEventScroll *, gpointer);
 gboolean OnSWBtnPress(GtkScrolledWindow *, GdkEvent *, gpointer);
 gboolean OnSWBtnRelease(GtkScrolledWindow *, GdkEvent *, gpointer);
@@ -60,10 +61,10 @@ gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
 void OnImageSize(GtkWidget *, GdkRectangle *, gpointer);
 void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
-void OnPrefs(GtkWidget*, gpointer *user_data);
-void OnViewLog(GtkWidget*, gpointer *user_data);
-void OnAbout(GtkWidget*, gpointer *user_data);
-void OnQuit(GtkWidget*, gpointer *user_data);
+void OnPrefs(GtkWidget *, gpointer);
+void OnViewLog(GtkWidget *, gpointer);
+void OnAbout(GtkWidget *, gpointer);
+void OnQuit(GtkWidget *, gpointer);
 
 
 extern void edit_project_main(ProjectData *, MainUi *);
@@ -86,6 +87,7 @@ extern int show_image(char *, MainUi *);
 extern int show_meta(char *, int, gchar *, MainUi *);
 extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 extern void img_actual_sz(MainUi *);
+extern void img_scale_sz(MainUi *, int);
 extern void zoom_image(double, MainUi *);
 extern void mouse_drag_check(MainUi *);
 extern void drag_move_sw(gdouble, gdouble, gdouble, gdouble, MainUi *);
@@ -102,7 +104,7 @@ static gdouble last_x, last_y;
 
 /* Callback - Open a new project */
 
-void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
+void OnNewProj(GtkWidget *menu_item, gpointer user_data)
 {  
     GtkWidget *window;
     MainUi *m_ui;
@@ -126,7 +128,7 @@ void OnNewProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Edit project settings */
 
-void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
+void OnEditProj(GtkWidget *menu_item, gpointer user_data)
 {  
     GtkWidget *window;
     MainUi *m_ui;
@@ -143,7 +145,7 @@ void OnEditProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Close a project */
 
-void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
+void OnCloseProj(GtkWidget *menu_item, gpointer user_data)
 {  
     GtkWidget *window;
     MainUi *m_ui;
@@ -165,7 +167,7 @@ void OnCloseProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Open a project */
 
-void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
+void OnOpenProj(GtkWidget *menu_item, gpointer user_data)
 {  
     GtkWidget *window;
     MainUi *m_ui;
@@ -189,7 +191,7 @@ void OnOpenProj(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Fit image to window */
 
-void OnViewFit(GtkWidget *menu_item, gpointer *user_data)
+void OnViewFit(GtkWidget *menu_item, gpointer user_data)
 {  
     int sw_h, sw_w;
     GtkWidget *window;
@@ -199,7 +201,7 @@ void OnViewFit(GtkWidget *menu_item, gpointer *user_data)
     window = (GtkWidget *) user_data;
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
-    /* Rest image */
+    /* Reset image */
     sw_w = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
     sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
     img_fit_win(m_ui->base_pixbuf, sw_w, sw_h, m_ui);
@@ -210,7 +212,7 @@ void OnViewFit(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - View full size image */
 
-void OnViewActual(GtkWidget *menu_item, gpointer *user_data)
+void OnViewActual(GtkWidget *menu_item, gpointer user_data)
 {  
     GtkWidget *window;
     MainUi *m_ui;
@@ -219,8 +221,28 @@ void OnViewActual(GtkWidget *menu_item, gpointer *user_data)
     window = (GtkWidget *) user_data;
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
-    /* Rest image */
+    /* Reset image */
     img_actual_sz(m_ui);
+
+    return;
+}  
+
+
+/* Callback - Set image scale */
+
+void OnViewX(GtkWidget *menu_item, gpointer user_data)
+{  
+    GtkWidget *window;
+    MainUi *m_ui;
+    int multx;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Reset image */
+    multx = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (menu_item), "view_x"));
+    img_scale_sz(m_ui, multx);
 
     return;
 }  
@@ -450,7 +472,7 @@ void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer da
 
 /* Callback - Set up preferences */
 
-void OnPrefs(GtkWidget *menu_item, gpointer *user_data)
+void OnPrefs(GtkWidget *menu_item, gpointer user_data)
 {  
     GtkWidget *window;
 
@@ -470,7 +492,7 @@ void OnPrefs(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - Show About details */
 
-void OnAbout(GtkWidget *menu_item, gpointer *user_data)
+void OnAbout(GtkWidget *menu_item, gpointer user_data)
 {  
     MainUi *m_ui;
 
@@ -490,7 +512,7 @@ void OnAbout(GtkWidget *menu_item, gpointer *user_data)
 
 /* Callback - View Log File details */
 
-void OnViewLog(GtkWidget *view_log, gpointer *user_data)
+void OnViewLog(GtkWidget *view_log, gpointer user_data)
 {  
     GtkWidget *window;
     char *log_fn;
@@ -512,7 +534,7 @@ void OnViewLog(GtkWidget *view_log, gpointer *user_data)
 
 /* Callback - Quit */
 
-void OnQuit(GtkWidget *window, gpointer *user_data)
+void OnQuit(GtkWidget *window, gpointer user_data)
 {  
     MainUi *m_ui;
 

@@ -81,6 +81,7 @@ extern int check_dir(char *);
 extern int make_dir(char *);
 extern int get_file_stat(char *, struct stat *);
 extern void log_msg(char*, char*, char*, GtkWidget*);
+extern void view_menu_sensitive(MainUi *, int);
 
 
 /* Globals */
@@ -391,9 +392,9 @@ void close_main_display(MainUi *m_ui)
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), "");
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
     gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
+    g_object_unref (m_ui->base_pixbuf);
     gtk_image_clear(GTK_IMAGE (m_ui->image_area));
-    gtk_widget_set_sensitive(m_ui->view_actual, FALSE);
-    gtk_widget_set_sensitive(m_ui->view_fit, FALSE);
+    view_menu_sensitive(m_ui, FALSE);
     gtk_label_set_text(GTK_LABEL (m_ui->proj_name_lbl), "");
     gtk_label_set_text(GTK_LABEL (m_ui->proj_desc_lbl), "");
     gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);

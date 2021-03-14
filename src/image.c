@@ -59,6 +59,7 @@ void show_meta(char *, int, gchar *, MainUi *);
 void show_scale(double, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
 void img_actual_sz(MainUi *);
+void img_scale_sz(MainUi *, int);
 void zoom_image(double, MainUi *);
 void scale_pixmap(double, MainUi *);
 void mouse_drag_check(MainUi *);
@@ -68,6 +69,7 @@ void mouse_drag_off(MainUi *);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
+extern void view_menu_sensitive(MainUi *, int);
 
 
 /* Globals */
@@ -285,8 +287,7 @@ int show_image(char *img_fn, MainUi *m_ui)
     sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
 
     img_fit_win(m_ui->base_pixbuf, sw_w, sw_h, m_ui);
-    gtk_widget_set_sensitive(m_ui->view_fit, TRUE);
-    gtk_widget_set_sensitive(m_ui->view_actual, TRUE);
+    view_menu_sensitive(m_ui, TRUE);
 
     return TRUE;
 }
@@ -386,6 +387,30 @@ void img_actual_sz(MainUi *m_ui)
     px_scale = 100; 
     show_scale(px_scale, m_ui);
     gtk_widget_show_all(m_ui->window);
+
+    return;
+}
+
+
+/* Set a particular scale */
+
+void img_scale_sz(MainUi *m_ui, int multx)
+{
+    double px_h, px_w, d_scale;
+    GdkPixbuf *pxbscaled;
+
+    px_h = (double) (gdk_pixbuf_get_height(m_ui->base_pixbuf) * multx);
+    px_w = (double) (gdk_pixbuf_get_width(m_ui->base_pixbuf) * multx);
+    pxbscaled = gdk_pixbuf_scale_simple (m_ui->base_pixbuf, (int) px_w, (int) px_h, GDK_INTERP_BILINEAR);
+
+    if (pxbscaled == NULL)
+	return;
+
+    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
+
+    px_scale = 100 * multx;
+    show_scale(px_scale, m_ui);
+    g_object_unref (pxbscaled);
 
     return;
 }

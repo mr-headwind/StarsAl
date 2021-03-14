@@ -108,7 +108,10 @@
 
  KNOWN ISSUES / BUGS
  -------------------
-    . xxxx
+    . There appears to be a problem with GdkPixbuf or GtkImage in that very large pixbufs are not handled well.
+      Using the View menu multiplier can result in a blank image. As an example, a 6000 x 4000 image multiplied at 
+      x3 or more will cause this. Sometimes closing and re-opening the project will fix, otherwise close and restart
+      StarsAl.
 
  THE TECHNICAL STUFF
  -------------------
