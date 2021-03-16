@@ -526,7 +526,7 @@ void OnViewLog(GtkWidget *view_log, gpointer user_data)
     window = (GtkWidget *) user_data;
 
     if (view_file_main(log_fn) == NULL)
-    	log_msg("SYS9006", log_fn, "SYS9010", window);
+    	log_msg("SYS9006", log_fn, "SYS9006", window);
 
     return;
 }  

@@ -86,6 +86,7 @@ typedef struct _main_ui
     ProjectData *proj;
     char *curr_img_base, *curr_dark_base;
     int img_drag_blocked, mouse_drag_mode;
+    char *img_fn;
 } MainUi;
 
 

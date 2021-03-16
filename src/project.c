@@ -393,6 +393,7 @@ void close_main_display(MainUi *m_ui)
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
     gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
     g_object_unref (m_ui->base_pixbuf);
+    free(m_ui->img_fn);
     gtk_image_clear(GTK_IMAGE (m_ui->image_area));
     view_menu_sensitive(m_ui, FALSE);
     gtk_label_set_text(GTK_LABEL (m_ui->proj_name_lbl), "");

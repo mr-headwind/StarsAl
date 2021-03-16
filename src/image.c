@@ -66,6 +66,8 @@ void mouse_drag_check(MainUi *);
 void drag_move_sw(gdouble, gdouble, gdouble, gdouble, MainUi *);
 void mouse_drag_on(MainUi *);
 void mouse_drag_off(MainUi *);
+static void nudge_loader(MainUi *);
+static void init_loader(MainUi *);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
@@ -76,6 +78,13 @@ extern void view_menu_sensitive(MainUi *, int);
 
 static const char *debug_hdr = "DEBUG-image.c ";
 static double px_scale = 0;
+
+/* Loader stuff */
+GdkPixbufLoader *loader = NULL;
+GdkPixbuf *loader_pixbuf = NULL;
+guchar *filebuf = NULL;
+guint filesize = 0;
+guint curpos = 0;
 
 
 /* Determine image type */
@@ -283,6 +292,7 @@ int show_image(char *img_fn, MainUi *m_ui)
     GError *err = NULL;
 
     m_ui->base_pixbuf = gdk_pixbuf_new_from_file(img_fn, &err);
+    m_ui->img_fn = strdup(img_fn);
     sw_w = gtk_widget_get_allocated_width (m_ui->img_scroll_win);
     sw_h = gtk_widget_get_allocated_height (m_ui->img_scroll_win);
 
@@ -392,10 +402,12 @@ void img_actual_sz(MainUi *m_ui)
 }
 
 
-/* Set a particular scale */
+/* Set a particular scale - this is likely to result in delays with larg images so use a loader */
 
 void img_scale_sz(MainUi *m_ui, int multx)
 {
+    init_loader(m_ui);
+
     double px_h, px_w, d_scale;
     GdkPixbuf *pxbscaled;
 
@@ -411,6 +423,80 @@ void img_scale_sz(MainUi *m_ui, int multx)
     px_scale = 100 * multx;
     show_scale(px_scale, m_ui);
     g_object_unref (pxbscaled);
+
+    return;
+}
+
+
+/* Set up the loader for progressive load, progress shown with a pulse bar */
+
+static void init_loader(MainUi *m_ui)
+{
+    FILE *file;
+
+    /* Prepare the loader and local callbacks */
+    loader = gdk_pixbuf_loader_new();
+    gtk_signal_connect(GTK_OBJECT(loader), "area_prepared", GTK_SIGNAL_FUNC(OnAreaPrepared), NULL);
+    gtk_signal_connect(GTK_OBJECT(loader), "area_updated", GTK_SIGNAL_FUNC(OnAreaUpdated), NULL);
+
+    /* Load file into memory for easier cycling */
+    file = fopen (m_ui->img_fn, "r");
+
+    if (file)
+    {
+	struct stat statbuf;
+
+	if (stat(m_ui->img_fn, &statbuf) == 0)
+	{
+	    filesize = statbuf.st_size;
+	    filebuf = g_malloc(filesize);
+	    fread(filebuf, sizeof(char), filesize, file);
+	}
+
+	fclose(file);
+    }
+    else
+    {
+	log_msg("SYS9006", m_ui->img_fn, "SYS9006", m_ui->window);
+	return;
+    }
+
+    /* Load the first small chunk, i.e., enough to trigger an area_prepared event */
+    nudge_loader(m_ui);
+
+    return;
+}
+
+
+/* Control writing to the loader */
+
+static void nudge_loader(MainUi *m_ui)
+{
+    guint bitesize = 256;
+    guint writesize = bitesize;
+
+    if (curpos >= filesize)
+	return;
+
+    /* Trim writesize if it extends past the end of the file */
+    if (curpos + bitesize >= filesize)
+	writesize = filesize - curpos;
+
+    /* Send next chunk of image */
+    if (!gdk_pixbuf_loader_write(loader, &filebuf[curpos], writesize))
+    {
+	log_msg("SYS9012", "GdkPixbufLoader", "SYS9012", m_ui->window);
+	return;
+    }
+
+    curpos += writesize;
+ 
+    /* 
+    ** Clean up loader when we're finished writing the entire file; 
+    ** loader_pixbuf is still around because we referenced it in OnAreaPrepared
+    */
+    if (curpos >= filesize)
+	gdk_pixbuf_loader_close(loader);
 
     return;
 }
@@ -538,3 +624,57 @@ void mouse_drag_off(MainUi *m_ui)
 
     return;
 }
+
+
+/* Local Image Callbacks */
+
+
+/* The original image is in place so don't need placeholder, but start the pulse bar */
+
+static void OnAreaPrepared(GdkPixbufLoader *loader,
+    gint x, gint y, gint width, gint height, gpointer data)
+{
+  gchar *bkgd_file;
+  GdkPixbuf *pixbuf;
+
+  loader_pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+  g_object_ref(loader_pixbuf);
+
+  bkgd_file = gnome_pixmap_file ("gnome-error.png");
+  pixbuf = gdk_pixbuf_new_from_file(bkgd_file);
+  g_free(bkgd_file);
+
+  /* Copy placeholder image to loader_pixbuf */
+  gdk_pixbuf_copy_area(pixbuf, 0, 0,
+    gdk_pixbuf_get_width(pixbuf),
+    gdk_pixbuf_get_height(pixbuf),
+    loader_pixbuf,
+    0, 0);
+}
+
+static void OnAreaUpdated(GdkPixbufLoader *loader,
+    gpointer data)
+{
+  gint height, width;
+  GdkRectangle rect = { LOADER_X, LOADER_Y, 48, 48 };
+
+  g_message("Rendering Loader Pixbuf");
+  width = gdk_pixbuf_get_width(loader_pixbuf);
+  height = gdk_pixbuf_get_height(loader_pixbuf);
+
+  /* Copy latest version of progressive image to the double
+   * buffer
+   */
+  gdk_pixbuf_render_to_drawable_alpha(loader_pixbuf,
+    dbuf_pixmap,
+    0, 0, LOADER_X, LOADER_Y,
+    width, height,
+    GDK_PIXBUF_ALPHA_BILEVEL, 128,
+    GDK_RGB_DITHER_NORMAL, 0, 0);
+
+  /* Trigger an expose_event to flush the changes to the
+   * drawing area
+   */
+  gtk_widget_draw(drawing_area, ▭);
+}
+
