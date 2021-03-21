@@ -72,6 +72,7 @@ typedef struct _main_ui
     GtkWidget *heading_lbl, *proj_name_lbl, *proj_desc_lbl, *img_scale_lbl;  
     GdkPixbuf *base_pixbuf;
     GtkWidget *txt_view;
+    GtkWidget *img_progress_bar;
 
     /* Control widgets and items */
     GtkWidget *save_btn;
@@ -85,7 +86,8 @@ typedef struct _main_ui
     /* Other */
     ProjectData *proj;
     char *curr_img_base, *curr_dark_base;
-    int img_drag_blocked, mouse_drag_mode;
+    int img_drag_blocked, mouse_drag_mode; 
+    guint pulse_status;
     char *img_fn;
 } MainUi;
 

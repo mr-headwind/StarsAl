@@ -164,6 +164,7 @@ void main_ui(MainUi *m_ui)
     set_css();
     gtk_widget_show_all(m_ui->window);
     gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
+    gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
 
     return;
 }
@@ -453,7 +454,7 @@ void image_area(MainUi *m_ui)
 }
 
 
-/* Image information - meta data, current viewing scale */
+/* Image information - meta data, current viewing scale, loading progress bar */
 
 void image_info(MainUi *m_ui)
 {  
@@ -466,6 +467,11 @@ void image_info(MainUi *m_ui)
     create_label4(&(m_ui->img_scale_lbl), "data_5", "", 1, 5, GTK_ALIGN_CENTER);
     gtk_box_pack_start (GTK_BOX (m_ui->img_info_vbox), m_ui->img_scale_lbl, FALSE, FALSE, 0);
     gtk_widget_set_name (m_ui->img_info_vbox, "box_1");
+
+    m_ui->img_progress_bar = gtk_progress_bar_new();
+    gtk_widget_set_name (m_ui->img_progress_bar, "pbar_1");
+    gtk_container_add(GTK_CONTAINER(m_ui->img_info_vbox), m_ui->img_progress_bar);
+    gtk_widget_set_margin_start (m_ui->img_progress_bar, 10);
 
     return;
 }
