@@ -86,7 +86,6 @@ extern int get_user_pref(char *, char **);
 extern int show_image(char *, MainUi *);
 extern int show_meta(char *, int, gchar *, MainUi *);
 extern void img_fit_win(GdkPixbuf *, int, int, MainUi *);
-extern void img_actual_sz(MainUi *);
 extern void img_scale_sz(MainUi *, int);
 extern void zoom_image(double, MainUi *);
 extern void mouse_drag_check(MainUi *);
@@ -222,7 +221,7 @@ void OnViewActual(GtkWidget *menu_item, gpointer user_data)
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     /* Reset image */
-    img_actual_sz(m_ui);
+    img_scale_sz(m_ui, 1);
 
     return;
 }  

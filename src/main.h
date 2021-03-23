@@ -56,7 +56,7 @@ typedef struct _main_ui
     GtkWidget *file_hdr, *edit_hdr, *view_hdr, *opt_hdr, *help_hdr;
     GtkWidget *new_proj, *open_proj, *close_proj, *file_exit;
     GtkWidget *edit_proj, *opt_prefs;
-    GtkWidget *view_fit, *view_actual, *view_x2, *view_x3, *view_x4;
+    GtkWidget *view_fit, *view_actual, *view_x2, *view_x3;
     GtkWidget *view_log, *help_about;
     GtkWidget *sep, *sep2;
     GtkAccelGroup *accel_group;

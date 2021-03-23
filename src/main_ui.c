@@ -178,7 +178,6 @@ void main_ui(MainUi *m_ui)
 **   - Open Project      - User settings	 - Actual	         - About
 **   - Close Project  				 - x2 
 **   - Exit    	      				 - x3
-**						 - x4
 */
 
 void create_menu(MainUi *m_ui)
@@ -243,7 +242,6 @@ void create_menu(MainUi *m_ui)
     m_ui->view_actual = gtk_menu_item_new_with_mnemonic ("_Actual");
     m_ui->view_x2 = gtk_menu_item_new_with_mnemonic ("x_2");
     m_ui->view_x3 = gtk_menu_item_new_with_mnemonic ("x_3");
-    m_ui->view_x4 = gtk_menu_item_new_with_mnemonic ("x_4");
     view_menu_sensitive(m_ui, FALSE);
 
     /* Add to menu */
@@ -251,7 +249,6 @@ void create_menu(MainUi *m_ui)
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->view_menu), m_ui->view_actual);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->view_menu), m_ui->view_x2);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->view_menu), m_ui->view_x3);
-    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->view_menu), m_ui->view_x4);
 
     /* Callbacks */
     g_signal_connect (m_ui->view_fit, "activate", G_CALLBACK (OnViewFit), m_ui->window);
@@ -260,15 +257,12 @@ void create_menu(MainUi *m_ui)
     g_object_set_data (G_OBJECT (m_ui->view_x2), "view_x", GINT_TO_POINTER (2));
     g_signal_connect (m_ui->view_x3, "activate", G_CALLBACK (OnViewX), m_ui->window);
     g_object_set_data (G_OBJECT (m_ui->view_x3), "view_x", GINT_TO_POINTER (3));
-    g_signal_connect (m_ui->view_x4, "activate", G_CALLBACK (OnViewX), m_ui->window);
-    g_object_set_data (G_OBJECT (m_ui->view_x4), "view_x", GINT_TO_POINTER (4));
 
     /* Show menu items */
     gtk_widget_show (m_ui->view_fit);
     gtk_widget_show (m_ui->view_actual);
     gtk_widget_show (m_ui->view_x2);
     gtk_widget_show (m_ui->view_x3);
-    gtk_widget_show (m_ui->view_x4);
 
 
     /* OPTIONS MENU */
@@ -361,7 +355,6 @@ void view_menu_sensitive(MainUi *m_ui, int tf)
     gtk_widget_set_sensitive(m_ui->view_actual, tf);
     gtk_widget_set_sensitive(m_ui->view_x2, tf);
     gtk_widget_set_sensitive(m_ui->view_x3, tf);
-    gtk_widget_set_sensitive(m_ui->view_x4, tf);
 
     return; 
 }

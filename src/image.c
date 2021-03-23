@@ -58,7 +58,6 @@ int show_image(char *, MainUi *);
 void show_meta(char *, int, gchar *, MainUi *);
 void show_scale(double, MainUi *);
 void img_fit_win(GdkPixbuf *, int, int, MainUi *);
-void img_actual_sz(MainUi *);
 void img_scale_sz(MainUi *, int);
 void zoom_image(double, MainUi *);
 void scale_pixmap(double, MainUi *);
@@ -72,6 +71,8 @@ gboolean pulse_bar(gpointer data);
 
 static void OnAreaPrepared(GdkPixbufLoader *, gpointer);
 static void OnAreaUpdated(GdkPixbufLoader *, gint, gint, gint, gint, gpointer);
+static void OnSizePrepared(GdkPixbufLoader *, gint, gint, gpointer);
+static void OnClosed(GdkPixbufLoader *, gpointer);
 	
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void trim_spaces(char *);
@@ -83,12 +84,12 @@ extern void view_menu_sensitive(MainUi *, int);
 static const char *debug_hdr = "DEBUG-image.c ";
 static double px_scale = 0;
 
-/* Loader stuff */
-GdkPixbufLoader *loader = NULL;
-GdkPixbuf *loader_pixbuf = NULL;
-guchar *filebuf = NULL;
-guint filesize = 0;
-guint curpos = 0;
+/* Pixbuf Loader variables */
+static GdkPixbufLoader *loader = NULL;
+static GdkPixbuf *loader_pixbuf = NULL;
+static guchar *filebuf = NULL;
+static guint filesize = 0;
+static guint curpos = 0;
 
 
 /* Determine image type */
@@ -393,25 +394,14 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
 }
 
 
-/* View the full sized iamge */
-
-void img_actual_sz(MainUi *m_ui)
-{
-    gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), m_ui->base_pixbuf);
-    px_scale = 100; 
-    show_scale(px_scale, m_ui);
-    gtk_widget_show_all(m_ui->window);
-
-    return;
-}
-
-
-/* Set a particular scale - this is likely to result in delays with larg images so use a loader */
+/* Set a particular scale - this is likely to result in delays with large images so use a loader */
 
 void img_scale_sz(MainUi *m_ui, int multx)
 {
+    px_scale = 100 * multx;
     init_loader(m_ui);
 
+    /*
     double px_h, px_w, d_scale;
     GdkPixbuf *pxbscaled;
 
@@ -427,6 +417,7 @@ void img_scale_sz(MainUi *m_ui, int multx)
     px_scale = 100 * multx;
     show_scale(px_scale, m_ui);
     g_object_unref (pxbscaled);
+    */
 
     return;
 }
@@ -442,6 +433,8 @@ static void init_loader(MainUi *m_ui)
     loader = gdk_pixbuf_loader_new();
     g_signal_connect (G_OBJECT(loader), "area_prepared", G_CALLBACK (OnAreaPrepared), m_ui);
     g_signal_connect (G_OBJECT(loader), "area_updated", G_CALLBACK (OnAreaUpdated), m_ui);
+    g_signal_connect (G_OBJECT(loader), "size-prepared", G_CALLBACK (OnSizePrepared), m_ui);
+    g_signal_connect (G_OBJECT(loader), "closed", G_CALLBACK (OnClosed), m_ui);
 
     /* Load file into memory for easier cycling */
     file = fopen (m_ui->img_fn, "r");
@@ -476,34 +469,42 @@ static void init_loader(MainUi *m_ui)
 
 static void nudge_loader(MainUi *m_ui)
 {
-    guint bitesize = 1024; //65535; // 256;
+    guint bitesize = 262144;  //65536;
     guint writesize = bitesize;
     GError *err = NULL;
 
     if (curpos >= filesize)
 	return;
 
-    /* Trim writesize if it extends past the end of the file */
-    if (curpos + bitesize >= filesize)
-	writesize = filesize - curpos;
-
-    /* Send next chunk of image */
-    if (!gdk_pixbuf_loader_write(loader, &filebuf[curpos], writesize, &err))
+    while(curpos < filesize)
     {
-	log_msg("SYS9012", "GdkPixbufLoader", "SYS9012", m_ui->window);
-	return;
-    }
+	/* Trim writesize if it extends past the end of the file */
+	if (curpos + bitesize >= filesize)
+	    writesize = filesize - curpos;
 
-    curpos += writesize;
- 
-    /* 
-    ** Clean up loader when we're finished writing the entire file; 
-    ** loader_pixbuf is still around because we referenced it in OnAreaPrepared
-    */
-    if (curpos >= filesize)
-    {
-	gdk_pixbuf_loader_close(loader, &err);
-	m_ui->pulse_status = FALSE;
+	/* Send next chunk of image */
+	if (!gdk_pixbuf_loader_write(loader, &filebuf[curpos], writesize, &err))
+	{
+	    log_msg("SYS9012", "GdkPixbufLoader", "SYS9012", m_ui->window);
+	    return;
+	}
+
+	curpos += writesize;
+     
+	/* 
+	** Clean up loader when we're finished writing the entire file; 
+	** loader_pixbuf is still around because we referenced it in OnAreaPrepared
+	*/
+	if (curpos >= filesize)
+	{
+	    gdk_pixbuf_loader_close(loader, &err);
+	    m_ui->pulse_status = FALSE;
+	    g_free(filebuf);
+	    loader_pixbuf = NULL;
+	    filebuf = NULL;
+	    filesize = 0;
+	    curpos = 0;
+	}
     }
 
     return;
@@ -685,15 +686,10 @@ void OnAreaPrepared(GdkPixbufLoader *loader, gpointer user_data)
 
 void OnAreaUpdated(GdkPixbufLoader *loader, gint x, gint y, gint width, gint height, gpointer user_data)
 {
-  //gint height, width;
-  //GdkRectangle rect = { LOADER_X, LOADER_Y, 48, 48 };
-
     MainUi *m_ui;
 
     /* Data */
     m_ui = (MainUi *) user_data;
-
-    //g_message("Rendering Loader Pixbuf");
 
     /* Draw latest */
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), loader_pixbuf);
@@ -701,3 +697,45 @@ void OnAreaUpdated(GdkPixbufLoader *loader, gint x, gint y, gint width, gint hei
     return;
 }
 
+
+/* The Pixbuf has an original size, but scaling may be applied at this point */
+
+void OnSizePrepared(GdkPixbufLoader *loader, gint width, gint height, gpointer user_data)
+{
+    MainUi *m_ui;
+    double px_w, px_h, d_scale;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    /* Set scaling if any */
+    px_w = (double) width * (px_scale / 100.0);
+    px_h = (double) height * (px_scale / 100.0);
+
+    gdk_pixbuf_loader_set_size (loader, (int) px_w, (int) px_h);
+
+    return;
+}
+
+
+/* The loader is closed, reset variables and set pulsing off */
+
+void OnClosed(GdkPixbufLoader *loader, gpointer user_data)
+{
+    MainUi *m_ui;
+
+    /* Data */
+    m_ui = (MainUi *) user_data;
+
+    /* Reset */
+    m_ui->pulse_status = FALSE;
+    g_free(filebuf);
+    loader_pixbuf = NULL;
+    filebuf = NULL;
+    filesize = 0;
+    curpos = 0;
+
+    show_scale(px_scale, m_ui);
+
+    return;
+}
