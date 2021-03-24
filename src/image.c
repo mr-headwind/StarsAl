@@ -350,7 +350,10 @@ void show_meta(char *img_fn, int idx, gchar *img_type, MainUi *m_ui)
     gtk_text_buffer_insert (txt_buffer, &iter, buf, -1);
 
     if (! gtk_widget_get_visible (m_ui->img_info_vbox))
+    {
     	gtk_widget_set_visible (m_ui->img_info_vbox, TRUE);
+    	gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
+    }
 
     return;
 }
@@ -388,7 +391,7 @@ void img_fit_win(GdkPixbuf *pixbuf, int win_w, int win_h, MainUi *m_ui)
     show_scale(px_scale, m_ui);
 
     g_object_unref (pxbscaled);
-    gtk_widget_show_all(m_ui->window);
+    gtk_widget_show(m_ui->image_area);
 
     return;
 }
@@ -496,15 +499,7 @@ static void nudge_loader(MainUi *m_ui)
 	** loader_pixbuf is still around because we referenced it in OnAreaPrepared
 	*/
 	if (curpos >= filesize)
-	{
 	    gdk_pixbuf_loader_close(loader, &err);
-	    m_ui->pulse_status = FALSE;
-	    g_free(filebuf);
-	    loader_pixbuf = NULL;
-	    filebuf = NULL;
-	    filesize = 0;
-	    curpos = 0;
-	}
     }
 
     return;
@@ -676,6 +671,7 @@ void OnAreaPrepared(GdkPixbufLoader *loader, gpointer user_data)
 
     /* Make uniform pulsing */ 
     m_ui->pulse_status = TRUE;
+    gtk_widget_set_visible (m_ui->img_progress_bar, TRUE);
     g_timeout_add(300, pulse_bar, m_ui);
 
     return;

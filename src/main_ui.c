@@ -164,7 +164,6 @@ void main_ui(MainUi *m_ui)
     set_css();
     gtk_widget_show_all(m_ui->window);
     gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
-    gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
 
     return;
 }
@@ -369,7 +368,7 @@ void create_main_view(MainUi *m_ui)
     m_ui->app_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->img_cntl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-    m_ui->img_info_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    m_ui->img_info_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     m_ui->proc_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
 
     /* Set project name and description widgets */
@@ -464,7 +463,6 @@ void image_info(MainUi *m_ui)
     m_ui->img_progress_bar = gtk_progress_bar_new();
     gtk_widget_set_name (m_ui->img_progress_bar, "pbar_1");
     gtk_container_add(GTK_CONTAINER(m_ui->img_info_vbox), m_ui->img_progress_bar);
-    gtk_widget_set_margin_start (m_ui->img_progress_bar, 10);
 
     return;
 }
@@ -551,6 +549,8 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_widget_set_sensitive(m_ui->edit_proj, TRUE);
     gtk_widget_set_sensitive(m_ui->close_proj, TRUE);
     gtk_widget_show_all(m_ui->window);
+    //gtk_widget_show(m_ui->image_list_tree);
+    gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
 
     return;
 }
