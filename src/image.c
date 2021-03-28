@@ -33,6 +33,7 @@
 
 /* Defines */
 
+#define MAX_SCALE 400
 
 /* Includes */
 #include <stdio.h>  
@@ -533,7 +534,7 @@ void zoom_image(double step, MainUi *m_ui)
     	if (step < 1)
     	    return;
 
-    if (px_scale > 400)
+    if (px_scale > MAX_SCALE)
 	return;
 
     scale_pixmap(step, m_ui);
@@ -555,6 +556,9 @@ g_print("scale_pixmap: step:  %0.2f\n", step);
     px_h = ((double) gdk_pixbuf_get_height(m_ui->base_pixbuf)) * (d_scale / 100.0);
     px_w = ((double) gdk_pixbuf_get_width(m_ui->base_pixbuf)) * (d_scale / 100.0);
     pxbscaled = gdk_pixbuf_scale_simple (m_ui->base_pixbuf, (int) px_w, (int) px_h, GDK_INTERP_BILINEAR);
+
+    if (pxbscaled == NULL)
+	printf("%s scale_pixmap - null\n", debug_hdr); fflush(stdout);
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), pxbscaled);
 
     px_scale = d_scale;
@@ -689,6 +693,7 @@ void OnAreaUpdated(GdkPixbufLoader *loader, gint x, gint y, gint width, gint hei
 
     /* Draw latest */
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), loader_pixbuf);
+printf("%s OnAreaUpdated - inage set\n", debug_hdr); fflush(stdout);
 
     return;
 }

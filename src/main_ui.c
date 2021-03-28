@@ -414,7 +414,7 @@ void image_area(MainUi *m_ui)
     /* Create drawing area for graphs */
     m_ui->image_area = gtk_image_new();
     gtk_widget_set_margin_top (m_ui->image_area, 10);
-    gtk_widget_set_size_request (m_ui->image_area, 750, 500);
+    //gtk_widget_set_size_request (m_ui->image_area, 750, 500);
     gtk_widget_set_halign (m_ui->image_area, GTK_ALIGN_CENTER);
     gtk_widget_set_valign (m_ui->image_area, GTK_ALIGN_CENTER);
 
