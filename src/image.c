@@ -693,7 +693,6 @@ void OnAreaUpdated(GdkPixbufLoader *loader, gint x, gint y, gint width, gint hei
 
     /* Draw latest */
     gtk_image_set_from_pixbuf (GTK_IMAGE (m_ui->image_area), loader_pixbuf);
-printf("%s OnAreaUpdated - inage set\n", debug_hdr); fflush(stdout);
 
     return;
 }
@@ -728,9 +727,17 @@ void OnClosed(GdkPixbufLoader *loader, gpointer user_data)
     /* Data */
     m_ui = (MainUi *) user_data;
 
+// Debug
+/*
+const char *handle = "/tmp/test_scale.jpg";
+GError *err = NULL;
+gdk_pixbuf_save (loader_pixbuf, handle, "jpeg", &err, "quality", "100", NULL);
+*/
+
     /* Reset */
     m_ui->pulse_status = FALSE;
     g_free(filebuf);
+    g_object_unref(loader_pixbuf);
     loader_pixbuf = NULL;
     filebuf = NULL;
     filesize = 0;
