@@ -67,6 +67,7 @@ void close_main_display(MainUi *);
 void close_project(ProjectData *);
 int save_proj_init(ProjectData *, GtkWidget *);
 ProjectData * open_project(char *, GtkWidget *);
+int remove_proj(ProjectData *, MainUi *);
 FILE * open_proj_file(char *, char *, GtkWidget *);
 int write_proj_file(FILE *, const char *, GtkWidget *);
 int read_proj_file(FILE *, char *, int, GtkWidget *);
@@ -75,6 +76,7 @@ int get_image_sz(int, GList *);
 void set_image_xml(char **, GList *, int);
 
 extern int load_exif_data(Image *, char *, GtkWidget *);
+extern int remove_dir(const char *);
 extern int get_user_pref(char *, char **);
 extern int val_str2numb(char *, int *, char *, GtkWidget *);
 extern int check_dir(char *);
@@ -368,7 +370,7 @@ int proj_close_check_save(ProjectData *proj, MainUi *m_ui)
     }
     else if (action == TRUE)
     {
-	// SAVE
+	// DO SAVE STUFF HERE
 	close_project(proj);
 	close_main_display(m_ui);
 	m_ui->proj = NULL;
@@ -391,6 +393,7 @@ void close_main_display(MainUi *m_ui)
     m_ui->sel_handler_id = 0;
     gtk_label_set_text(GTK_LABEL (m_ui->status_info), "");
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
+    gtk_widget_set_sensitive(m_ui->remove2_proj, FALSE);
     gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
     g_object_unref (m_ui->base_pixbuf);
     free(m_ui->img_fn);
@@ -563,6 +566,49 @@ void set_image_xml(char **buf, GList *gl, int idx)
     sprintf(*buf, "%s%s\n", *buf, proj_tags[idx][1]);		// Images end tag
 
     return;
+}
+
+
+/* Remove a project to the backup directory */
+
+int remove_proj(ProjectData *proj, MainUi *m_ui)
+{
+    char *s, *bkup;
+
+    /* Confirm dialog */
+
+    /* Move the project directory the BACKUP directory */
+    get_user_pref(BACKUP_DIR, &bkup);
+    s = (char*) malloc(strlen(proj->project_name) + strlen(bkup) + 8);
+    sprintf(s, "%s/%s.bak", bkup, proj->project_name);
+
+    /* Overwrite any previous backup */
+    if (check_dir(s) == TRUE)
+	if (remove_dir(s) != 0)
+	{
+	    sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	    log_msg("SYS9009", proj->project_name, "SYS9009", m_ui->window);
+	    return FALSE;
+	}
+
+    if (rename(proj->project_path, s) < 0)
+    {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9009", proj->project_name, "SYS9009", m_ui->window);
+	return FALSE;
+    }
+    else
+    {
+	log_msg("SYS9010", proj->project_name, NULL, NULL);
+    }
+
+    free(s);
+
+    /* Close the project */
+    close_project(proj);
+    close_main_display(m_ui);
+
+    return TRUE;
 }
 
 

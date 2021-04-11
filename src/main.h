@@ -54,8 +54,8 @@ typedef struct _main_ui
     GtkWidget *menu_bar;  
     GtkWidget *file_menu, *edit_menu, *view_menu, *opt_menu, *help_menu;
     GtkWidget *file_hdr, *edit_hdr, *view_hdr, *opt_hdr, *help_hdr;
-    GtkWidget *new_proj, *open_proj, *close_proj, *file_exit;
-    GtkWidget *edit_proj, *opt_prefs;
+    GtkWidget *new_proj, *open_proj, *remove_proj, *close_proj, *file_exit;
+    GtkWidget *edit_proj, *remove2_proj, *opt_prefs;
     GtkWidget *view_fit, *view_actual, *view_x2, *view_x3;
     GtkWidget *view_log, *help_about;
     GtkWidget *sep, *sep2;

@@ -80,6 +80,7 @@ void col_set_attrs (GtkTreeViewColumn *, GtkCellRenderer *, GtkTreeModel *, GtkT
 
 extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
+extern void OnRemoveProj(GtkWidget*, gpointer);
 extern void OnCloseProj(GtkWidget*, gpointer);
 extern void OnEditProj(GtkWidget*, gpointer);
 extern void OnViewFit(GtkWidget*, gpointer);
@@ -191,6 +192,7 @@ void create_menu(MainUi *m_ui)
     /* File menu items */
     m_ui->new_proj = gtk_menu_item_new_with_mnemonic ("New Project...");
     m_ui->open_proj = gtk_menu_item_new_with_mnemonic ("Open Project...");
+    m_ui->remove_proj = gtk_menu_item_new_with_mnemonic ("Remove Project...");
     m_ui->close_proj = gtk_menu_item_new_with_mnemonic ("Close Project");
     m_ui->sep = gtk_separator_menu_item_new();
     m_ui->file_exit = gtk_menu_item_new_with_mnemonic ("E_xit");
@@ -199,6 +201,7 @@ void create_menu(MainUi *m_ui)
     /* Add to menu */
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->new_proj);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->open_proj);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->remove_proj);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->close_proj);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->sep);
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->file_menu), m_ui->file_exit);
@@ -206,12 +209,14 @@ void create_menu(MainUi *m_ui)
     /* Callbacks */
     g_signal_connect (m_ui->new_proj, "activate", G_CALLBACK (OnNewProj), m_ui->window);
     g_signal_connect (m_ui->open_proj, "activate", G_CALLBACK (OnOpenProj), m_ui->window);
+    g_signal_connect (m_ui->remove_proj, "activate", G_CALLBACK (OnRemoveProj), m_ui->window);
     g_signal_connect (m_ui->close_proj, "activate", G_CALLBACK (OnCloseProj), m_ui->window);
     g_signal_connect_swapped (m_ui->file_exit, "activate", G_CALLBACK (OnQuit), m_ui->window); 
 
     /* Show menu items */
     gtk_widget_show (m_ui->new_proj);
     gtk_widget_show (m_ui->open_proj);
+    gtk_widget_show (m_ui->remove_proj);
     gtk_widget_show (m_ui->close_proj);
     gtk_widget_show (m_ui->file_exit);
 
@@ -221,16 +226,21 @@ void create_menu(MainUi *m_ui)
 
     /* Edit menu items */
     m_ui->edit_proj = gtk_menu_item_new_with_mnemonic ("_Project...");
+    m_ui->remove2_proj = gtk_menu_item_new_with_mnemonic ("_Remove Project...");
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
+    gtk_widget_set_sensitive(m_ui->remove2_proj, FALSE);
 
     /* Add to menu */
     gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->edit_proj);
+    gtk_menu_shell_append (GTK_MENU_SHELL (m_ui->edit_menu), m_ui->remove2_proj);
 
     /* Callbacks */
     g_signal_connect (m_ui->edit_proj, "activate", G_CALLBACK (OnEditProj), m_ui->window);
+    g_signal_connect (m_ui->remove2_proj, "activate", G_CALLBACK (OnRemoveProj), m_ui->window);
 
     /* Show menu items */
     gtk_widget_show (m_ui->edit_proj);
+    gtk_widget_show (m_ui->remove2_proj);
 
 
     /* VIEW MENU */
@@ -547,6 +557,7 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_label_set_text(GTK_LABEL (m_ui->proj_desc_lbl), proj->project_desc);
 
     gtk_widget_set_sensitive(m_ui->edit_proj, TRUE);
+    gtk_widget_set_sensitive(m_ui->remove2_proj, TRUE);
     gtk_widget_set_sensitive(m_ui->close_proj, TRUE);
     gtk_widget_show_all(m_ui->window);
     //gtk_widget_show(m_ui->image_list_tree);

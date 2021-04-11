@@ -84,6 +84,7 @@ int read_user_prefs(GtkWidget *);
 int write_user_prefs(GtkWidget *);
 void set_default_prefs();
 void default_dir_pref();
+void default_backup_pref();
 void set_user_prefs(PrefUi *);
 int get_user_pref(char *, char **);
 void get_user_pref_idx(int, char *, char **);
@@ -469,6 +470,15 @@ void set_default_prefs()
     if (p == NULL)
 	default_dir_pref();
 
+    /* Default backup directory */
+    get_user_pref(BACKUP_DIR, &p);
+
+    if (p == NULL)
+	default_backup_pref();
+
+    /* Save to file */
+    write_user_prefs(NULL);
+
     /* Save to file */
     write_user_prefs(NULL);
 
@@ -484,11 +494,34 @@ void default_dir_pref()
     int len;
 
     home_str = home_dir();
-    len = strlen(home_str) + strlen(TITLE) + 11;
+    len = strlen(home_str) + strlen(TITLE) + 2;
     val = (char *) malloc(len);
     sprintf(val, "%s/%s", home_str, TITLE);
 
     add_user_pref(PROJ_DIR, val);
+
+    if (! check_dir(val))
+	make_dir(val);
+
+    free(val);
+
+    return;
+}
+
+
+/* Default backup directory preference - $HOME/StarsAl/BACKUP */
+
+void default_backup_pref()
+{
+    char *home_str, *val;
+    int len;
+
+    home_str = home_dir();
+    len = strlen(home_str) + strlen(TITLE) + 9;
+    val = (char *) malloc(len);
+    sprintf(val, "%s/%s/BACKUP", home_str, TITLE);
+
+    add_user_pref(BACKUP_DIR, val);
 
     if (! check_dir(val))
 	make_dir(val);

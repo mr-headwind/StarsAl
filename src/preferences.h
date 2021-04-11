@@ -52,5 +52,6 @@ typedef struct _UserPrefData
 
 //#define SAMPLE_KEY "SAMPLEKEY1"
 #define PROJ_DIR "PROJDIR"
+#define BACKUP_DIR "BKUPDIR"
 
 #endif

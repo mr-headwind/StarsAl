@@ -49,6 +49,7 @@
 
 void OnNewProj(GtkWidget *, gpointer);
 void OnOpenProj(GtkWidget *, gpointer);
+void OnRemoveProj(GtkWidget*, gpointer);
 void OnCloseProj(GtkWidget *, gpointer);
 void OnEditProj(GtkWidget *, gpointer);
 void OnViewFit(GtkWidget *, gpointer);
@@ -70,6 +71,7 @@ void OnQuit(GtkWidget *, gpointer);
 extern void edit_project_main(ProjectData *, MainUi *);
 extern void open_project_main(MainUi *);
 extern int proj_close_check_save(ProjectData *, MainUi *);
+extern int remove_proj(ProjectData *, MainUi *);
 extern void free_window_reg();
 extern void close_open_ui();
 extern int is_ui_reg(char *, int);
@@ -137,6 +139,28 @@ void OnEditProj(GtkWidget *menu_item, gpointer user_data)
     m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
 
     edit_project_main(m_ui->proj, m_ui);
+
+    return;
+}  
+
+
+/* Callback - Remove project */
+
+void OnRemoveProj(GtkWidget *menu_item, gpointer user_data)
+{  
+    GtkWidget *window;
+    MainUi *m_ui;
+
+    /* Data */
+    window = (GtkWidget *) user_data;
+    m_ui = (MainUi *) g_object_get_data (G_OBJECT (window), "ui");
+
+    /* Check if a project is open */
+    if (m_ui->proj != NULL)
+    {
+    	if (remove_proj(m_ui->proj, m_ui) == FALSE)
+    	    return;
+    }
 
     return;
 }  

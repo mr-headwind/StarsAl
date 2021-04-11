@@ -77,7 +77,7 @@ void setup_proj(ProjectData *, ProjectUi *p_ui);
 static void window_cleanup(GtkWidget *, ProjectUi *);
 
 static void OnProjCancel(GtkWidget*, gpointer);
-static gboolean OnProjDelete(GtkWidget*, GdkEvent *, gpointer);
+static gboolean OnProjWinDelete(GtkWidget*, GdkEvent *, gpointer);
 static void OnProjSave(GtkWidget*, gpointer);
 static void OnDirBrowse(GtkWidget*, gpointer);
 static void OnListClear(GtkWidget*, gpointer);
@@ -226,7 +226,7 @@ void project_ui(ProjectData *proj, ProjectUi *p_ui)
     gtk_container_add(GTK_CONTAINER(p_ui->window), p_ui->main_vbox);
 
     /* Exit when window closed */
-    p_ui->close_handler_id = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnProjDelete), NULL);
+    p_ui->close_handler_id = g_signal_connect(p_ui->window, "delete-event", G_CALLBACK(OnProjWinDelete), NULL);
 
     /* Show */
     gtk_widget_show_all(p_ui->window);
@@ -818,7 +818,7 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 {
     const gchar *nm, *desc;
     int len;
-    char *s;
+    char *s, *bkup;
 
     /* Project name and path */
     nm = gtk_entry_get_text (GTK_ENTRY (p_ui->proj_nm));
@@ -832,8 +832,9 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     }
     else 						// Edit
     {
-	s = (char*) malloc(strlen(proj->project_path) + 5);
-	sprintf(s, "%s.bak", proj->project_path);
+	get_user_pref(BACKUP_DIR, &bkup);
+	s = (char*) malloc(strlen(proj->project_name) + strlen(bkup) + 8);
+	sprintf(s, "%s/%s.bak-1", bkup, proj->project_name);
 
 	/* Overwrite any previous backup */
 	if (check_dir(s) == TRUE)
@@ -1073,6 +1074,7 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
 
     /* Set up main screen display */
     m_ui->proj = proj;
+    gtk_widget_destroy(m_ui->image_list_tree);
     display_proj(proj, m_ui);
 
     return;
@@ -1120,7 +1122,7 @@ void OnProjCancel(GtkWidget *window, gpointer user_data)
 
 /* Window delete event */
 
-gboolean OnProjDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
+gboolean OnProjWinDelete(GtkWidget *window, GdkEvent *ev, gpointer user_data)
 {
     OnProjCancel(window, user_data);
 
