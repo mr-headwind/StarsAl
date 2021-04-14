@@ -560,8 +560,14 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_widget_set_sensitive(m_ui->remove2_proj, TRUE);
     gtk_widget_set_sensitive(m_ui->close_proj, TRUE);
     gtk_widget_show_all(m_ui->window);
-    //gtk_widget_show(m_ui->image_list_tree);
     gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
+
+    if (! set)
+    {
+	gtk_image_clear(GTK_IMAGE (m_ui->image_area));
+	view_menu_sensitive(m_ui, FALSE);
+	gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
+    }
 
     return;
 }
@@ -580,6 +586,9 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     GtkTreeIter iter;
 
     /* Build a list view for images */
+    if (GTK_IS_WIDGET (m_ui->image_list_tree))
+    	gtk_widget_destroy(m_ui->image_list_tree);
+
     store = gtk_list_store_new (IMG_N_COLUMNS, G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 
     /* Iterate through the images and add the store */

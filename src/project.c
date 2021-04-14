@@ -298,7 +298,12 @@ int load_files(GList **gl, char **buf_ptr, const char *start_tag, const char *en
 	else
 	{
 	    img->path = strndup(fn, p - fn - 1);
-	    load_exif_data(img, fn, window);
+	    
+	    if (! load_exif_data(img, fn, window))
+	    {
+	    	free(fn);
+	    	continue;
+	    }
 	}
 
 	/* Add to list */
@@ -395,7 +400,10 @@ void close_main_display(MainUi *m_ui)
     gtk_widget_set_sensitive(m_ui->edit_proj, FALSE);
     gtk_widget_set_sensitive(m_ui->remove2_proj, FALSE);
     gtk_widget_set_sensitive(m_ui->close_proj, FALSE);
-    g_object_unref (m_ui->base_pixbuf);
+
+    if (m_ui->base_pixbuf != NULL)
+	g_object_unref (m_ui->base_pixbuf);
+
     free(m_ui->img_fn);
     gtk_image_clear(GTK_IMAGE (m_ui->image_area));
     view_menu_sensitive(m_ui, FALSE);

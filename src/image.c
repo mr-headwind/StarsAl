@@ -221,7 +221,6 @@ int load_exif_data(Image *img, char *full_path, GtkWidget *window)
     if (!ed)
     {
 	log_msg("APP0010", full_path, "APP0010", window);
-        free(full_path);
         return FALSE;
     }
 
