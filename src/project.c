@@ -615,6 +615,7 @@ int remove_proj(ProjectData *proj, MainUi *m_ui)
     /* Close the project */
     close_project(proj);
     close_main_display(m_ui);
+    m_ui->proj = NULL;
 
     return TRUE;
 }

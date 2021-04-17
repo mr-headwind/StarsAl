@@ -1074,7 +1074,6 @@ void OnProjSave(GtkWidget *btn, gpointer user_data)
 
     /* Set up main screen display */
     m_ui->proj = proj;
-    gtk_widget_destroy(m_ui->image_list_tree);
     display_proj(proj, m_ui);
 
     return;
