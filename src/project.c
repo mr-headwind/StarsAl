@@ -584,6 +584,7 @@ int remove_proj(ProjectData *proj, MainUi *m_ui)
     char *s, *bkup;
 
     /* Confirm dialog */
+    res = query_dialog(m_ui->window, "Confirm remove project: %s?", proj->project_name);
 
     /* Move the project directory the BACKUP directory */
     get_user_pref(BACKUP_DIR, &bkup);

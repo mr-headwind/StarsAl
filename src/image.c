@@ -202,7 +202,13 @@ Image * setup_image(char *nm, char *dir, char *image_full_path, ProjectUi *p_ui)
     strcpy(img->nm, nm);
     strcpy(img->path, dir);
 
-    load_exif_data(img, image_full_path, p_ui->window);
+    if (! load_exif_data(img, image_full_path, p_ui->window))
+    {
+    	free(img->nm);
+    	free(img->path);
+    	free(img);
+    	return NULL;
+    }
 
     return img;
 }

@@ -444,14 +444,17 @@ void show_list(SelectListUi *lst, GSList *gsl, ProjectUi *p_ui)
 	if (l == NULL)
 	{
 	    basename_dirname(path1, &nm, &dir);
-	    row = create_lstbox_row(nm, dir);
-	    gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
-
 	    image = setup_image(nm, dir, path1, p_ui);
-	    lst->img_files = g_list_prepend(lst->img_files, image);
-	    g_object_set_data (G_OBJECT (row), "image", image);
 
-	    save_indi = TRUE;
+	    if (image)
+	    {
+		row = create_lstbox_row(nm, dir);
+		gtk_list_box_insert(GTK_LIST_BOX (lst->list_box), row, -1);
+		lst->img_files = g_list_prepend(lst->img_files, image);
+		g_object_set_data (G_OBJECT (row), "image", image);
+		save_indi = TRUE;
+	    }
+
 	    free(nm);
 	    free(dir);
 	}
