@@ -84,6 +84,7 @@ extern int make_dir(char *);
 extern int get_file_stat(char *, struct stat *);
 extern void log_msg(char*, char*, char*, GtkWidget*);
 extern void view_menu_sensitive(MainUi *, int);
+extern gint query_dialog(GtkWidget *, char *, char *);
 
 
 /* Globals */
@@ -582,9 +583,13 @@ void set_image_xml(char **buf, GList *gl, int idx)
 int remove_proj(ProjectData *proj, MainUi *m_ui)
 {
     char *s, *bkup;
+    gint res;
 
     /* Confirm dialog */
     res = query_dialog(m_ui->window, "Confirm remove project: %s?", proj->project_name);
+
+    if (res == GTK_RESPONSE_NO)
+    	return FALSE;
 
     /* Move the project directory the BACKUP directory */
     get_user_pref(BACKUP_DIR, &bkup);

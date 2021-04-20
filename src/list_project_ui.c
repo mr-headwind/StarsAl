@@ -20,7 +20,7 @@
 
 
 /*
-** Description: Open Project user interface and management.
+** Description: List Project user interface and management.
 **
 ** Author:	Anthony Buckley
 **
@@ -65,7 +65,7 @@ typedef struct _SelectProjUi
     GtkWidget *hdr_hbox, *info_hbox;
     GtkWidget *nm_hdr, *desc_hdr, *date_hdr;
     GtkWidget *cnt_lbl;
-    GtkWidget *open_btn, *cancel_btn;
+    GtkWidget *open_btn, *remove_btn, *cancel_btn;
     int close_handler_id, sel_handler_id, act_handler_id;
     MainUi *m_ui;
 } SelectProjUi;
@@ -89,8 +89,8 @@ enum ProjectCol
 
 /* Prototypes */
 
-int open_project_main(MainUi *);
-int sel_proj_init(GtkWidget *);
+int list_project_main(MainUi *, int);
+int sel_proj_init(GtkWidget *, int);
 SelectProjUi * new_sel_proj_ui();
 static void sel_proj_ui(SelectProjUi *, MainUi *);
 static void select_proj_cntr(SelectProjUi *);
@@ -104,6 +104,7 @@ static void window_cleanup(GtkWidget *, SelectProjUi *);
 static void OnProjSelect (GtkTreeSelection *, gpointer);
 static void OnProjDbl (GtkTreeView *, GtkTreePath *, GtkTreeViewColumn *, gpointer);
 static void OnOpen(GtkWidget*, gpointer);
+static void OnRemove(GtkWidget*, gpointer);
 static void OnCancel(GtkWidget*, gpointer);
 gboolean OnOpenDelete(GtkWidget *, GdkEvent *, gpointer);
 
@@ -124,20 +125,20 @@ extern void deregister_window(GtkWidget *);
 /* Globals */
 
 static const char *debug_hdr = "DEBUG-project_ui.c ";
-static int save_indi;
 static char *proj_dir;
 static gchar *curr_proj_nm;
 static int proj_dir_len;
+static int ui_mode;
 
 
-/* Project selection */
+/* Project selection, mode: 0 - open, 1 - remove */
 
-int open_project_main(MainUi *m_ui)
+int list_project_main(MainUi *m_ui, int mode)
 {
     SelectProjUi *ui;
 
     /* Initial */
-    if (! sel_proj_init(m_ui->window))
+    if (! sel_proj_init(m_ui->window, mode))
     	return FALSE;
 
     /* Initialise project */
@@ -156,7 +157,7 @@ int open_project_main(MainUi *m_ui)
 
 /* Initial checks and values */
 
-int sel_proj_init(GtkWidget *window)
+int sel_proj_init(GtkWidget *window, int mode)
 {
     char *p;
 
@@ -172,6 +173,7 @@ int sel_proj_init(GtkWidget *window)
     proj_dir = p;
     proj_dir_len = strlen(p);
     curr_proj_nm = NULL;
+    ui_mode = mode;
 
     return TRUE;
 }
@@ -223,10 +225,20 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     g_signal_connect_swapped(s_ui->cancel_btn, "clicked", G_CALLBACK(OnCancel), s_ui->window);
     gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->cancel_btn, FALSE, FALSE, 0);
 
-    /* Open button */
-    s_ui->open_btn = gtk_button_new_with_label("  Open  ");
-    g_signal_connect(s_ui->open_btn, "clicked", G_CALLBACK(OnOpen), (gpointer) s_ui);
-    gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->open_btn, FALSE, FALSE, 0);
+    if (ui_mode == 0)
+    {
+	/* Open button */
+	s_ui->open_btn = gtk_button_new_with_label("  Open  ");
+	g_signal_connect(s_ui->open_btn, "clicked", G_CALLBACK(OnOpen), (gpointer) s_ui);
+	gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->open_btn, FALSE, FALSE, 0);
+    }
+    else
+    {
+	/* Remove button */
+	s_ui->remove_btn = gtk_button_new_with_label("  Remove  ");
+	g_signal_connect(s_ui->remove_btn, "clicked", G_CALLBACK(OnRemove), (gpointer) s_ui);
+	gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->remove_btn, FALSE, FALSE, 0);
+    }
 
     /* Combine everything onto the window */
     gtk_box_pack_start (GTK_BOX (s_ui->main_vbox), s_ui->scroll_win, FALSE, FALSE, 0);
@@ -349,7 +361,9 @@ int project_list(SelectProjUi *s_ui)
     s_ui->model = gtk_tree_view_get_model (GTK_TREE_VIEW (s_ui->tree));
     gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (s_ui->tree), TOOL_TIP);
     gtk_tree_view_set_activate_on_single_click (GTK_TREE_VIEW (s_ui->tree), FALSE);
-    s_ui->act_handler_id = g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK (OnProjDbl), s_ui);
+
+    if (ui_mode == 0)
+	s_ui->act_handler_id = g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK (OnProjDbl), s_ui);
 
     /* Selection */
     s_ui->select_proj = gtk_tree_view_get_selection (GTK_TREE_VIEW (s_ui->tree));
@@ -538,6 +552,21 @@ void OnOpen(GtkWidget *btn, gpointer user_data)
 }
 
 
+/* Callback - Remove project */
+
+void OnRemove(GtkWidget *btn, gpointer user_data)
+{  
+    SelectProjUi *s_ui;
+    MainUi *m_ui;
+
+    /* Get data */
+    s_ui = (SelectProjUi *) user_data;
+    m_ui = s_ui->m_ui;
+
+    return;
+}
+
+
 // Callback for window close
 // Destroy the window and de-register the window 
 
@@ -577,8 +606,10 @@ void window_cleanup(GtkWidget *window, SelectProjUi *s_ui)
     
     /* Close the window, free the screen data and block any secondary close signal */
     g_signal_handler_block (window, s_ui->close_handler_id);
-    g_signal_handler_block (s_ui->tree, s_ui->act_handler_id);
     g_signal_handler_block (s_ui->select_proj, s_ui->sel_handler_id);
+
+    if (ui_mode == 0)
+	g_signal_handler_block (s_ui->tree, s_ui->act_handler_id);
 
     deregister_window(window);
     gtk_window_close(GTK_WINDOW(window));

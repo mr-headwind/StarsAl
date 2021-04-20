@@ -69,7 +69,7 @@ void OnQuit(GtkWidget *, gpointer);
 
 
 extern void edit_project_main(ProjectData *, MainUi *);
-extern void open_project_main(MainUi *);
+extern void list_project_main(MainUi *, int);
 extern int proj_close_check_save(ProjectData *, MainUi *);
 extern int remove_proj(ProjectData *, MainUi *);
 extern void free_window_reg();
@@ -161,6 +161,10 @@ void OnRemoveProj(GtkWidget *menu_item, gpointer user_data)
     	if (remove_proj(m_ui->proj, m_ui) == FALSE)
     	    return;
     }
+    else
+    {
+	list_project_main(m_ui, 1);
+    }
 
     return;
 }  
@@ -206,7 +210,7 @@ void OnOpenProj(GtkWidget *menu_item, gpointer user_data)
     }
 
     /* Open selection window */
-    open_project_main(m_ui);
+    list_project_main(m_ui, 0);
 
     return;
 }  
