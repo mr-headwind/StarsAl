@@ -42,6 +42,11 @@
 #define FALSE 0
 #endif
 
+#ifndef MODE_OPEN
+#define MODE_OPEN 0
+#define MODE_REMOVE 1
+#endif
+
 #if defined (GDK_WINDOWING_X11)
 #include <gdk/gdkx.h>
 #elif defined (GDK_WINDOWING_WIN32)

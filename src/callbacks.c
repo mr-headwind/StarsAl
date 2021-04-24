@@ -163,7 +163,7 @@ void OnRemoveProj(GtkWidget *menu_item, gpointer user_data)
     }
     else
     {
-	list_project_main(m_ui, 1);
+	list_project_main(m_ui, MODE_REMOVE);
     }
 
     return;
@@ -210,7 +210,7 @@ void OnOpenProj(GtkWidget *menu_item, gpointer user_data)
     }
 
     /* Open selection window */
-    list_project_main(m_ui, 0);
+    list_project_main(m_ui, MODE_OPEN);
 
     return;
 }  

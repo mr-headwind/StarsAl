@@ -109,6 +109,7 @@ static void OnCancel(GtkWidget*, gpointer);
 gboolean OnOpenDelete(GtkWidget *, GdkEvent *, gpointer);
 
 extern ProjectData * open_project(char *, GtkWidget *);
+extern int remove_proj2(char *, GtkWidget *);
 extern void create_label(GtkWidget **, char *, char *, GtkWidget *);
 extern char * get_xmltag_val(char **, const char *, const char *, int, GtkWidget *);
 extern FILE * open_proj_file(char *, char *, GtkWidget *);
@@ -225,7 +226,7 @@ void sel_proj_ui(SelectProjUi *s_ui, MainUi *m_ui)
     g_signal_connect_swapped(s_ui->cancel_btn, "clicked", G_CALLBACK(OnCancel), s_ui->window);
     gtk_box_pack_end (GTK_BOX (s_ui->btn_hbox), s_ui->cancel_btn, FALSE, FALSE, 0);
 
-    if (ui_mode == 0)
+    if (ui_mode == MODE_OPEN)
     {
 	/* Open button */
 	s_ui->open_btn = gtk_button_new_with_label("  Open  ");
@@ -362,7 +363,7 @@ int project_list(SelectProjUi *s_ui)
     gtk_tree_view_set_tooltip_column (GTK_TREE_VIEW (s_ui->tree), TOOL_TIP);
     gtk_tree_view_set_activate_on_single_click (GTK_TREE_VIEW (s_ui->tree), FALSE);
 
-    if (ui_mode == 0)
+    if (ui_mode == MODE_OPEN)
 	s_ui->act_handler_id = g_signal_connect(s_ui->tree, "row-activated", G_CALLBACK (OnProjDbl), s_ui);
 
     /* Selection */
@@ -557,11 +558,14 @@ void OnOpen(GtkWidget *btn, gpointer user_data)
 void OnRemove(GtkWidget *btn, gpointer user_data)
 {  
     SelectProjUi *s_ui;
-    MainUi *m_ui;
 
     /* Get data */
     s_ui = (SelectProjUi *) user_data;
-    m_ui = s_ui->m_ui;
+
+    if (! remove_proj2(curr_proj_nm, s_ui->window))
+	return;
+
+    OnCancel(s_ui->window, s_ui);
 
     return;
 }
@@ -608,7 +612,7 @@ void window_cleanup(GtkWidget *window, SelectProjUi *s_ui)
     g_signal_handler_block (window, s_ui->close_handler_id);
     g_signal_handler_block (s_ui->select_proj, s_ui->sel_handler_id);
 
-    if (ui_mode == 0)
+    if (ui_mode == MODE_OPEN)
 	g_signal_handler_block (s_ui->tree, s_ui->act_handler_id);
 
     deregister_window(window);

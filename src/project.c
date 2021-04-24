@@ -68,6 +68,7 @@ void close_project(ProjectData *);
 int save_proj_init(ProjectData *, GtkWidget *);
 ProjectData * open_project(char *, GtkWidget *);
 int remove_proj(ProjectData *, MainUi *);
+int remove_proj2(char *, GtkWidget *);
 FILE * open_proj_file(char *, char *, GtkWidget *);
 int write_proj_file(FILE *, const char *, GtkWidget *);
 int read_proj_file(FILE *, char *, int, GtkWidget *);
@@ -622,6 +623,55 @@ int remove_proj(ProjectData *proj, MainUi *m_ui)
     close_project(proj);
     close_main_display(m_ui);
     m_ui->proj = NULL;
+
+    return TRUE;
+}
+
+
+/* Remove a project to the backup directory - list selection method */
+
+int remove_proj2(char *project_name, GtkWidget *window)
+{
+    char *s, *bkup, *path, *p;
+    gint res;
+
+    /* Confirm dialog */
+    res = query_dialog(window, "Confirm remove project: %s?", project_name);
+
+    if (res == GTK_RESPONSE_NO)
+    	return FALSE;
+
+    /* Move the project directory the BACKUP directory */
+    get_user_pref(PROJ_DIR, &p);
+    path = (char*) malloc(strlen(project_name) + strlen(p) + 2);
+    sprintf(path, "%s/%s", p, project_name);
+
+    get_user_pref(BACKUP_DIR, &p);
+    bkup = (char*) malloc(strlen(project_name) + strlen(p) + 8);
+    sprintf(bkup, "%s/%s.bak", p, project_name);
+
+    /* Overwrite any previous backup */
+    if (check_dir(bkup) == TRUE)
+	if (remove_dir(bkup) != 0)
+	{
+	    sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	    log_msg("SYS9009", project_name, "SYS9009", window);
+	    return FALSE;
+	}
+
+    if (rename(path, bkup) < 0)
+    {
+	sprintf(app_msg_extra, "Error: (%d) %s", errno, strerror(errno));
+	log_msg("SYS9009", project_name, "SYS9009", window);
+	return FALSE;
+    }
+    else
+    {
+	log_msg("SYS9010", project_name, NULL, NULL);
+    }
+
+    free(path);
+    free(bkup);
 
     return TRUE;
 }
