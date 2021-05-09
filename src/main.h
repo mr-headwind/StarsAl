@@ -64,7 +64,7 @@ typedef struct _main_ui
     /* Tool bars */
 
     /* Application widgets */
-    GtkWidget *algn_vbox, *proc_hbox, *proj_hbox, *img_cntl_hbox, *img_info_vbox;  
+    GtkWidget *algn_vbox, *proc_vbox, *proj_hbox, *img_cntl_hbox, *img_info_vbox;  
     GtkWidget *image_area, *img_scroll_win;  
     GtkWidget *image_list_tree, *lst_scroll_win; 
     GtkTreeModel *model;
@@ -73,6 +73,7 @@ typedef struct _main_ui
     GdkPixbuf *base_pixbuf;
     GtkWidget *txt_view;
     GtkWidget *img_progress_bar;
+    GtkWidget *darks_btn, *register_btn, *stack_btn;
 
     /* Control widgets and items */
     GtkWidget *save_btn;

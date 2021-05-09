@@ -379,7 +379,7 @@ void create_main_view(MainUi *m_ui)
     m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->img_cntl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->img_info_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    m_ui->proc_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+    m_ui->proc_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
 
     /* Set project name and description widgets */
     project_title(m_ui);
@@ -393,13 +393,16 @@ void create_main_view(MainUi *m_ui)
     /* Listbox for project image and dark files */
     image_list(m_ui);
 
+    /* Image processing sequence */
+    process_panel(m_ui);
+
     /* Combine together */
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->proj_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_scroll_win, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_info_vbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_cntl_hbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->lst_scroll_win, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_hbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_vbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, FALSE, FALSE, 0);
 
     return;
@@ -734,6 +737,31 @@ void col_set_attrs (GtkTreeViewColumn *tree_column,
 	g_object_set (G_OBJECT (cell), "cell-background-rgba", &LIGHT_GRAY, NULL);
 
     g_free(img_type);
+
+    return; 
+}
+
+
+/* Create the processing control panel buttons */
+
+void process_panel(MainUi *m_ui)
+{  
+    /* Process darks button */
+    m_ui->darks_btn = gtk_button_new_with_label("  Process Darks  ");
+    g_signal_connect(m_ui->darks_btn, "clicked", G_CALLBACK(OnProcessDarks), m_ui);
+    gtk_box_pack_end (GTK_BOX (m_ui->proc_vbox), m_ui->darks_btn, FALSE, FALSE, 0);
+
+    /* Register (align) images button */
+    m_ui->register_btn = gtk_button_new_with_label("  Register Images  ");
+    g_signal_connect(m_ui->register_btn, "clicked", G_CALLBACK(OnRegister), m_ui);
+    gtk_box_pack_end (GTK_BOX (m_ui->proc_vbox), m_ui->register_btn, FALSE, FALSE, 0);
+
+    /* Stack images button */
+    m_ui->stack_btn = gtk_button_new_with_label("  Stack Images  ");
+    g_signal_connect(m_ui->stack_btn, "clicked", G_CALLBACK(OnStack), m_ui);
+    gtk_box_pack_end (GTK_BOX (m_ui->stack_btn), m_ui->m_ui->stack_btn, FALSE, FALSE, 0);
+
+    gtk_widget_set_halign(GTK_WIDGET (m_ui->proc_vbox), GTK_ALIGN_CENTER);
 
     return; 
 }
