@@ -77,6 +77,7 @@ void display_proj(ProjectData *, MainUi *);
 void set_image_list(ProjectData *, MainUi *);
 void new_image_col(int, char *, enum ImageCol, MainUi *);
 void col_set_attrs (GtkTreeViewColumn *, GtkCellRenderer *, GtkTreeModel *, GtkTreeIter *, gpointer);
+void process_panel(MainUi *);
 
 extern void OnNewProj(GtkWidget*, gpointer);
 extern void OnOpenProj(GtkWidget*, gpointer);
@@ -93,6 +94,9 @@ extern gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
 extern void OnImageSize(GtkWidget *, GdkRectangle *, gpointer);
 extern void OnImageSelect (GtkTreeSelection *, gpointer);
 extern void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
+extern void OnProcessDarks(GtkWidget*, gpointer);
+extern void OnRegister(GtkWidget*, gpointer);
+extern void OnStack(GtkWidget*, gpointer);
 extern void OnPrefs(GtkWidget*, gpointer);
 extern void OnAbout(GtkWidget*, gpointer);
 extern void OnViewLog(GtkWidget*, gpointer);
@@ -106,6 +110,7 @@ extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
+extern void setup_btnbx(GtkWidget **, char *, int, GtkWidget **, char *, int);
 extern char * itostr(int);
 extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
@@ -747,21 +752,22 @@ void col_set_attrs (GtkTreeViewColumn *tree_column,
 void process_panel(MainUi *m_ui)
 {  
     /* Process darks button */
-    m_ui->darks_btn = gtk_button_new_with_label("  Process Darks  ");
+    setup_btnbx(&(m_ui->darks_btnbx), "btnbx_1", 75, &(m_ui->darks_btn), "  Process Darks  ", 12);
     g_signal_connect(m_ui->darks_btn, "clicked", G_CALLBACK(OnProcessDarks), m_ui);
-    gtk_box_pack_end (GTK_BOX (m_ui->proc_vbox), m_ui->darks_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->proc_vbox), m_ui->darks_btnbx, FALSE, FALSE, 0);
 
     /* Register (align) images button */
-    m_ui->register_btn = gtk_button_new_with_label("  Register Images  ");
+    setup_btnbx(&(m_ui->register_btnbx), "btnbx_3", 0, &(m_ui->register_btn), "  Register Images  ", 12);
     g_signal_connect(m_ui->register_btn, "clicked", G_CALLBACK(OnRegister), m_ui);
-    gtk_box_pack_end (GTK_BOX (m_ui->proc_vbox), m_ui->register_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->proc_vbox), m_ui->register_btnbx, FALSE, FALSE, 0);
 
     /* Stack images button */
-    m_ui->stack_btn = gtk_button_new_with_label("  Stack Images  ");
+    setup_btnbx(&(m_ui->stack_btnbx), "btnbx_3", 0, &(m_ui->stack_btn), "  Stack Images  ", 12);
     g_signal_connect(m_ui->stack_btn, "clicked", G_CALLBACK(OnStack), m_ui);
-    gtk_box_pack_end (GTK_BOX (m_ui->stack_btn), m_ui->m_ui->stack_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->proc_vbox), m_ui->stack_btnbx, FALSE, FALSE, 0);
 
     gtk_widget_set_halign(GTK_WIDGET (m_ui->proc_vbox), GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(GTK_WIDGET (m_ui->proc_vbox), GTK_ALIGN_START);
 
     return; 
 }

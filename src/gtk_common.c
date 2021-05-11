@@ -50,6 +50,7 @@ void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
+void setup_btnbx(GtkWidget **, char *, int, GtkWidget **, char *, int);
 	
 char find_active_by_parent(GtkWidget *, char);
 GtkWidget * find_widget_by_name(GtkWidget *, char *);
@@ -188,6 +189,28 @@ void create_cbox(GtkWidget **cbox, char *nm, const char *arr[], int max, int act
     gtk_widget_set_valign(*cbox, GTK_ALIGN_CENTER);
     gtk_widget_set_margin_top (*cbox, 0);
     gtk_grid_attach(GTK_GRID (cntr), *cbox, col, row, 1, 1);
+
+    return;
+}
+
+
+/* Set up a button inside a colour coded box */
+
+void setup_btnbx(GtkWidget **btnbx, char *btnbx_nm, int btnbx_top,
+		 GtkWidget **btn, char *btn_lbl, int margin)
+{  
+    /* Button box */
+    *btnbx = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_margin_top (*btnbx, btnbx_top);
+    gtk_widget_set_name (*btnbx, btnbx_nm);
+
+    /* Button */
+    *btn = gtk_button_new_with_label(btn_lbl);
+    gtk_widget_set_margin_top(*btn, margin);
+    gtk_widget_set_margin_bottom(*btn, margin);
+    gtk_widget_set_margin_start(*btn, margin);
+    gtk_widget_set_margin_end(*btn, margin);
+    gtk_box_pack_start (GTK_BOX (*btnbx), *btn, TRUE, TRUE, 0);
 
     return;
 }

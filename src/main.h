@@ -74,6 +74,7 @@ typedef struct _main_ui
     GtkWidget *txt_view;
     GtkWidget *img_progress_bar;
     GtkWidget *darks_btn, *register_btn, *stack_btn;
+    GtkWidget *darks_btnbx, *register_btnbx, *stack_btnbx;
 
     /* Control widgets and items */
     GtkWidget *save_btn;

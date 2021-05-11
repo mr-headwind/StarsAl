@@ -62,6 +62,9 @@ gboolean OnMouseDrag(GtkScrolledWindow *, GdkEvent *, gpointer);
 void OnImageSize(GtkWidget *, GdkRectangle *, gpointer);
 void OnImageSelect(GtkTreeSelection *, gpointer);
 void OnBaseToggle(GtkCellRendererToggle *, gchar *, gpointer);
+void OnProcessDarks(GtkWidget *, gpointer);
+void OnRegister(GtkWidget *, gpointer);
+void OnStack(GtkWidget *, gpointer);
 void OnPrefs(GtkWidget *, gpointer);
 void OnViewLog(GtkWidget *, gpointer);
 void OnAbout(GtkWidget *, gpointer);
@@ -492,6 +495,45 @@ void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer da
 	m_ui->curr_dark_base = strdup((char *) path);
 
     g_free(img_type);
+
+    return;
+}  
+
+
+/* Callback - Process Darks */
+
+void OnProcessDarks(GtkWidget *btn, gpointer user_data)
+{  
+    MainUi *m_ui;
+
+    /* Get data */
+    m_ui = (MainUi *) user_data;
+
+    return;
+}  
+
+
+/* Callback - Register (align) images */
+
+void OnRegister(GtkWidget *btn, gpointer user_data)
+{  
+    MainUi *m_ui;
+
+    /* Get data */
+    m_ui = (MainUi *) user_data;
+
+    return;
+}  
+
+
+/* Callback - Stack images */
+
+void OnStack(GtkWidget *btn, gpointer user_data)
+{  
+    MainUi *m_ui;
+
+    /* Get data */
+    m_ui = (MainUi *) user_data;
 
     return;
 }  
