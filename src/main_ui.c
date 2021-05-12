@@ -379,12 +379,14 @@ void view_menu_sensitive(MainUi *m_ui, int tf)
 void create_main_view(MainUi *m_ui)
 {  
     /* Control containers */
-    m_ui->proj_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+    m_ui->proj_hdg_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->app_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->img_cntl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-    m_ui->img_info_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    m_ui->proc_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    m_ui->img_meta_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    m_ui->proc_help_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    m_ui->misc1_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    m_ui->proc_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
     /* Set project name and description widgets */
     project_title(m_ui);
@@ -402,13 +404,13 @@ void create_main_view(MainUi *m_ui)
     process_panel(m_ui);
 
     /* Combine together */
-    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->proj_hbox, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_scroll_win, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_info_vbox, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_cntl_hbox, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->lst_scroll_win, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_vbox, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proj_hdg_hbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_scroll_win, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_info_vbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_cntl_hbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->lst_scroll_win, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_vbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, TRUE, TRUE, 0);
 
     return;
 }
@@ -418,8 +420,9 @@ void create_main_view(MainUi *m_ui)
 
 void project_title(MainUi *m_ui)
 {  
-    create_label(&(m_ui->proj_name_lbl), "title_3b", "", m_ui->proj_hbox);
-    create_label(&(m_ui->proj_desc_lbl), "data_2a", "", m_ui->proj_hbox);
+    create_label(&(m_ui->proj_name_lbl), "title_3b", "", m_ui->proj_hdg_hbox);
+    create_label(&(m_ui->proj_desc_lbl), "data_2a", "", m_ui->proj_hdg_hbox);
+    gtk_widget_set_valign(m_ui->proj_hdg_hbox, GTK_ALIGN_START);
 
     return;
 }
@@ -470,17 +473,17 @@ void image_info(MainUi *m_ui)
 {  
     m_ui->txt_view = gtk_text_view_new();
     gtk_widget_set_name (m_ui->txt_view, "txtview_1");
-    gtk_container_add(GTK_CONTAINER(m_ui->img_info_vbox), m_ui->txt_view);
-    gtk_widget_set_margin_start (m_ui->img_info_vbox, 10);
-    gtk_widget_set_valign (m_ui->img_info_vbox, GTK_ALIGN_END);
+    gtk_container_add(GTK_CONTAINER(m_ui->img_meta_vbox), m_ui->txt_view);
+    gtk_widget_set_margin_start (m_ui->img_meta_vbox, 10);
+    gtk_widget_set_valign (m_ui->img_meta_vbox, GTK_ALIGN_END);
 
     create_label4(&(m_ui->img_scale_lbl), "data_5", "", 1, 5, GTK_ALIGN_CENTER);
-    gtk_box_pack_start (GTK_BOX (m_ui->img_info_vbox), m_ui->img_scale_lbl, FALSE, FALSE, 0);
-    gtk_widget_set_name (m_ui->img_info_vbox, "box_1");
+    gtk_box_pack_start (GTK_BOX (m_ui->img_meta_vbox), m_ui->img_scale_lbl, FALSE, FALSE, 0);
+    gtk_widget_set_name (m_ui->img_meta_vbox, "box_1");
 
     m_ui->img_progress_bar = gtk_progress_bar_new();
     gtk_widget_set_name (m_ui->img_progress_bar, "pbar_1");
-    gtk_container_add(GTK_CONTAINER(m_ui->img_info_vbox), m_ui->img_progress_bar);
+    gtk_container_add(GTK_CONTAINER(m_ui->img_meta_vbox), m_ui->img_progress_bar);
 
     return;
 }
@@ -751,6 +754,9 @@ void col_set_attrs (GtkTreeViewColumn *tree_column,
 
 void process_panel(MainUi *m_ui)
 {  
+    /* Process box */
+    gtk_widget_set_name (m_ui->proc_vbox, "box_2");
+
     /* Process darks button */
     setup_btnbx(&(m_ui->darks_btnbx), "btnbx_1", 75, &(m_ui->darks_btn), "  Process Darks  ", 12);
     g_signal_connect(m_ui->darks_btn, "clicked", G_CALLBACK(OnProcessDarks), m_ui);

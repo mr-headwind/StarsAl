@@ -203,6 +203,10 @@ void setup_btnbx(GtkWidget **btnbx, char *btnbx_nm, int btnbx_top,
     *btnbx = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_margin_top (*btnbx, btnbx_top);
     gtk_widget_set_name (*btnbx, btnbx_nm);
+    gtk_widget_set_margin_top(*btnbx, 10);
+    gtk_widget_set_margin_bottom(*btnbx, 10);
+    gtk_widget_set_margin_start(*btnbx, 10);
+    gtk_widget_set_margin_end(*btnbx, 10);
 
     /* Button */
     *btn = gtk_button_new_with_label(btn_lbl);

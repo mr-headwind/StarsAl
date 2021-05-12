@@ -64,7 +64,7 @@ typedef struct _main_ui
     /* Tool bars */
 
     /* Application widgets */
-    GtkWidget *algn_vbox, *proc_vbox, *proj_hbox, *img_cntl_hbox, *img_info_vbox;  
+    GtkWidget *algn_vbox, *proc_vbox, *proj_hdg_hbox, *img_cntl_hbox, *img_meta_vbox, *proc_help_vbox;  
     GtkWidget *image_area, *img_scroll_win;  
     GtkWidget *image_list_tree, *lst_scroll_win; 
     GtkTreeModel *model;
