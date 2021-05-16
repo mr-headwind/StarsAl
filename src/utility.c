@@ -112,6 +112,7 @@ static const char *app_messages[][2] =
     { "APP0012", "One or more images have inconsistent - \n\tISO, Exposure, Width or Height. "},
     { "APP0013", "Warning: One or more darks have been discarded. "},
     { "APP0014", "File error: Failed to find tag - %s. "},
+    { "APP0015", "Error: You must have a least one image. "},
     { "APP9999", "Application message: "},
     { "SYS9000", "Failed to start application. "},
     { "SYS9001", "Session started. "},
@@ -132,7 +133,7 @@ static const char *app_messages[][2] =
     { "SYS9999", "Error - Unknown error message given. "}			// NB - MUST be last
 };
 
-static const int Msg_Count = 32;
+static const int Msg_Count = 33;
 static char *Home;
 static char *logfile = NULL;
 static FILE *lf = NULL;

@@ -666,6 +666,12 @@ int validate_images(GList *img_files, ImgExif *exif, ProjectUi *p_ui)
     memset(img_arr, 0, img_cnt * sizeof(ExArray));
     r = FALSE;
 
+    if (img_cnt == 0)
+    {
+	log_msg("APP0015", NULL, "APP0015", p_ui->window);
+	return r;
+    }
+
     /* Iterate each image file and check the exposure data */
     for(l = img_files; l != NULL; l = l->next)
     {
@@ -879,9 +885,6 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 
     strcpy(proj->project_desc, desc);
 
-    /* Project status */
-    proj->status = 0;
-
     /* Images and Darks */
     if (proj->images_gl != NULL)
 	g_list_free (proj->images_gl);
@@ -891,6 +894,9 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
 
     proj->images_gl = g_list_copy(p_ui->images.img_files);
     proj->darks_gl = g_list_copy(p_ui->darks.img_files);
+
+    /* Project status */
+    proj->status = 1;
 
     return;
 }

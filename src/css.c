@@ -68,9 +68,10 @@ static const char *debug_hdr = "DEBUG-css.c ";
 **		#ebe7f8 : Light purple grey
 **		#708090 : Gunmetal grey
 **		#fbf6fe : Light mauve
-**		#ff8f8f : Light red
+**		#daf5d0 : Light green
 **		#f8fcca : Light yellow
 **		#cbd8fb : Light blue
+**		#ffd6d6 : Light red
 **		#000000 : Light black
 */
 
@@ -111,9 +112,10 @@ static char *css_data_fhd =
 	"textview#txtview_1 * { font-family: Sans; font-size: 12px; background-color: #708090; color: @WHITE1; }"
 	"box#box_1 { background-color: #708090; }"
 	"box#box_2 { background-color: #000000; }"
-	"box#btnbx_1 { background-color: #cbd8fb; }"
+	"box#btnbx_1 { background-color: #daf5d0; }"
 	"box#btnbx_2 { background-color: #f8fcca; }"
-	"box#btnbx_3 { background-color: #ff8f8f; }"
+	"box#btnbx_3 { background-color: #cbd8fb; }"
+	"box#btnbx_4 { background-color: #ffd6d6; }"
 	"button.link { font-family: Sans; font-size: 12px; color: @DARK_BLUE; }";
 
 

@@ -72,8 +72,10 @@ void create_main_view(MainUi *);
 void project_title(MainUi *);
 void image_area(MainUi *);
 void image_info(MainUi *);
+void help_tips_txt(MainUi *);
 void image_list(MainUi *);
 void display_proj(ProjectData *, MainUi *);
+void set_process_btns(ProjectData *, MainUi *);
 void set_image_list(ProjectData *, MainUi *);
 void new_image_col(int, char *, enum ImageCol, MainUi *);
 void col_set_attrs (GtkTreeViewColumn *, GtkCellRenderer *, GtkTreeModel *, GtkTreeIter *, gpointer);
@@ -110,7 +112,7 @@ extern void create_label4(GtkWidget **, char *, char *, gint, gint, GtkAlign);
 extern void create_entry(GtkWidget **, char *, GtkWidget *, int, int);
 extern void create_radio(GtkWidget **, GtkWidget *, char *, char *, GtkWidget *, int, char *, char *);
 extern void create_cbox(GtkWidget **, char *, const char *[], int, int, GtkWidget *, int, int);
-extern void setup_btnbx(GtkWidget **, char *, int, GtkWidget **, char *, int);
+extern void setup_btnbx(GtkWidget **, char *, int, int, GtkWidget **, char *, int);
 extern char * itostr(int);
 extern GtkWidget * debug_cntr(GtkWidget *);
 extern GtkWidget * find_widget_by_name(GtkWidget *, char *);
@@ -158,7 +160,7 @@ void main_ui(MainUi *m_ui)
 
     /* Combine everything onto the window */
     gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->menu_bar, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->app_hbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->app_vbox, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->cntl_box), m_ui->status_info, TRUE, TRUE, 0);
 
     gtk_container_add(GTK_CONTAINER(m_ui->window), m_ui->cntl_box);  
@@ -169,7 +171,8 @@ void main_ui(MainUi *m_ui)
     /* Show window */
     set_css();
     gtk_widget_show_all(m_ui->window);
-    gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
+    gtk_widget_set_visible (m_ui->img_meta_vbox, FALSE);
+    gtk_widget_set_visible (m_ui->process_vbox, FALSE);
 
     return;
 }
@@ -380,19 +383,23 @@ void create_main_view(MainUi *m_ui)
 {  
     /* Control containers */
     m_ui->proj_hdg_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-    m_ui->app_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+    m_ui->app_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->algn_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     m_ui->img_cntl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
     m_ui->img_meta_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     m_ui->proc_help_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    m_ui->misc1_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    m_ui->proc_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    m_ui->grp1_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    m_ui->grp2_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    m_ui->process_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
     /* Set project name and description widgets */
     project_title(m_ui);
 
     /* Create drawing area for images */
     image_area(m_ui);
+
+    /* Container for help and tips */
+    help_tips_txt(m_ui);
 
     /* Container for image details */
     image_info(m_ui);
@@ -404,13 +411,20 @@ void create_main_view(MainUi *m_ui)
     process_panel(m_ui);
 
     /* Combine together */
-    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proj_hdg_hbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->grp1_vbox), m_ui->proc_help_vbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->grp1_vbox), m_ui->img_meta_vbox, TRUE, TRUE, 0);
+
     gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_scroll_win, TRUE, TRUE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->img_info_vbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->img_cntl_hbox), m_ui->grp1_vbox, TRUE, TRUE, 0);
+
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->img_cntl_hbox, TRUE, TRUE, 0);
     gtk_box_pack_start (GTK_BOX (m_ui->algn_vbox), m_ui->lst_scroll_win, TRUE, TRUE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->proc_vbox, TRUE, TRUE, 0);
-    gtk_box_pack_start (GTK_BOX (m_ui->app_hbox), m_ui->algn_vbox, TRUE, TRUE, 0);
+
+    gtk_box_pack_start (GTK_BOX (m_ui->grp2_hbox), m_ui->process_vbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->grp2_hbox), m_ui->algn_vbox, TRUE, TRUE, 0);
+
+    gtk_box_pack_start (GTK_BOX (m_ui->app_vbox), m_ui->proj_hdg_hbox, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->app_vbox), m_ui->grp2_hbox, TRUE, TRUE, 0);
 
     return;
 }
@@ -462,6 +476,16 @@ void image_area(MainUi *m_ui)
     g_signal_connect(m_ui->image_area, "size-allocate", G_CALLBACK(OnImageSize), m_ui);
 
     mouse_drag_off(m_ui);
+
+    return;
+}
+
+
+/* Add text to provide help or tips about what actions to take */
+
+void help_tips_txt(MainUi *m_ui)
+{  
+    gtk_widget_set_valign (m_ui->proc_help_vbox, GTK_ALIGN_START);
 
     return;
 }
@@ -573,11 +597,14 @@ void display_proj(ProjectData *proj, MainUi *m_ui)
     gtk_widget_show_all(m_ui->window);
     gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
 
+    set_process_btns(proj, m_ui);
+
     if (! set)
     {
 	gtk_image_clear(GTK_IMAGE (m_ui->image_area));
 	view_menu_sensitive(m_ui, FALSE);
-	gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
+	gtk_widget_set_visible (m_ui->img_meta_vbox, FALSE);
+	gtk_widget_set_visible (m_ui->process_vbox, FALSE);
     }
 
     return;
@@ -755,25 +782,69 @@ void col_set_attrs (GtkTreeViewColumn *tree_column,
 void process_panel(MainUi *m_ui)
 {  
     /* Process box */
-    gtk_widget_set_name (m_ui->proc_vbox, "box_2");
+    gtk_widget_set_name (m_ui->process_vbox, "box_2");
 
     /* Process darks button */
-    setup_btnbx(&(m_ui->darks_btnbx), "btnbx_1", 75, &(m_ui->darks_btn), "  Process Darks  ", 12);
+    setup_btnbx(&(m_ui->darks_btnbx), "btnbx_3", 20, 10, &(m_ui->darks_btn), "  Process Darks  ", 12);
     g_signal_connect(m_ui->darks_btn, "clicked", G_CALLBACK(OnProcessDarks), m_ui);
-    gtk_box_pack_start (GTK_BOX (m_ui->proc_vbox), m_ui->darks_btnbx, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->process_vbox), m_ui->darks_btnbx, FALSE, FALSE, 0);
 
     /* Register (align) images button */
-    setup_btnbx(&(m_ui->register_btnbx), "btnbx_3", 0, &(m_ui->register_btn), "  Register Images  ", 12);
+    setup_btnbx(&(m_ui->register_btnbx), "btnbx_3", 10, 10, &(m_ui->register_btn), "  Register Images  ", 12);
     g_signal_connect(m_ui->register_btn, "clicked", G_CALLBACK(OnRegister), m_ui);
-    gtk_box_pack_start (GTK_BOX (m_ui->proc_vbox), m_ui->register_btnbx, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->process_vbox), m_ui->register_btnbx, FALSE, FALSE, 0);
 
     /* Stack images button */
-    setup_btnbx(&(m_ui->stack_btnbx), "btnbx_3", 0, &(m_ui->stack_btn), "  Stack Images  ", 12);
+    setup_btnbx(&(m_ui->stack_btnbx), "btnbx_3", 10, 20, &(m_ui->stack_btn), "  Stack Images  ", 12);
     g_signal_connect(m_ui->stack_btn, "clicked", G_CALLBACK(OnStack), m_ui);
-    gtk_box_pack_start (GTK_BOX (m_ui->proc_vbox), m_ui->stack_btnbx, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (m_ui->process_vbox), m_ui->stack_btnbx, FALSE, FALSE, 0);
 
-    gtk_widget_set_halign(GTK_WIDGET (m_ui->proc_vbox), GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(GTK_WIDGET (m_ui->proc_vbox), GTK_ALIGN_START);
+    gtk_widget_set_halign(GTK_WIDGET (m_ui->process_vbox), GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(GTK_WIDGET (m_ui->process_vbox), GTK_ALIGN_START);
+    gtk_widget_set_margin_top (m_ui->process_vbox, 15);
+
+    return; 
+}
+
+
+/* Set up next stage button */
+
+void set_process_btns(ProjectData *proj, MainUi *m_ui)
+{  
+    /* Disable and colour code the Darks button if not present */
+    if (! proj->darks_gl)
+    {
+    	if (proj->status == 0)
+    	    proj->status = 1;
+    }
+    
+    /* Colour code depending on status */
+    switch(proj->status)
+    {
+	case 0:
+	    gtk_widget_set_name(m_ui->darks_btnbx, "btnbx_1");
+	    gtk_widget_set_name(m_ui->register_btnbx, "btnbx_2");
+	    gtk_widget_set_name(m_ui->stack_btnbx, "btnbx_2");
+	    break;
+
+	case 1:
+	    gtk_widget_set_name(m_ui->register_btnbx, "btnbx_1");
+	    gtk_widget_set_name(m_ui->stack_btnbx, "btnbx_2");
+	    break;
+
+	case 2:
+	    gtk_widget_set_name(m_ui->stack_btnbx, "btnbx_1");
+	    break;
+
+	default:
+	    break;
+    }
+
+    if (! proj->darks_gl)
+    {
+    	gtk_widget_set_sensitive(m_ui->darks_btn, FALSE);
+    	gtk_widget_set_name(m_ui->darks_btnbx, "btnbx_4");
+    }
 
     return; 
 }

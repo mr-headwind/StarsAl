@@ -355,10 +355,11 @@ void show_meta(char *img_fn, int idx, gchar *img_type, MainUi *m_ui)
 
     gtk_text_buffer_insert (txt_buffer, &iter, buf, -1);
 
-    if (! gtk_widget_get_visible (m_ui->img_info_vbox))
+    if (! gtk_widget_get_visible (m_ui->img_meta_vbox))
     {
-    	gtk_widget_set_visible (m_ui->img_info_vbox, TRUE);
+    	gtk_widget_set_visible (m_ui->img_meta_vbox, TRUE);
     	gtk_widget_set_visible (m_ui->img_progress_bar, FALSE);
+    	gtk_widget_set_visible (m_ui->process_vbox, FALSE);
     }
 
     return;

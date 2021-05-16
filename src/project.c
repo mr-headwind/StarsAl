@@ -411,7 +411,8 @@ void close_main_display(MainUi *m_ui)
     view_menu_sensitive(m_ui, FALSE);
     gtk_label_set_text(GTK_LABEL (m_ui->proj_name_lbl), "");
     gtk_label_set_text(GTK_LABEL (m_ui->proj_desc_lbl), "");
-    gtk_widget_set_visible (m_ui->img_info_vbox, FALSE);
+    gtk_widget_set_visible (m_ui->img_meta_vbox, FALSE);
+    gtk_widget_set_visible (m_ui->process_vbox, FALSE);
 
     return;
 }
