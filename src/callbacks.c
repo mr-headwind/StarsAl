@@ -95,6 +95,7 @@ extern void img_scale_sz(MainUi *, int);
 extern void zoom_image(double, MainUi *);
 extern void mouse_drag_check(MainUi *);
 extern void drag_move_sw(gdouble, gdouble, gdouble, gdouble, MainUi *);
+extern int setup_alignment(char *, char *, MainUi *);
 
 
 /* Globals */
@@ -508,6 +509,10 @@ void OnProcessDarks(GtkWidget *btn, gpointer user_data)
 
     /* Get data */
     m_ui = (MainUi *) user_data;
+
+    /* Process all the darks */
+    gtk_widget_set_name(m_ui->darks_btnbx, "btnbx_3");
+    gtk_widget_set_name(m_ui->register_btnbx, "btnbx_1");
 
     return;
 }  

@@ -19,12 +19,13 @@
 CC=cc
 CXX=g++
 CFLAGS=-I. `pkg-config --cflags gtk+-3.0 libexif` 
-CXXFLAGS=-I. `pkg-config --cflags gtk+-3.0` 
+CXXFLAGS=-I. `pkg-config --cflags gtk+-3.0 opencv4` 
 # CFLAGS2=-Wno-deprecated-declarations
 DEPS = defs.h main.h starsal.h version.h project.h project_ui.h preferences.h
-OBJ = starsal.o callbacks.o main_ui.o project_ui.o list_project_ui.o prefs_ui.o date_util.o utility.o about_ui.o view_file_ui.o css.o gtk_common.o image.o project.o
+OBJ = starsal.o callbacks.o main_ui.o project_ui.o list_project_ui.o prefs_ui.o date_util.o utility.o about_ui.o view_file_ui.o css.o gtk_common.o image.o project.o align_image.o
 LIBS = `pkg-config --libs gtk+-3.0 libexif`
-#LIBS2 = -lxxxx
+LIBS2 = `pkg-config --libs gtk+-3.0 opencv4`
+#LIBS3 = -lxxxx
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) #$(CFLAGS2)
