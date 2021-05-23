@@ -83,10 +83,12 @@ int main(int argc, char **argv)
 {
   // Read reference image
   string refFilename("form.jpg"); 
+  //string refFilename("IMG_0333src.jpg"); 
   cout << "Reading reference image : " << refFilename << endl; 
   Mat imReference = imread(refFilename);
 
   // Read image to be aligned
+  //string imFilename("IMG_0336aln.jpg");
   string imFilename("scanned-form.jpg");
   cout << "Reading image to align : " << imFilename << endl; 
   Mat im = imread(imFilename);
