@@ -98,13 +98,15 @@ static const char *proj_tags[][2] =
       { "<Description>", "</Description>" },
       { "<Path>", "</Path>" },
       { "<Status>", "</Status>" },
+      { "<BaseImg>", "</BaseImg>" },
+      { "<BaseDark>", "</BaseDark>" },
       { "<Images>", "</Images>" },
         { "<File>", "</File>" },
       { "<Darks>", "</Darks>" },
         { "<File>", "</File>" }
 };
 
-static const int Tag_Count = 10;
+static const int Tag_Count = 12;
 static const char *debug_hdr = "DEBUG-project.c ";
 
 static const int starsal_idx = 1;
@@ -112,10 +114,12 @@ static const int name_idx = 2;
 static const int desc_idx = 3;
 static const int path_idx = 4;
 static const int status_idx = 5;
-static const int img_idx = 6;
-static const int dark_idx = 8;
-static const int file1_idx = 7;
-static const int file2_idx = 9;
+static const int baseimg_idx = 6;
+static const int basedark_idx = 7;
+static const int img_idx = 8;
+static const int dark_idx = 10;
+static const int file1_idx = 9;
+static const int file2_idx = 11;
 
 
 
@@ -226,7 +230,7 @@ ProjectData * open_project(char *nm, GtkWidget *window)
 
 int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 {
-    char *buf_ptr, *tmp_status;
+    char *buf_ptr, *tmp_status, *tmp_base;
 
     /* Check that it's a StarsAl file */
     if ((buf_ptr = strstr(buf, proj_tags[starsal_idx][0])) == NULL)
@@ -242,6 +246,12 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     tmp_status = get_xmltag_val(&buf_ptr, proj_tags[status_idx][0], proj_tags[status_idx][1], TRUE, window);
     proj->status = atoi(tmp_status);
     free(tmp_status);
+    tmp_base = get_xmltag_val(&buf_ptr, proj_tags[baseimg_idx][0], proj_tags[baseimg_idx][1], TRUE, window);
+    proj->baseimg = atoi(tmp_base);
+    free(tmp_base);
+    tmp_base = get_xmltag_val(&buf_ptr, proj_tags[basedark_idx][0], proj_tags[basedark_idx][1], TRUE, window);
+    proj->basedark = atoi(tmp_base);
+    free(tmp_base);
 
     /* Images and Darks */
     load_files(&(proj->images_gl), &buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);

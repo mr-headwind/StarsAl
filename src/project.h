@@ -46,7 +46,7 @@ typedef struct _ProjectData
     char *project_name;
     char *project_desc;
     char *project_path;
-    int status;
+    int status, baseimg, basedark;
     GList *images_gl;
     GList *darks_gl;
 } ProjectData;
