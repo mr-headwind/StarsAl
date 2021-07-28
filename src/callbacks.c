@@ -491,9 +491,17 @@ void OnBaseToggle(GtkCellRendererToggle *cell_renderer, gchar *path, gpointer da
     }
 
     if (strcmp(img_type, "I") == 0)
+    {
+	free(m_ui->curr_img_base);
 	m_ui->curr_img_base = strdup((char *) path);
+	m_ui->proj->baseimg = atoi(m_ui->curr_img_base);
+    }
     else
+    {
+	free(m_ui->curr_dark_base);
 	m_ui->curr_dark_base = strdup((char *) path);
+	m_ui->proj->basedark = atoi(m_ui->curr_dark_base);
+    }
 
     g_free(img_type);
 

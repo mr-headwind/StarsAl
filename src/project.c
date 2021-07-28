@@ -230,7 +230,7 @@ ProjectData * open_project(char *nm, GtkWidget *window)
 
 int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
 {
-    char *buf_ptr, *tmp_status, *tmp_base;
+    char *buf_ptr, *tmp_tag;
 
     /* Check that it's a StarsAl file */
     if ((buf_ptr = strstr(buf, proj_tags[starsal_idx][0])) == NULL)
@@ -239,19 +239,22 @@ int load_proj_from_file(ProjectData *proj, char *buf, GtkWidget *window)
     	return FALSE;
     }
 
-    /* Title, Description, Path and Status */
+    /* Title, Description, Path, Status and Base Images */
     proj->project_name = get_xmltag_val(&buf_ptr, proj_tags[name_idx][0], proj_tags[name_idx][1], TRUE, window);
     proj->project_desc = get_xmltag_val(&buf_ptr, proj_tags[desc_idx][0], proj_tags[desc_idx][1], TRUE, window);
     proj->project_path = get_xmltag_val(&buf_ptr, proj_tags[path_idx][0], proj_tags[path_idx][1], TRUE, window);
-    tmp_status = get_xmltag_val(&buf_ptr, proj_tags[status_idx][0], proj_tags[status_idx][1], TRUE, window);
-    proj->status = atoi(tmp_status);
-    free(tmp_status);
-    tmp_base = get_xmltag_val(&buf_ptr, proj_tags[baseimg_idx][0], proj_tags[baseimg_idx][1], TRUE, window);
-    proj->baseimg = atoi(tmp_base);
-    free(tmp_base);
-    tmp_base = get_xmltag_val(&buf_ptr, proj_tags[basedark_idx][0], proj_tags[basedark_idx][1], TRUE, window);
-    proj->basedark = atoi(tmp_base);
-    free(tmp_base);
+
+    tmp_tag = get_xmltag_val(&buf_ptr, proj_tags[status_idx][0], proj_tags[status_idx][1], TRUE, window);
+    proj->status = atoi(tmp_tag);
+    free(tmp_tag);
+
+    tmp_tag = get_xmltag_val(&buf_ptr, proj_tags[baseimg_idx][0], proj_tags[baseimg_idx][1], TRUE, window);
+    proj->baseimg = atoi(tmp_tag);
+    free(tmp_tag);
+
+    tmp_tag = get_xmltag_val(&buf_ptr, proj_tags[basedark_idx][0], proj_tags[basedark_idx][1], TRUE, window);
+    proj->basedark = atoi(tmp_tag);
+    free(tmp_tag);
 
     /* Images and Darks */
     load_files(&(proj->images_gl), &buf_ptr, proj_tags[img_idx][0], proj_tags[img_idx][1], window);
@@ -482,8 +485,8 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     buf_sz = 0;
     buf_sz += get_hdr_sz();
 
-    /* Add size for project title, path and status */
-    buf_sz += (nml + descl + pathl + 4);
+    /* Add size for project title, path, status and base images */
+    buf_sz += (nml + descl + pathl + 6);
 
     /* Add size for images and darks */
     buf_sz += get_image_sz(strlen(proj_tags[file1_idx][0]), proj->images_gl);
@@ -492,20 +495,27 @@ int save_proj_init(ProjectData *proj, GtkWidget *window)
     /* Prepare the project header details and tags */
     buf = (char *) malloc(buf_sz);
 
-    sprintf(buf, "%s\n%s\n%s%s%s\n%s%s%s\n%s%s%s\n%s%d%s\n", proj_tags[0][0],		// XML header tag
-							     proj_tags[starsal_idx][0],	// StarsAl header tag
-							     proj_tags[name_idx][0],	// Project tag
-							     proj->project_name,	// Project name
-							     proj_tags[name_idx][1],	// End Project tag
-							     proj_tags[desc_idx][0],	// Description tag
-							     proj->project_desc,	// Description
-							     proj_tags[desc_idx][1],	// End Description tag
-							     proj_tags[path_idx][0],	// Path tag
-							     proj->project_path,	// Path
-							     proj_tags[path_idx][1],	// End Path tag
-							     proj_tags[status_idx][0],	// Status tag
-							     proj->status,		// Status
-							     proj_tags[status_idx][1]); // End Status tag
+    sprintf(buf, "%s\n%s\n%s%s%s\n%s%s%s\n%s%s%s\n%s%d%s\n%s%d%s\n%s%d%s\n", 
+    							     proj_tags[0][0],	 	  // XML header tag
+							     proj_tags[starsal_idx][0],	  // StarsAl header tag
+							     proj_tags[name_idx][0],	  // Project tag
+							     proj->project_name,	  // Project name
+							     proj_tags[name_idx][1],	  // End Project tag
+							     proj_tags[desc_idx][0],	  // Description tag
+							     proj->project_desc,	  // Description
+							     proj_tags[desc_idx][1],	  // End Description tag
+							     proj_tags[path_idx][0],	  // Path tag
+							     proj->project_path,	  // Path
+							     proj_tags[path_idx][1],	  // End Path tag
+							     proj_tags[status_idx][0],	  // Status tag
+							     proj->status,		  // Status
+							     proj_tags[status_idx][1],    // End Status tag
+							     proj_tags[baseimg_idx][0],	  // Base Image tag
+							     proj->baseimg,		  // Base Image
+							     proj_tags[baseimg_idx][1],   // End Base Image tag
+							     proj_tags[basedark_idx][0],  // Base Dark tag
+							     proj->basedark,		  // Base Dark
+							     proj_tags[basedark_idx][1]); // End Base Dark tag
 
     
     /* Prepare the Prepare the file names and tags */

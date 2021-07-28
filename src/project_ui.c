@@ -895,8 +895,10 @@ void setup_proj(ProjectData *proj, ProjectUi *p_ui)
     proj->images_gl = g_list_copy(p_ui->images.img_files);
     proj->darks_gl = g_list_copy(p_ui->darks.img_files);
 
-    /* Project status */
+    /* Project status and Base Images */
     proj->status = 1;
+    proj->baseimg = 0;
+    proj->basedark = 0;
 
     return;
 }

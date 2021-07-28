@@ -630,7 +630,6 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     store = gtk_list_store_new (IMG_N_COLUMNS, G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 
     /* Iterate through the images and add the store */
-    base = TRUE;
     i = 0;
 
     for(l = proj->images_gl; l != NULL; l = l->next)
@@ -638,6 +637,12 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
     	img = (Image *) l->data;
     	s = (char *) malloc(strlen(img->nm) + strlen(img->path) + 2);
     	sprintf(s, "%s/%s", img->path, img->nm);
+
+    	/* Check for the base or reference image */
+    	if (i == proj->baseimg)
+	    base = TRUE;
+	else
+	    base = FALSE;
 
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
@@ -647,24 +652,29 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 			    IMAGE_NM, s,
 			    IMG_TOOL_TIP, img->nm,
 			    -1);
-	base = FALSE;
 	i++;
 	free(s);
     }
 
-    m_ui->curr_img_base = strdup("0");
+    m_ui->curr_img_base = itostr(proj->baseimg);
 
     if (proj->darks_gl)
-    	m_ui->curr_dark_base = itostr(i);
+    	m_ui->curr_dark_base = itostr(proj->basedark);
 
     /* Iterate through the darks and add the store */
-    base = TRUE;
+    i = 0;
 
     for(l = proj->darks_gl; l != NULL; l = l->next)
     {
     	img = (Image *) l->data;
     	s = (char *) malloc(strlen(img->nm) + strlen(img->path) + 2);
     	sprintf(s, "%s/%s", img->path, img->nm);
+
+    	/* Check for the base or reference dark */
+    	if (i == proj->basedark)
+	    base = TRUE;
+	else
+	    base = FALSE;
 
     	/* Acquire an iterator and load the data*/
 	gtk_list_store_append (store, &iter);
@@ -674,7 +684,7 @@ void set_image_list(ProjectData *proj, MainUi *m_ui)
 			    IMAGE_NM, s,
 			    IMG_TOOL_TIP, img->nm,
 			    -1);
-	base = FALSE;
+	i++;
 	free(s);
     }
 
